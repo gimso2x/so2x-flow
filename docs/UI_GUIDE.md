@@ -1,5 +1,9 @@
 # UI GUIDE
 
+이 문서는 구버전 호환용 fallback 문서다.
+기본 디자인 기준 문서는 root의 `DESIGN.md`를 사용한다.
+새 규칙이나 실제 디자인 판단은 가능하면 `DESIGN.md`에 먼저 반영한다.
+
 ## Style Principles
 - Use consistent spacing.
 - Prefer simple layouts.

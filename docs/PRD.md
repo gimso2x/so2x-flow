@@ -22,4 +22,4 @@
 - All skill files and templates exist.
 - `scripts/execute.py` runs in `--dry-run` for all supported modes.
 - Feature and QA flows both create task docs and run planner -> implementer chaining.
-- Design context prefers `DESIGN.md` and only falls back to `docs/UI_GUIDE.md` if needed.
+- Design context uses `DESIGN.md` as the default source of truth and only falls back to `docs/UI_GUIDE.md` for legacy compatibility.

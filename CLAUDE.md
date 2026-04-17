@@ -19,8 +19,8 @@
 - `docs/ARCHITECTURE.md`
 - `docs/ADR.md`
 - `docs/QA.md`
-- `DESIGN.md` (preferred)
-- `docs/UI_GUIDE.md` (fallback only)
+- `DESIGN.md` (primary design reference)
+- `docs/UI_GUIDE.md` (legacy fallback only)
 
 ## Execution rules
 - For feature work, create `tasks/feature/<slug>.md` first.

@@ -15,7 +15,7 @@
 - No implementation without a task or plan document.
 - Keep orchestration thin.
 - Feature and QA flows are equal.
-- Prefer `DESIGN.md`; only fall back to `docs/UI_GUIDE.md` when needed.
+- Use `DESIGN.md` as the primary design reference; only fall back to `docs/UI_GUIDE.md` for legacy compatibility.
 
 ## Data Flow
 1. User request enters a mode.
