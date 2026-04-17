@@ -104,6 +104,7 @@ def main() -> int:
     print(f"claude_md_patched: {patched}")
 
     print("step 4/4: install complete")
+    print("next_step: flow-init으로 이 프로젝트를 초기화해줘.")
     print(f"target: {target_root}")
     print(f"copied_count: {len(copied)}")
     for item in copied:

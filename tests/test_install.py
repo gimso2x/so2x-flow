@@ -23,6 +23,7 @@ def test_install_copies_flow_scaffold_into_target_project(tmp_path: Path):
     result = run_install(target)
     assert "step 1/4: copy scaffold files" in result.stdout
     assert "step 4/4: install complete" in result.stdout
+    assert "next_step: flow-init으로 이 프로젝트를 초기화해줘." in result.stdout
     assert "copied_count:" in result.stdout
     assert (target / ".claude" / "commands" / "flow-init.md").exists()
     assert (target / ".claude" / "skills" / "flow-feature.md").exists()
