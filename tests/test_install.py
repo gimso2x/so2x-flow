@@ -139,4 +139,4 @@ def test_readme_install_prompt_forces_single_turn_completion_without_recap_only(
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     assert "1~4단계를 한 턴에서 끝까지 실제로 실행한 뒤 마지막에만 결과를 짧게 정리해" in readme
     assert 'recap이나 "다음으로 ~ 하면 됩니다" 같은 안내만 남기지 말고' in readme
-    assert '마지막 한 줄에 반드시 `다음: /flow-init` 을 포함해' in readme
+    assert '문구는 정확히 `다음 단계: /flow-init으로 프로젝트를 초기화하세요.` 로 써' in readme
