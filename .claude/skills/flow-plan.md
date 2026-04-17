@@ -57,6 +57,7 @@ Use this skill to turn a rough requirement into an approved implementation plan 
 - slice/검증 기준 없이 추상적 계획만 남기고 끝내기 금지
 - 승인 요청 없이 구현 단계로 밀어넣기 금지
 - 승인 전에는 `/flow-feature`로 자동 전환하거나 다음 실행을 기정사실화하지 않는다
+- 승인 전에는 /flow-feature로 자동 전환하지 않는다
 
 ## Runtime policy
 - decomposition은 명시적으로 남긴다

@@ -119,6 +119,7 @@ rmdir .tmp 2>/dev/null || true
 - `flow-qa` — systematic debugging + test-first bugfix 흐름
 - `flow-review` — independent verification / code review 성격의 검토
 - `flow-plan` — thinking + planning + approval
+- `/flow-plan` — 구현 없이 계획만 수행
 - 현재 v0 `/flow-plan`은 `.workflow/tasks/plan/*.json` 하나를 canonical 계획 산출물로 남기는 docs-first 흐름이다.
 
 ## init vs install
