@@ -56,20 +56,17 @@ def test_init_dry_run_writes_outputs_and_lists_bootstrap_artifacts(tmp_path: Pat
 
 def test_feature_dry_run_collects_design_doc_creates_task_and_chains_planner_to_implementer(tmp_path: Path):
     workspace = make_workspace(tmp_path)
-    plan_result = run_execute(workspace, "plan", "로그인 기능 설계 확정", "--dry-run")
-    plan_payload = read_json(output_path(workspace, plan_result.stdout, "output_json"))
-
     result = run_execute(workspace, "feature", "로그인 기능 구현", "--dry-run")
     payload = read_json(output_path(workspace, result.stdout, "output_json"))
     assert payload["mode"] == "feature"
     assert payload["design_doc"] == "DESIGN.md"
-    assert payload["approved_plan_path"] == plan_payload["artifacts"][0]
+    assert payload["approved_plan_path"] is None
+    assert payload["approved_plan_match_reason"] == "no plan artifacts found"
     assert payload["docs_used"] == [
         ".workflow/docs/PRD.md",
         ".workflow/docs/ARCHITECTURE.md",
         ".workflow/docs/ADR.md",
         "DESIGN.md",
-        plan_payload["artifacts"][0],
     ]
     assert [item["role"] for item in payload["role_results"]] == ["planner", "implementer"]
     assert payload["artifacts"] == [".workflow/tasks/feature/로그인-기능-구현.md"]
@@ -81,15 +78,45 @@ def test_feature_dry_run_collects_design_doc_creates_task_and_chains_planner_to_
     assert "## Verification" in task_text
     assert "## Follow-up Slice" in task_text
     assert "## Next Step Prompt" in task_text
-    assert f"Latest approved flow-plan output: {plan_payload['artifacts'][0]}" in task_text
-    assert f"Source plan artifact: {plan_payload['artifacts'][0]}" in task_text
+    assert "Latest approved flow-plan output: (none matched request)" in task_text
+    assert "Source plan artifact: (none)" in task_text
 
     implementer_output = payload["role_results"][1]["output"]
     assert "planner_output:" in implementer_output
     assert "role: planner" in implementer_output
     assert "Implementation Slice" in implementer_output
     assert "Approved Direction" in implementer_output
+    assert "approved_plan_path: (none)" in implementer_output
+    assert "approved_plan_match_reason: no plan artifacts found" in implementer_output
+
+
+def test_feature_dry_run_links_matching_latest_plan_artifact(tmp_path: Path):
+    workspace = make_workspace(tmp_path)
+    plan_result = run_execute(workspace, "plan", "로그인 기능 설계 확정", "--dry-run")
+    plan_payload = read_json(output_path(workspace, plan_result.stdout, "output_json"))
+    feature_result = run_execute(workspace, "feature", "로그인 기능 구현", "--dry-run")
+    feature_payload = read_json(output_path(workspace, feature_result.stdout, "output_json"))
+    assert feature_payload["approved_plan_path"] == ".workflow/outputs/plans/로그인-기능-설계-확정.md"
+    assert feature_payload["approved_plan_match_reason"].startswith("matched plan ")
+    assert feature_payload["approved_plan_path"] in feature_payload["docs_used"]
+    task_text = (workspace / feature_payload["artifacts"][0]).read_text(encoding="utf-8")
+    assert "Latest approved flow-plan output: .workflow/outputs/plans/로그인-기능-설계-확정.md" in task_text
+    assert "Source plan artifact: .workflow/outputs/plans/로그인-기능-설계-확정.md" in task_text
+    implementer_output = feature_payload["role_results"][1]["output"]
     assert f"approved_plan_path: {plan_payload['artifacts'][0]}" in implementer_output
+
+
+def test_feature_dry_run_does_not_link_unrelated_latest_plan_artifact(tmp_path: Path):
+    workspace = make_workspace(tmp_path)
+    run_execute(workspace, "plan", "결제 기능 설계 확정", "--dry-run")
+    feature_result = run_execute(workspace, "feature", "로그인 기능 구현", "--dry-run")
+    feature_payload = read_json(output_path(workspace, feature_result.stdout, "output_json"))
+    assert feature_payload["approved_plan_path"] is None
+    assert feature_payload["approved_plan_match_reason"].startswith("latest plan slug mismatch")
+    assert ".workflow/outputs/plans/결제-기능-설계-확정.md" not in feature_payload["docs_used"]
+    task_text = (workspace / feature_payload["artifacts"][0]).read_text(encoding="utf-8")
+    assert "Latest approved flow-plan output: (none matched request)" in task_text
+    assert "Source plan artifact: (none)" in task_text
 
 
 def test_feature_dry_run_marks_missing_ui_guide_as_optional_when_design_missing(tmp_path: Path):

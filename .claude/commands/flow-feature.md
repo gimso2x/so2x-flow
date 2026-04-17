@@ -14,6 +14,7 @@
 ## 출력
 - `.workflow/tasks/feature/<slug>.md`
 - planner -> implementer 흐름 결과 또는 dry-run 요약
+- 매칭된 최신 plan이 있으면 그 경로와 매칭 사유, 없으면 미연결 사유
 - 응답에는 가능하면 아래가 보여야 한다.
   - 승인된 방향
   - 이번 구현 slice

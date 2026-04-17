@@ -47,6 +47,8 @@ feature task와 응답에는 최소한 아래 항목이 있어야 한다.
 - 먼저 `.workflow/tasks/feature/<slug>.md`를 만든다
 - task에는 승인된 방향과 이번 slice를 명시한다
 - `Proposed Steps`를 planner가 채운 뒤 implementer를 실행한다
-- implementer는 planner 결과를 받아 최소 범위로 실행한다
+- 최신 `.workflow/outputs/plans/*.md` 중 canonical plan 문서를 찾고, 요청 슬러그/주제 토큰이 맞을 때만 feature에 연결한다
+- 최신 plan이 있어도 요청과 안 맞으면 연결하지 않는다
+- implementer는 planner 결과와 승인된 plan 문맥이 있을 때만 그 최소 범위로 실행한다
 - v0 기본은 `--dry-run`
 - live 실행은 `runtime.allow_live_run=true`일 때만 허용

@@ -94,6 +94,74 @@ def slugify(text: str) -> str:
     return text.strip("-") or "run"
 
 
+GENERIC_PLAN_TOKENS = {
+    "plan",
+    "feature",
+    "flow",
+    "task",
+    "tasks",
+    "request",
+    "요청",
+    "기능",
+    "설계",
+    "확정",
+    "작업",
+    "분해",
+    "구현",
+    "개선",
+    "초안",
+    "버전",
+    "v1",
+    "v2",
+}
+
+
+def canonical_plan_artifacts() -> list[Path]:
+    if not OUTPUT_PLANS.exists():
+        return []
+    return sorted(
+        [
+            path
+            for path in OUTPUT_PLANS.glob("*.md")
+            if path.name != ".gitkeep" and not path.name.startswith("plan-")
+        ],
+        key=lambda path: path.stat().st_mtime,
+        reverse=True,
+    )
+
+
+def slug_tokens(text: str) -> set[str]:
+    slug = slugify(text)
+    return {token for token in slug.split("-") if token and token not in GENERIC_PLAN_TOKENS}
+
+
+def match_plan_to_request(request: str, plan_path: Path) -> tuple[bool, str]:
+    request_slug = slugify(request)
+    plan_slug = slugify(plan_path.stem)
+    request_tokens = slug_tokens(request)
+    plan_tokens = slug_tokens(plan_path.stem)
+    shared_tokens = sorted(request_tokens & plan_tokens)
+
+    if request_slug == plan_slug:
+        return True, f"matched plan slug exactly: {plan_slug}"
+    if request_slug and plan_slug and (request_slug in plan_slug or plan_slug in request_slug):
+        return True, f"matched plan slug by containment: {plan_slug}"
+    if shared_tokens:
+        return True, f"matched plan topic tokens: {', '.join(shared_tokens)}"
+    return False, f"latest plan slug mismatch: request={request_slug}, latest_plan={plan_slug}"
+
+
+def select_approved_plan(request: str) -> tuple[str | None, str]:
+    artifacts = canonical_plan_artifacts()
+    if not artifacts:
+        return None, "no plan artifacts found"
+    latest = artifacts[0]
+    matched, reason = match_plan_to_request(request, latest)
+    if not matched:
+        return None, reason
+    return str(latest.relative_to(PROJECT_ROOT)), reason
+
+
 def load_config() -> dict:
     return yaml.safe_load(CONFIG_PATH.read_text(encoding="utf-8"))
 
@@ -196,7 +264,7 @@ def load_prompt_template(role: str) -> str:
 
 
 def render_feature_task(request: str, approved_plan_path: str | None = None) -> str:
-    plan_ref = approved_plan_path or "(none found)"
+    plan_ref = approved_plan_path or "(none matched request)"
     return f'''# Feature Task
 
 ## Title
@@ -217,7 +285,7 @@ def render_feature_task(request: str, approved_plan_path: str | None = None) -> 
 
 ## Approved Direction
 - Summarize the agreed direction from flow-plan or the latest approval note.
-- Source plan artifact: {plan_ref}
+- Source plan artifact: {approved_plan_path or "(none)"}
 
 ## Implementation Slice
 - Define the smallest implementation slice for this run.
@@ -337,6 +405,7 @@ def build_prompt(
     planner_output: str | None,
     design_doc: str | None,
     approved_plan_path: str | None = None,
+    approved_plan_match_reason: str | None = None,
 ) -> str:
     prompt_template = load_prompt_template(role)
     lines = [
@@ -346,6 +415,7 @@ def build_prompt(
         f"docs_used: {', '.join(docs_used) if docs_used else '(none)'}",
         f"design_doc: {design_doc or '(none)'}",
         f"approved_plan_path: {approved_plan_path or '(none)'}",
+        f"approved_plan_match_reason: {approved_plan_match_reason or '(none)'}",
         "",
         "prompt_template:",
         prompt_template.strip(),
@@ -390,6 +460,7 @@ def render_markdown_summary(payload: dict) -> str:
             f"- Fallback Reason: {payload['fallback_reason'] or '(none)'}",
             f"- Design Doc: {payload['design_doc'] or '(none)'}",
             f"- Approved Plan: {payload.get('approved_plan_path') or '(none)'}",
+            f"- Approved Plan Match Reason: {payload.get('approved_plan_match_reason') or '(none)'}",
             "",
             "## Docs Used",
             *[f"- {doc}" for doc in docs_used],
@@ -421,6 +492,7 @@ def print_summary(payload: dict) -> None:
     print(f"fallback_reason: {payload['fallback_reason'] or '(none)'}")
     print(f"design_doc: {payload['design_doc'] or '(none)'}")
     print(f"approved_plan_path: {payload.get('approved_plan_path') or '(none)'}")
+    print(f"approved_plan_match_reason: {payload.get('approved_plan_match_reason') or '(none)'}")
     print("docs_used:")
     for doc in payload["docs_used"]:
         print(f"  - {doc}")
@@ -449,9 +521,11 @@ def main() -> int:
     roles = [role for role in configured_roles if role not in skip_roles]
     planner_output = None
     task_path = None
-    approved_plan_path = latest_plan_artifact() if mode == "feature" else None
+    approved_plan_path = None
+    approved_plan_match_reason = None
 
     if mode == "feature":
+        approved_plan_path, approved_plan_match_reason = select_approved_plan(args.request)
         if approved_plan_path and approved_plan_path not in docs_used:
             docs_used.append(approved_plan_path)
             docs_bundle = load_docs_bundle(docs_used)
@@ -485,7 +559,7 @@ def main() -> int:
             **config["roles"][role],
             **role_config,
         }
-        prompt = build_prompt(role, mode, args.request, docs_used, docs_bundle, task_path, args.qa_id, planner_output, design_doc, approved_plan_path)
+        prompt = build_prompt(role, mode, args.request, docs_used, docs_bundle, task_path, args.qa_id, planner_output, design_doc, approved_plan_path, approved_plan_match_reason)
         if args.dry_run:
             result = run_role(
                 runner=resolution.selected_runner,
@@ -530,6 +604,7 @@ def main() -> int:
         "fallback_reason": resolution.fallback_reason,
         "design_doc": design_doc,
         "approved_plan_path": approved_plan_path,
+        "approved_plan_match_reason": approved_plan_match_reason,
         "docs_used": docs_used,
         "roles": roles,
         "role_results": role_results,
