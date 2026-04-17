@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "scripts/hooks/dangerous-cmd-guard.sh"
+            "command": ".workflow/scripts/hooks/dangerous-cmd-guard.sh"
           }
         ]
       }
@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "scripts/hooks/tdd-guard.sh"
+            "command": ".workflow/scripts/hooks/tdd-guard.sh"
           }
         ]
       }
@@ -26,7 +26,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "scripts/hooks/circuit-breaker.sh"
+            "command": ".workflow/scripts/hooks/circuit-breaker.sh"
           }
         ]
       }

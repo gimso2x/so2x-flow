@@ -4,7 +4,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-RUNNER_PATH = ROOT / "scripts" / "ccs_runner.py"
+RUNNER_PATH = ROOT / ".workflow" / "scripts" / "ccs_runner.py"
 
 spec = importlib.util.spec_from_file_location("so2x_flow_ccs_runner", RUNNER_PATH)
 runner = importlib.util.module_from_spec(spec)

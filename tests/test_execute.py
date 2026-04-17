@@ -7,10 +7,10 @@ import yaml
 
 
 ROOT = Path(__file__).resolve().parents[1]
-EXECUTE = ROOT / "scripts" / "execute.py"
-RUNS_DIR = ROOT / "outputs" / "runs"
-PLANS_DIR = ROOT / "outputs" / "plans"
-CONFIG_PATH = ROOT / "config" / "ccs-map.yaml"
+EXECUTE = ROOT / ".workflow" / "scripts" / "execute.py"
+RUNS_DIR = ROOT / ".workflow" / "outputs" / "runs"
+PLANS_DIR = ROOT / ".workflow" / "outputs" / "plans"
+CONFIG_PATH = ROOT / ".workflow" / "config" / "ccs-map.yaml"
 
 
 def run_execute(*args: str) -> subprocess.CompletedProcess[str]:
@@ -50,13 +50,13 @@ def test_feature_dry_run_collects_design_doc_creates_task_and_chains_planner_to_
     assert payload["mode"] == "feature"
     assert payload["design_doc"] == "DESIGN.md"
     assert payload["docs_used"] == [
-        "docs/PRD.md",
-        "docs/ARCHITECTURE.md",
-        "docs/ADR.md",
+        ".workflow/docs/PRD.md",
+        ".workflow/docs/ARCHITECTURE.md",
+        ".workflow/docs/ADR.md",
         "DESIGN.md",
     ]
     assert [item["role"] for item in payload["role_results"]] == ["planner", "implementer"]
-    assert payload["artifacts"] == ["tasks/feature/로그인-기능-구현.md"]
+    assert payload["artifacts"] == [".workflow/tasks/feature/로그인-기능-구현.md"]
     implementer_output = payload["role_results"][1]["output"]
     assert "planner_output:" in implementer_output
     assert "role: planner" in implementer_output
@@ -66,7 +66,7 @@ def test_qa_dry_run_prioritizes_qa_doc_and_uses_qa_planner():
     result = run_execute("qa", "QA-001 홈 버튼 클릭 안됨", "--qa-id", "QA-001", "--dry-run")
     payload = read_json(output_path(result.stdout, "output_json"))
     assert payload["mode"] == "qa"
-    assert payload["docs_used"][0] == "docs/QA.md"
+    assert payload["docs_used"][0] == ".workflow/docs/QA.md"
     assert [item["role"] for item in payload["role_results"]] == ["qa_planner", "implementer"]
     task_text = (ROOT / payload["artifacts"][0]).read_text(encoding="utf-8")
     assert "## Reproduction" in task_text
@@ -93,7 +93,7 @@ def test_plan_dry_run_writes_outputs_under_plans_directory():
     assert payload["mode"] == "plan"
     assert output_json.parent == PLANS_DIR
     assert output_md.parent == PLANS_DIR
-    assert payload["artifacts"] == ["outputs/plans/결제-기능-작업-분해.md"]
+    assert payload["artifacts"] == [".workflow/outputs/plans/결제-기능-작업-분해.md"]
 
 
 def test_skip_plan_removes_planner_role_from_feature_run():
@@ -140,4 +140,4 @@ def test_requested_ccs_falls_back_to_claude_when_ccs_missing():
 
 def test_execute_uses_runner_resolution_layer():
     execute_text = EXECUTE.read_text(encoding="utf-8")
-    assert "from scripts.ccs_runner import resolve_runner, run_role" in execute_text
+    assert "from ccs_runner import resolve_runner, run_role" in execute_text

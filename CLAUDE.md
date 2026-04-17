@@ -2,9 +2,9 @@
 
 ## Core workflow skills
 - `flow-init`: bootstrap only
-- `flow-feature`: create feature task doc first, then execute
-- `flow-qa`: create QA task doc first, then execute
-- `flow-review`: review against docs/tasks
+- `flow-feature`: create `.workflow/tasks/feature/<slug>.md` first, then execute
+- `flow-qa`: create `.workflow/tasks/qa/<slug>.md` first, then execute
+- `flow-review`: review against workflow docs and task artifacts
 - `flow-plan`: planning only, no implementation
 
 ## Claude Code working style
@@ -21,18 +21,22 @@
 - Prefer small explicit documents over hidden state.
 - `.claude/skills/` is the workflow source of truth; `.claude/commands/` are thin slash-command wrappers.
 
+## Workflow home
+- Shared workflow assets live under `.workflow/`.
+- Keep product code at the root. Keep config, docs, prompts, scripts, tasks, and outputs under `.workflow/`.
+
 ## Required docs
-- `docs/PRD.md`
-- `docs/ARCHITECTURE.md`
-- `docs/ADR.md`
-- `docs/QA.md`
+- `.workflow/docs/PRD.md`
+- `.workflow/docs/ARCHITECTURE.md`
+- `.workflow/docs/ADR.md`
+- `.workflow/docs/QA.md`
 - `DESIGN.md` (primary design reference)
-- `docs/UI_GUIDE.md` (legacy fallback only)
+- `.workflow/docs/UI_GUIDE.md` (legacy fallback only)
 
 ## Execution rules
-- For feature work, create `tasks/feature/<slug>.md` first.
-- For QA work, create `tasks/qa/<slug>.md` first.
+- For feature work, create `.workflow/tasks/feature/<slug>.md` first.
+- For QA work, create `.workflow/tasks/qa/<slug>.md` first.
 - `Proposed Steps` must exist before implementation.
-- Use `config/ccs-map.yaml` to select `auto`, `ccs`, or `claude` runner.
-- In v0, `scripts/execute.py` is validated primarily in `--dry-run` mode.
+- Use `.workflow/config/ccs-map.yaml` to select `auto`, `ccs`, or `claude` runner.
+- In v0, `.workflow/scripts/execute.py` is validated primarily in `--dry-run` mode.
 - Use `.claude/settings.json` hooks as deterministic guardrails; do not rely on CLAUDE.md text alone for enforcement.

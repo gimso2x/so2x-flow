@@ -4,7 +4,7 @@
 
 ## 역할
 - QA 이슈 요청을 `flow-qa` skill로 넘긴다.
-- 실제 절차, 규칙, QA task 문서 기준은 skill과 `scripts/execute.py`가 기준이다.
+- 실제 절차, 규칙, QA task 문서 기준은 skill과 `.workflow/scripts/execute.py`가 기준이다.
 
 ## 입력
 - QA 이슈 설명
@@ -16,4 +16,4 @@
 
 ## 참고
 - 본체: `.claude/skills/flow-qa.md`
-- 실행기: `scripts/execute.py`
+- 실행기: `.workflow/scripts/execute.py`

@@ -4,7 +4,7 @@
 
 ## 역할
 - review 요청을 `flow-review` skill로 넘긴다.
-- 실제 리뷰 기준과 출력 형식은 skill과 `scripts/execute.py`가 기준이다.
+- 실제 리뷰 기준과 출력 형식은 skill과 `.workflow/scripts/execute.py`가 기준이다.
 
 ## 입력
 - 리뷰 대상 요청
@@ -15,4 +15,4 @@
 
 ## 참고
 - 본체: `.claude/skills/flow-review.md`
-- 실행기: `scripts/execute.py`
+- 실행기: `.workflow/scripts/execute.py`
