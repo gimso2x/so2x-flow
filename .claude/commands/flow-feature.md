@@ -9,10 +9,23 @@
 ## 입력
 - feature 요청 한 줄
 - 필요하면 관련 문서나 범위 힌트
+- 가능하면 직전 flow-plan 승인 방향
 
 ## 출력
 - `.workflow/tasks/feature/<slug>.md`
 - planner -> implementer 흐름 결과 또는 dry-run 요약
+- 응답에는 가능하면 아래가 보여야 한다.
+  - 승인된 방향
+  - 이번 구현 slice
+  - 이번에 안 하는 범위
+  - 검증 기준
+  - 마지막 한 줄의 다음 slice 질문
+
+## 응답 마감 규칙
+- 설계 미확정 상태를 숨기고 바로 구현 확정한 척하지 않는다.
+- 마지막은 즉답 가능한 닫힌 질문으로 끝낸다.
+- 권장 형식:
+  - `다음으로 <남은 slice 요약>까지 이어서 진행하시겠습니까? (y/n)`
 
 ## 참고
 - 본체: `.claude/skills/flow-feature.md`

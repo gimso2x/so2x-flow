@@ -194,28 +194,36 @@ def render_feature_task(request: str) -> str:
 - .workflow/docs/ARCHITECTURE.md
 - .workflow/docs/ADR.md
 - DESIGN.md
+- (Optional) latest approved flow-plan output
+
+## Approved Direction
+- Summarize the agreed direction from flow-plan or the latest approval note.
+
+## Implementation Slice
+- Define the smallest implementation slice for this run.
 
 ## Relevant Files
 - List candidate files to inspect or modify.
-
-## Scope
-- Define the minimum implementation slice for this feature.
 
 ## Out of Scope
 - Explicitly list what this task will not change.
 
 ## Proposed Steps
-1. Clarify the exact user-visible behavior.
+1. Confirm the approved direction and implementation slice.
 2. Identify the smallest implementation change.
-3. Implement and verify the change.
+3. Implement and verify the slice.
 
 ## Acceptance
-- Define the minimum accepted outcome.
+- Define the minimum accepted outcome for this slice.
 
-## Verification Checklist
-- [ ] Behavior implemented as planned
-- [ ] Relevant tests executed
-- [ ] Docs updated if needed
+## Verification
+- List the checks required before considering this slice done.
+
+## Follow-up Slice
+- Describe the next smallest slice after this one.
+
+## Next Step Prompt
+- 다음으로 <남은 slice 요약>까지 이어서 진행하시겠습니까? (y/n)
 '''
 
 

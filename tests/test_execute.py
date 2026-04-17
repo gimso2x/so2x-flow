@@ -68,9 +68,20 @@ def test_feature_dry_run_collects_design_doc_creates_task_and_chains_planner_to_
     ]
     assert [item["role"] for item in payload["role_results"]] == ["planner", "implementer"]
     assert payload["artifacts"] == [".workflow/tasks/feature/로그인-기능-구현.md"]
+
+    task_text = (workspace / payload["artifacts"][0]).read_text(encoding="utf-8")
+    assert "## Approved Direction" in task_text
+    assert "## Implementation Slice" in task_text
+    assert "## Out of Scope" in task_text
+    assert "## Verification" in task_text
+    assert "## Follow-up Slice" in task_text
+    assert "## Next Step Prompt" in task_text
+
     implementer_output = payload["role_results"][1]["output"]
     assert "planner_output:" in implementer_output
     assert "role: planner" in implementer_output
+    assert "Implementation Slice" in implementer_output
+    assert "Approved Direction" in implementer_output
 
 
 def test_feature_dry_run_marks_missing_ui_guide_as_optional_when_design_missing(tmp_path: Path):
