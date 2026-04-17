@@ -125,8 +125,8 @@ def canonical_plan_artifacts() -> list[Path]:
     return sorted(
         [
             path
-            for path in PLAN_TASKS.glob("*.md")
-            if path.name != ".gitkeep"
+            for path in PLAN_TASKS.iterdir()
+            if path.is_file() and path.suffix == ".json" and path.name != ".gitkeep"
         ],
         key=lambda path: path.stat().st_mtime,
         reverse=True,
@@ -384,45 +384,30 @@ def render_qa_task(request: str, qa_id: str | None) -> str:
 '''
 
 
-def render_plan_doc(request: str, docs_used: list[str]) -> str:
-    return "\n".join([
-        "# Plan",
-        "",
-        f"## Request\n{request}",
-        "",
-        "## Related Docs",
-        *[f"- {doc}" for doc in docs_used],
-        "",
-        "## Context Snapshot",
-        "- 현재 프로젝트 구조와 관련 문서를 기준으로 핵심 맥락을 요약한다.",
-        "",
-        "## Open Questions",
-        "- 한 번에 하나씩 확인이 필요한 질문을 적는다.",
-        "",
-        "## Options",
-        "### Option A",
-        "- 가장 작은 MVP 접근",
-        "",
-        "### Option B",
-        "- 상호작용이나 범위를 조금 더 포함한 접근",
-        "",
-        "## Recommendation",
-        "- 추천안을 한 줄로 명시하고 이유를 붙인다.",
-        "",
-        "## Draft Plan",
-        "1. 컨텍스트를 확인한다.",
-        "2. 범위를 분해한다.",
-        "3. 질문과 대안을 정리한다.",
-        "4. 추천안을 기준으로 설계 초안을 확정한다.",
-        "5. 구현 전 검증 기준을 적는다.",
-        "",
-        "## Approval Gate",
-        "- 이 설계 방향 자체를 확정할지 사용자 승인을 요청한다.",
-        "- 승인 전에는 /flow-feature로 자동 전환하거나 다음 실행을 기정사실화하지 않는다.",
-        "",
-        "## Next Step Prompt",
-        "- 이 설계 방향으로 확정할까요? (y/n)",
-    ])
+def render_plan_doc(request: str, docs_used: list[str]) -> dict:
+    return {
+        "request": request,
+        "related_docs": docs_used,
+        "context_snapshot": "현재 프로젝트 구조와 관련 문서를 기준으로 핵심 맥락을 요약한다.",
+        "open_questions": ["한 번에 하나씩 확인이 필요한 질문을 적는다."],
+        "options": {
+            "Option A": ["가장 작은 MVP 접근"],
+            "Option B": ["상호작용이나 범위를 조금 더 포함한 접근"],
+        },
+        "recommendation": "추천안을 한 줄로 명시하고 이유를 붙인다.",
+        "draft_plan": [
+            "컨텍스트를 확인한다.",
+            "범위를 분해한다.",
+            "질문과 대안을 정리한다.",
+            "추천안을 기준으로 설계 초안을 확정한다.",
+            "구현 전 검증 기준을 적는다.",
+        ],
+        "approval_gate": [
+            "이 설계 방향 자체를 확정할지 사용자 승인을 요청한다.",
+            "승인 전에는 /flow-feature로 자동 전환하거나 다음 실행을 기정사실화하지 않는다.",
+        ],
+        "next_step_prompt": "이 설계 방향으로 확정할까요? (y/n)",
+    }
 
 
 def build_prompt(
@@ -532,10 +517,13 @@ def main() -> int:
         path.write_text(render_qa_task(args.request, args.qa_id), encoding="utf-8")
         artifacts.append(task_path)
     elif mode == "plan":
-        task_path = f".workflow/tasks/plan/{slugify(args.request)}.md"
+        task_path = f".workflow/tasks/plan/{slugify(args.request)}.json"
         path = PROJECT_ROOT / task_path
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(render_plan_doc(args.request, docs_used), encoding="utf-8")
+        path.write_text(
+            json.dumps(render_plan_doc(args.request, docs_used), ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
         artifacts.append(task_path)
 
     runtime_config = config.get("runtime", {})

@@ -39,7 +39,7 @@ Use this skill to create a validated plan document without implementation.
 - `Next Step Prompt`
 
 ## Outputs
-- `.workflow/tasks/plan/<slug>.md`
+- `.workflow/tasks/plan/<slug>.json`
 - `.workflow/outputs/plan/<mode>-<slug>-<timestamp>.json`
 - planner 결과 요약 또는 dry-run 출력
 
@@ -54,9 +54,9 @@ Use this skill to create a validated plan document without implementation.
 
 ## Runtime policy
 - decomposition은 명시적으로 남긴다
-- 사람용 계획 문서는 `.workflow/tasks/plan/` 아래에 남긴다
+- canonical 계획 산출물은 `.workflow/tasks/plan/` 아래 JSON으로 남긴다
 - machine output은 `.workflow/outputs/plan/` 아래 JSON만 남긴다
 - v0 기본은 `--dry-run`
 - live 실행은 `runtime.allow_live_run=true`일 때만 허용
-- 즉, 현재 v0 `/flow-plan`은 markdown 계획 문서를 쓰는 전제를 버리지 않는다.
-- markdown 계획 문서를 전혀 쓰지 않을 프로젝트라면 별도 no-md 모드를 추가하기 전까지 현재 `/flow-plan`과 맞지 않는다.
+- 현재 v0 `/flow-plan`은 markdown 계획 문서를 만들지 않는다.
+- feature는 `.workflow/tasks/plan/*.json`만 canonical plan으로 참조한다.
