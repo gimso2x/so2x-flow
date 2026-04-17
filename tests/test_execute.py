@@ -341,6 +341,42 @@ def test_skip_plan_rejects_unapproved_matching_plan(tmp_path: Path):
 
 
 
+def test_live_execution_requires_explicit_runtime_opt_in(tmp_path: Path):
+    workspace = make_workspace(tmp_path)
+    execute = workspace / ".workflow" / "scripts" / "execute.py"
+
+    result = subprocess.run(
+        [sys.executable, str(execute), "review", "실실행 테스트"],
+        cwd=workspace,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode != 0
+    assert "allow_live_run" in result.stderr
+
+
+
+def test_live_execution_rejects_non_boolean_allow_live_run_values(tmp_path: Path):
+    workspace = make_workspace(tmp_path)
+    config_path = workspace / ".workflow" / "config" / "ccs-map.yaml"
+    config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+    config["runtime"]["allow_live_run"] = "true"
+    config_path.write_text(yaml.safe_dump(config, allow_unicode=True, sort_keys=False), encoding="utf-8")
+
+    execute = workspace / ".workflow" / "scripts" / "execute.py"
+    result = subprocess.run(
+        [sys.executable, str(execute), "review", "실실행 테스트"],
+        cwd=workspace,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode != 0
+    assert "allow_live_run must be a boolean true" in result.stderr
+
+
+
 def test_skip_plan_allows_feature_run_when_matching_plan_is_explicitly_approved(tmp_path: Path):
     workspace = make_workspace(tmp_path)
     plan_result = run_execute(workspace, "plan", "프로필 편집 설계 확정", "--dry-run")

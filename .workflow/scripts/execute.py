@@ -590,7 +590,10 @@ def main() -> int:
         artifacts.append(task_path)
 
     runtime_config = config.get("runtime", {})
-    allow_live_run = bool(runtime_config.get("allow_live_run", False))
+    allow_live_run_raw = runtime_config.get("allow_live_run", False)
+    if not isinstance(allow_live_run_raw, bool):
+        raise SystemExit("live execution blocked: runtime.allow_live_run must be a boolean true/false value")
+    allow_live_run = allow_live_run_raw
     if not args.dry_run and not allow_live_run:
         raise SystemExit("live execution blocked: set runtime.allow_live_run=true or use --dry-run")
     resolution = resolve_runner(runtime_config.get("runner", "auto"))
