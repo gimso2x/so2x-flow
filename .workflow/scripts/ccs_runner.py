@@ -95,6 +95,15 @@ def command_preview(command: list[str]) -> str:
     return shlex.join(command)
 
 
+def authentication_hint(runner: str, stderr: str | None) -> str | None:
+    if runner != "ccs" or not stderr:
+        return None
+    lowered = stderr.lower()
+    if "authentication required for openai codex" in lowered:
+        return "ccs is installed but Codex auth is not configured; run `ccs setup` or `ccs codex --auth` and finish login before live run"
+    return None
+
+
 def run_role(
     *,
     runner: str,
@@ -143,9 +152,11 @@ def run_role_subprocess(
     except subprocess.TimeoutExpired:
         raise RunnerError(f"runner={runner} role={role} timed out after {timeout}s: {preview}")
     except subprocess.CalledProcessError as exc:
-        raise RunnerError(
-            f"runner={runner} role={role} exited {exc.returncode}: {preview}\nstderr: {exc.stderr}"
-        ) from exc
+        hint = authentication_hint(runner, exc.stderr)
+        detail = f"runner={runner} role={role} exited {exc.returncode}: {preview}\nstderr: {exc.stderr}"
+        if hint:
+            detail = f"{detail}\nhint: {hint}"
+        raise RunnerError(detail) from exc
     engine = role_config.get("engine", role_config.get("claude_role", role))
     model = role_config.get("model", runner)
     return RoleResult(role=role, runner=runner, engine=engine, model=model, status="success", output=completed.stdout, command=command, command_preview=preview)

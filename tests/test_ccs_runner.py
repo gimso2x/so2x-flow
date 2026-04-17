@@ -133,3 +133,30 @@ def test_run_role_subprocess_command_failure_raises_runner_error_with_stderr(mon
         assert "ccs codex --model codex -p hello" in message
     else:
         raise AssertionError("Expected RunnerError for subprocess failure path")
+
+
+def test_run_role_subprocess_surfaces_ccs_codex_auth_hint(monkeypatch):
+    def fake_run(*args, **kwargs):
+        raise runner.subprocess.CalledProcessError(
+            returncode=1,
+            cmd=args[0],
+            stderr="[X] Failed to start OAuth flow\n[X] Authentication required for OpenAI Codex",
+        )
+
+    monkeypatch.setattr(runner.subprocess, "run", fake_run)
+
+    try:
+        runner.run_role_subprocess(
+            runner="ccs",
+            role="planner",
+            prompt="hello",
+            role_config={"command": "ccs", "engine": "codex", "model": "codex", "profile": "codex"},
+            timeout=11,
+        )
+    except runner.RunnerError as exc:
+        message = str(exc)
+        assert "Authentication required for OpenAI Codex" in message
+        assert "ccs is installed but Codex auth is not configured" in message
+        assert "run `ccs setup` or `ccs codex --auth`" in message
+    else:
+        raise AssertionError("Expected RunnerError for ccs auth failure path")

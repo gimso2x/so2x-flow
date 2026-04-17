@@ -486,3 +486,36 @@ def test_live_execution_requires_explicit_runtime_opt_in(tmp_path: Path):
     )
     assert result.returncode != 0
     assert "allow_live_run" in result.stderr
+
+
+
+def test_live_ccs_execution_surfaces_codex_auth_guidance(tmp_path: Path):
+    workspace = make_workspace(tmp_path)
+    fake_ccs = workspace / "fake-ccs.sh"
+    fake_ccs.write_text(
+        "#!/usr/bin/env bash\n"
+        "echo '[X] Failed to start OAuth flow' >&2\n"
+        "echo '[X] Authentication required for OpenAI Codex' >&2\n"
+        "exit 1\n",
+        encoding="utf-8",
+    )
+    fake_ccs.chmod(0o755)
+
+    config_path = workspace / ".workflow" / "config" / "ccs-map.yaml"
+    config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+    config["runtime"]["runner"] = "ccs"
+    config["runtime"]["allow_live_run"] = True
+    config["roles"]["planner"]["ccs"]["command"] = str(fake_ccs)
+    config_path.write_text(yaml.safe_dump(config, allow_unicode=True, sort_keys=False), encoding="utf-8")
+
+    execute = workspace / ".workflow" / "scripts" / "execute.py"
+    result = subprocess.run(
+        [sys.executable, str(execute), "plan", "결제 기능 작업 분해"],
+        cwd=workspace,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode != 0
+    assert "ccs is installed but Codex auth is not configured" in result.stderr
+    assert "run `ccs setup` or `ccs codex --auth`" in result.stderr
