@@ -2,10 +2,10 @@ __pycache__/
 .pytest_cache/
 .workflow/scripts/__pycache__/
 .workflow/outputs/**
-!.workflow/outputs/plans/
-!.workflow/outputs/plans/.gitkeep
-!.workflow/outputs/runs/
-!.workflow/outputs/runs/.gitkeep
+!.workflow/outputs/plan/
+!.workflow/outputs/plan/.gitkeep
+!.workflow/outputs/run/
+!.workflow/outputs/run/.gitkeep
 .workflow/tasks/feature/*.md
 .workflow/tasks/qa/*.md
 !.workflow/tasks/feature/_template.md

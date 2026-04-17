@@ -6,6 +6,10 @@ import subprocess
 from dataclasses import dataclass
 
 
+class RunnerError(RuntimeError):
+    """Raised when a runner subprocess fails."""
+
+
 @dataclass
 class RunnerResolution:
     requested_runner: str
@@ -133,7 +137,14 @@ def run_role_subprocess(
         role_config=role_config,
         runtime_config=runtime_config,
     )
-    completed = subprocess.run(command, capture_output=True, text=True, timeout=timeout, check=True)
+    try:
+        completed = subprocess.run(command, capture_output=True, text=True, timeout=timeout, check=True)
+    except subprocess.TimeoutExpired:
+        raise RunnerError(f"runner={runner} role={role} timed out after {timeout}s: {preview}")
+    except subprocess.CalledProcessError as exc:
+        raise RunnerError(
+            f"runner={runner} role={role} exited {exc.returncode}: {preview}\nstderr: {exc.stderr}"
+        ) from exc
     engine = role_config.get("engine", role_config.get("claude_role", role))
     model = role_config.get("model", runner)
     preview = command_preview(command)

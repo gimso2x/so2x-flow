@@ -198,10 +198,14 @@ def select_approved_plan(request: str) -> tuple[str | None, str]:
 
 
 def load_config() -> dict:
+    if not CONFIG_PATH.exists():
+        raise SystemExit(f"config not found: {CONFIG_PATH}")
     return yaml.safe_load(CONFIG_PATH.read_text(encoding="utf-8"))
 
 
 def load_text(path: Path) -> str:
+    if not path.exists():
+        raise SystemExit(f"file not found: {path}")
     return path.read_text(encoding="utf-8")
 
 

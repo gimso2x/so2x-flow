@@ -15,8 +15,7 @@ Use this skill when a QA issue or bug report needs a document-first fix flow.
 
 ## Outputs
 - `.workflow/tasks/qa/<slug>.md`
-- `.workflow/outputs/runs/qa-<slug>-<timestamp>.json`
-- `.workflow/outputs/runs/qa-<slug>-<timestamp>.md`
+- `.workflow/outputs/run/qa-<slug>-<timestamp>.json`
 
 ## Forbidden
 - QA task 문서 없이 수정 시작 금지
