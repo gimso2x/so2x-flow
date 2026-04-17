@@ -107,7 +107,23 @@ def test_readme_uses_exit_trap_cleanup_and_hook_examples():
 def test_command_and_skill_docs_use_workflow_paths_consistently():
     feature_command = (ROOT / ".claude" / "commands" / "flow-feature.md").read_text(encoding="utf-8")
     qa_command = (ROOT / ".claude" / "commands" / "flow-qa.md").read_text(encoding="utf-8")
+    feature_skill = (ROOT / ".claude" / "skills" / "flow-feature.md").read_text(encoding="utf-8")
+    qa_skill = (ROOT / ".claude" / "skills" / "flow-qa.md").read_text(encoding="utf-8")
     plan_skill = (ROOT / ".claude" / "skills" / "flow-plan.md").read_text(encoding="utf-8")
     assert "`.workflow/tasks/feature/<slug>.md`" in feature_command
     assert "`.workflow/tasks/qa/<slug>.md`" in qa_command
+    assert "## Input" in feature_skill
+    assert "## Outputs" in feature_skill
+    assert "## Forbidden" in feature_skill
+    assert "## Input" in qa_skill
+    assert "## Outputs" in qa_skill
+    assert "## Forbidden" in qa_skill
     assert "`.workflow/outputs/plans/`" in plan_skill
+
+
+def test_readme_documents_init_install_split_and_artifact_naming():
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    assert "## init vs install" in readme
+    assert "설치와 운영 초기화는 일부러 분리돼 있다" in readme
+    assert "## artifact naming" in readme
+    assert "`.workflow/outputs/runs/<mode>-<slug>-<timestamp>.json|md`" in readme

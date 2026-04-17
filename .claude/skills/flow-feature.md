@@ -2,19 +2,29 @@
 
 Use this skill when a new product or engineering feature is requested.
 
-## Required flow
-1. Read project docs first.
-2. Create `.workflow/tasks/feature/<slug>.md` first.
-3. Fill `Proposed Steps` with explicit implementation steps.
-4. Run planner first.
-5. Pass planner output to implementer.
-6. In v0, validate with `--dry-run` first and treat live execution as explicit opt-in.
-7. Save outputs under `.workflow/outputs/runs/`.
+## Input
+- feature 요청 한 줄
+- 필요하면 범위, 관련 문서, 제약
 
-## Rules
-- No implementation without a task document.
-- `Proposed Steps` is mandatory.
-- Planner defines the work.
-- Implementer executes the work.
-- Do not let implementer re-plan the feature from scratch.
-- If `runtime.allow_live_run` is not enabled, stay in dry-run mode.
+## Required docs
+- `.workflow/docs/PRD.md`
+- `.workflow/docs/ARCHITECTURE.md`
+- `.workflow/docs/ADR.md`
+- 필요 시 `DESIGN.md`
+
+## Outputs
+- `.workflow/tasks/feature/<slug>.md`
+- `.workflow/outputs/runs/feature-<slug>-<timestamp>.json`
+- `.workflow/outputs/runs/feature-<slug>-<timestamp>.md`
+
+## Forbidden
+- task 문서 없이 구현 시작 금지
+- implementer가 planner 없이 범위를 재정의하는 것 금지
+- `runtime.allow_live_run` 없이 live 실행 금지
+
+## Runtime policy
+- 먼저 `.workflow/tasks/feature/<slug>.md`를 만든다
+- `Proposed Steps`를 채운 뒤 planner를 먼저 실행한다
+- implementer는 planner 결과를 받아 최소 범위로 실행한다
+- v0 기본은 `--dry-run`
+- live 실행은 `runtime.allow_live_run=true`일 때만 허용

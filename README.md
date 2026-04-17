@@ -61,11 +61,17 @@ rmdir .tmp 2>/dev/null || true
 
 ## 포함된 흐름
 
-- `flow-init` — 워크스페이스 문서와 설정 초기화
+- `flow-init` — 설치된 scaffold 자산을 기준으로 워크스페이스를 확인하고 init 결과를 남김
 - `flow-feature` — feature task 문서 생성 후 계획/구현
 - `flow-qa` — QA 수정 문서 생성 후 계획/구현
 - `flow-review` — 문서와 태스크 기준 리뷰만 수행
 - `flow-plan` — 구현 없이 계획만 수행
+
+## init vs install
+
+- `install.py` — scaffold 파일을 프로젝트에 복사하고 설치 로그를 남기는 진짜 설치 단계
+- `execute.py init` / `flow-init` — 이미 설치된 scaffold를 기준으로 init dry-run/live 결과를 남기는 운영 단계
+- 즉, 설치와 운영 초기화는 일부러 분리돼 있다. 파일 배포는 install, 워크플로우 실행은 init이다.
 
 ## 핵심 규칙
 
@@ -129,12 +135,20 @@ flow-plan으로 "결제 기능 작업 분해" 계획 문서를 만들어줘.
 - `DESIGN.md` — 타깃 프로젝트용 기본 디자인 기준 문서
 - `.workflow/docs/UI_GUIDE.md` — 구버전 호환용 fallback 문서, 없으면 무시 가능
 - `.workflow/prompts/` — role prompt 템플릿
-- `.workflow/tasks/` — feature / QA task 템플릿
+- `.workflow/tasks/` — feature / QA task 템플릿과 생성 task 문서
 - `.workflow/scripts/execute.py` — orchestrator
 - `.workflow/scripts/install.py` — 설치 + 단계 로그 출력
 - `.workflow/scripts/patch_claude_md.py` — CLAUDE.md 섹션 패치 스크립트
 - `.workflow/scripts/ccs_runner.py` — runner 결정과 command 구성
 - `tests/` — dry-run 테스트
+
+## artifact naming
+
+- task 문서: `.workflow/tasks/<mode>/<slug>.md`
+- 실행 결과: `.workflow/outputs/runs/<mode>-<slug>-<timestamp>.json|md`
+- 계획 결과: `.workflow/outputs/plans/<mode>-<slug>-<timestamp>.json|md`
+- 계획 본문 문서: `.workflow/outputs/plans/<slug>.md`
+- slug는 `slugify()` 규칙을 따른다. 영문/숫자/한글만 남기고 나머지는 `-`로 접는다.
 
 ## 검증
 
