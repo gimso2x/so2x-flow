@@ -11,7 +11,7 @@
 - 필요하면 관련 문서나 범위 힌트
 
 ## 출력
-- `tasks/feature/<slug>.md`
+- `.workflow/tasks/feature/<slug>.md`
 - planner -> implementer 흐름 결과 또는 dry-run 요약
 
 ## 참고

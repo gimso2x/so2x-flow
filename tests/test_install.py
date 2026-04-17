@@ -102,3 +102,12 @@ def test_readme_uses_exit_trap_cleanup_and_hook_examples():
     assert "예: `rm -rf`, 무차별 삭제/이동 같은 명령 차단" in readme
     assert "예: task 문서 없이 바로 구현부터 하려는 프롬프트 견제" in readme
     assert "예: 종료 전에 빠진 검증이나 다음 액션 누락 방지" in readme
+
+
+def test_command_and_skill_docs_use_workflow_paths_consistently():
+    feature_command = (ROOT / ".claude" / "commands" / "flow-feature.md").read_text(encoding="utf-8")
+    qa_command = (ROOT / ".claude" / "commands" / "flow-qa.md").read_text(encoding="utf-8")
+    plan_skill = (ROOT / ".claude" / "skills" / "flow-plan.md").read_text(encoding="utf-8")
+    assert "`.workflow/tasks/feature/<slug>.md`" in feature_command
+    assert "`.workflow/tasks/qa/<slug>.md`" in qa_command
+    assert "`.workflow/outputs/plans/`" in plan_skill

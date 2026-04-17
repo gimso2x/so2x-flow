@@ -16,7 +16,7 @@ PROJECT_ROOT = WORKFLOW_ROOT.parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
-from ccs_runner import resolve_runner, run_role
+from ccs_runner import resolve_runner, run_role, run_role_subprocess
 
 CONFIG_PATH = WORKFLOW_ROOT / "config" / "ccs-map.yaml"
 OUTPUT_RUNS = WORKFLOW_ROOT / "outputs" / "runs"
@@ -28,33 +28,33 @@ MODE_ALIASES = {
     "plan-only": "plan",
 }
 
-BOOTSTRAP_FILES: dict[str, str] = {
-    "CLAUDE.md": "# so2x-flow workspace guide\n\n## Core workflow skills\n- `flow-init`: bootstrap only\n- `flow-feature`: create `.workflow/tasks/feature/<slug>.md` first, then execute\n- `flow-qa`: create `.workflow/tasks/qa/<slug>.md` first, then execute\n- `flow-review`: review against workflow docs and task artifacts\n- `flow-plan`: planning only, no implementation\n\n## Claude Code working style\n- Follow Explore → Plan → Implement → Verify.\n- Read relevant docs and files before editing.\n- Use Plan Mode for ambiguous, multi-file, or architectural work.\n- Keep context clean and goals explicit.\n- Verify with tests, dry-runs, or concrete output evidence before trusting results.\n\n## Principles\n- Docs first. Do not implement without a task or plan document.\n- Treat feature work and QA work as first-class flows.\n- Keep orchestration thin.\n- Prefer small explicit documents over hidden state.\n- `.claude/skills/` is the workflow source of truth; `.claude/commands/` are thin slash-command wrappers.\n\n## Workflow home\n- Shared workflow assets live under `.workflow/`.\n- Keep product code at the root; keep prompts, tasks, scripts, config, and workflow docs under `.workflow/`.\n\n## Required docs\n- `.workflow/docs/PRD.md`\n- `.workflow/docs/ARCHITECTURE.md`\n- `.workflow/docs/ADR.md`\n- `.workflow/docs/QA.md`\n- `DESIGN.md` (target-project UI reference, optional for scaffold-only work)\n- `.workflow/docs/UI_GUIDE.md` (legacy fallback only; ignore it if the file does not exist)\n\n## Execution rules\n- For feature work, create `.workflow/tasks/feature/<slug>.md` first.\n- For QA work, create `.workflow/tasks/qa/<slug>.md` first.\n- `Proposed Steps` must exist before implementation.\n- Use `.workflow/config/ccs-map.yaml` to select `auto`, `ccs`, or `claude` runner.\n- In v0, `.workflow/scripts/execute.py` is validated primarily in `--dry-run` mode.\n- `runtime.allow_live_run` stays `false` by default. Live execution is opt-in.\n- Use `.claude/settings.json` hooks as deterministic guardrails; do not rely on CLAUDE.md text alone for enforcement.\n",
-    ".claude/settings.json": '{\n  "hooks": {\n    "PreToolUse": [\n      {\n        "matcher": "Bash",\n        "hooks": [\n          {\n            "type": "command",\n            "command": ".workflow/scripts/hooks/dangerous-cmd-guard.sh"\n          }\n        ]\n      }\n    ],\n    "UserPromptSubmit": [\n      {\n        "hooks": [\n          {\n            "type": "command",\n            "command": ".workflow/scripts/hooks/tdd-guard.sh"\n          }\n        ]\n      }\n    ],\n    "Stop": [\n      {\n        "hooks": [\n          {\n            "type": "command",\n            "command": ".workflow/scripts/hooks/circuit-breaker.sh"\n          }\n        ]\n      }\n    ]\n  }\n}\n',
-    ".claude/skills/README.md": "# so2x-flow skills\n\nWorkflow source of truth.\n",
-    ".claude/skills/flow-init.md": "# flow-init\n\nBootstrap only.\n",
-    ".claude/skills/flow-feature.md": "# flow-feature\n\nCreate task docs before implementation.\n",
-    ".claude/skills/flow-qa.md": "# flow-qa\n\nCreate QA task docs before fixes.\n",
-    ".claude/skills/flow-review.md": "# flow-review\n\nReview only, no code changes.\n",
-    ".claude/skills/flow-plan.md": "# flow-plan\n\nPlanning only, no implementation.\n",
-    ".workflow/config/ccs-map.yaml": "runtime:\n  runner: auto\n  allow_live_run: false\n",
-    ".workflow/docs/PRD.md": "# PRD\n",
-    ".workflow/docs/ARCHITECTURE.md": "# ARCHITECTURE\n",
-    ".workflow/docs/ADR.md": "# ADR\n",
-    ".workflow/docs/QA.md": "# QA\n",
-    "DESIGN.md": "# DESIGN\n",
-    ".workflow/prompts/planner.md": "# planner\n",
-    ".workflow/prompts/implementer.md": "# implementer\n",
-    ".workflow/prompts/qa-planner.md": "# qa-planner\n",
-    ".workflow/prompts/reviewer.md": "# reviewer\n",
-    ".workflow/tasks/feature/_template.md": "# Feature Task\n",
-    ".workflow/tasks/qa/_template.md": "# QA Fix Task\n",
-    ".workflow/scripts/hooks/tdd-guard.sh": "#!/usr/bin/env sh\nexit 0\n",
-    ".workflow/scripts/hooks/dangerous-cmd-guard.sh": "#!/usr/bin/env sh\nexit 0\n",
-    ".workflow/scripts/hooks/circuit-breaker.sh": "#!/usr/bin/env sh\nexit 0\n",
-    ".workflow/outputs/plans/.gitkeep": "",
-    ".workflow/outputs/runs/.gitkeep": "",
-}
+BOOTSTRAP_ARTIFACTS = [
+    "CLAUDE.md",
+    "DESIGN.md",
+    ".claude/settings.json",
+    ".claude/skills/README.md",
+    ".claude/skills/flow-init.md",
+    ".claude/skills/flow-feature.md",
+    ".claude/skills/flow-qa.md",
+    ".claude/skills/flow-review.md",
+    ".claude/skills/flow-plan.md",
+    ".workflow/config/ccs-map.yaml",
+    ".workflow/docs/PRD.md",
+    ".workflow/docs/ARCHITECTURE.md",
+    ".workflow/docs/ADR.md",
+    ".workflow/docs/QA.md",
+    ".workflow/prompts/planner.md",
+    ".workflow/prompts/implementer.md",
+    ".workflow/prompts/qa-planner.md",
+    ".workflow/prompts/reviewer.md",
+    ".workflow/tasks/feature/_template.md",
+    ".workflow/tasks/qa/_template.md",
+    ".workflow/scripts/hooks/tdd-guard.sh",
+    ".workflow/scripts/hooks/dangerous-cmd-guard.sh",
+    ".workflow/scripts/hooks/circuit-breaker.sh",
+    ".workflow/outputs/plans/.gitkeep",
+    ".workflow/outputs/runs/.gitkeep",
+]
 
 BOOTSTRAP_DIRS = [
     ".claude",
@@ -106,12 +106,10 @@ def ensure_bootstrap_files() -> list[str]:
     artifacts: list[str] = []
     for rel_dir in BOOTSTRAP_DIRS:
         (PROJECT_ROOT / rel_dir).mkdir(parents=True, exist_ok=True)
-    for rel_path, content in BOOTSTRAP_FILES.items():
+    for rel_path in BOOTSTRAP_ARTIFACTS:
         path = PROJECT_ROOT / rel_path
-        path.parent.mkdir(parents=True, exist_ok=True)
-        if not path.exists():
-            path.write_text(content, encoding="utf-8")
-        artifacts.append(rel_path)
+        if path.exists():
+            artifacts.append(rel_path)
     return artifacts
 
 
@@ -428,14 +426,23 @@ def main() -> int:
             **role_config,
         }
         prompt = build_prompt(role, mode, args.request, docs_used, docs_bundle, task_path, args.qa_id, planner_output, design_doc)
-        result = run_role(
-            runner=resolution.selected_runner,
-            role=role,
-            prompt=prompt,
-            role_config=shared_role_config,
-            runtime_config=runtime_config,
-            dry_run=args.dry_run,
-        )
+        if args.dry_run:
+            result = run_role(
+                runner=resolution.selected_runner,
+                role=role,
+                prompt=prompt,
+                role_config=shared_role_config,
+                runtime_config=runtime_config,
+                dry_run=True,
+            )
+        else:
+            result = run_role_subprocess(
+                runner=resolution.selected_runner,
+                role=role,
+                prompt=prompt,
+                role_config=shared_role_config,
+                runtime_config=runtime_config,
+            )
         role_results.append(
             {
                 "role": result.role,
