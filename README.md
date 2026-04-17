@@ -69,6 +69,7 @@ rmdir .tmp 2>/dev/null || true
 - `flow-qa` — QA 수정 문서 생성 후 계획/구현
 - `flow-review` — 문서와 태스크 기준 리뷰만 수행
 - `/flow-plan` — 구현 없이 계획만 수행
+- 현재 v0 `/flow-plan`은 `.workflow/tasks/plan/*.md` 계획 문서를 남기는 docs-first 흐름이다.
 
 ## init vs install
 
@@ -148,6 +149,7 @@ flow-review로 "이번 변경 QA 관점 점검" 리뷰 문서를 만들어줘.
 ## artifact naming
 
 - task 문서: `.workflow/tasks/<mode>/<slug>.md`
+- plan도 예외가 아니다. `/flow-plan`은 `.workflow/tasks/plan/<slug>.md`를 만든다.
 - 실행 결과: `.workflow/outputs/run/<mode>-<slug>-<timestamp>.json`
 - 계획 결과: `.workflow/outputs/plan/<mode>-<slug>-<timestamp>.json`
 - 계획 본문 문서: `.workflow/tasks/plan/<slug>.md`

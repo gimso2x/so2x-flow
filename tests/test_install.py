@@ -123,6 +123,8 @@ def test_command_and_skill_docs_use_workflow_paths_consistently():
     assert "## Outputs" in qa_skill
     assert "## Forbidden" in qa_skill
     assert "`.workflow/tasks/plan/<slug>.md`" in plan_skill
+    assert "markdown 계획 문서를 쓰지 않는 프로젝트라면 현재 `/flow-plan`을 그대로 쓰지 말고" in plan_command
+    assert "현재 v0 `/flow-plan`은 markdown 계획 문서를 쓰는 전제를 버리지 않는다" in plan_skill
     assert "승인 전에는 /flow-feature로 자동 전환하지 않는다" in plan_skill
     assert "이 설계 방향으로 확정할까요? (y/n)" in plan_command
 
@@ -134,6 +136,7 @@ def test_readme_documents_init_install_split_and_artifact_naming():
     assert "## artifact naming" in readme
     assert "`.workflow/outputs/run/<mode>-<slug>-<timestamp>.json`" in readme
     assert "- `/flow-plan` — 구현 없이 계획만 수행" in readme
+    assert "현재 v0 `/flow-plan`은 `.workflow/tasks/plan/*.md` 계획 문서를 남기는 docs-first 흐름이다." in readme
     assert '/flow-plan으로 "결제 기능 작업 분해" 계획 문서를 만들어줘.' in readme
 
 

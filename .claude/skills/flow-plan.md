@@ -58,3 +58,5 @@ Use this skill to create a validated plan document without implementation.
 - machine output은 `.workflow/outputs/plan/` 아래 JSON만 남긴다
 - v0 기본은 `--dry-run`
 - live 실행은 `runtime.allow_live_run=true`일 때만 허용
+- 즉, 현재 v0 `/flow-plan`은 markdown 계획 문서를 쓰는 전제를 버리지 않는다.
+- markdown 계획 문서를 전혀 쓰지 않을 프로젝트라면 별도 no-md 모드를 추가하기 전까지 현재 `/flow-plan`과 맞지 않는다.

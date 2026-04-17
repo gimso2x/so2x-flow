@@ -5,6 +5,8 @@
 ## 역할
 - plan 요청을 `flow-plan` skill로 넘긴다.
 - 실제 계획 생성 규칙과 출력 형식은 skill과 `.workflow/scripts/execute.py`가 기준이다.
+- 현재 v0 `/flow-plan`은 `.workflow/tasks/plan/<slug>.md` 생성이 기본 전제다.
+- markdown 계획 문서를 쓰지 않는 프로젝트라면 현재 `/flow-plan`을 그대로 쓰지 말고 별도 출력 모드가 필요하다.
 
 ## 입력
 - 계획 요청 한 줄
@@ -24,6 +26,11 @@
 - 마지막은 즉답 가능한 닫힌 질문으로 끝낸다.
 - 권장 형식:
   - `이 설계 방향으로 확정할까요? (y/n)`
+
+## 주의
+- `/flow-plan` dry-run도 사람용 계획 문서 `.workflow/tasks/plan/<slug>.md`를 만든다.
+- dry-run 뒤에 에이전트가 그 md를 다시 수동 수정하려고 들 필요는 없다. 기본 산출물을 우선 신뢰한다.
+- markdown 계획 산출물 자체를 쓰지 않을 거라면 현재 v0 워크플로우와 맞지 않는다.
 
 ## 참고
 - 본체: `.claude/skills/flow-plan.md`
