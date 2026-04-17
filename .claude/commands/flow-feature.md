@@ -1,25 +1,19 @@
 # /flow-feature
 
-Use this command when a new product or engineering feature is requested.
+이 명령은 `skills/flow-feature.md`를 호출하는 얇은 진입점이다.
 
-## Required flow
-1. Read project docs first.
-2. Create `tasks/feature/<slug>.md` first.
-3. Fill `Proposed Steps` with 3 to 7 concrete steps.
-4. Run planner role first.
-5. Pass planner output to implementer.
-6. Save outputs under `outputs/runs/`.
+## 역할
+- feature 요청을 `flow-feature` skill로 넘긴다.
+- 실제 절차, 규칙, task 문서 기준은 skill과 `scripts/execute.py`가 기준이다.
 
-## Rules
-- No implementation without a task document.
-- `Proposed Steps` is mandatory.
-- Planner defines the work.
-- Implementer executes the work.
-- Do not let implementer re-plan the feature from scratch.
+## 입력
+- feature 요청 한 줄
+- 필요하면 관련 문서나 범위 힌트
 
-## Minimum task sections
-- Summary
-- Scope
-- Proposed Steps
-- Risks / Notes
-- Verification Checklist
+## 출력
+- `tasks/feature/<slug>.md`
+- planner -> implementer 흐름 결과 또는 dry-run 요약
+
+## 참고
+- 본체: `skills/flow-feature.md`
+- 실행기: `scripts/execute.py`

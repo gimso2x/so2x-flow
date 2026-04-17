@@ -1,29 +1,19 @@
 # /flow-init
 
-Use this command to bootstrap a new project workspace for so2x-flow.
+이 명령은 `skills/flow-init.md`를 호출하는 얇은 진입점이다.
 
-## Responsibilities
-- Initialize the standard directory structure.
-- Create shared docs drafts.
-- Create command/settings/hooks skeleton files.
-- Make the workspace ready for future `/flow-feature`, `/flow-qa`, `/flow-review`, and `/flow-plan` usage.
+## 역할
+- so2x-flow 초기화 요청을 `flow-init` skill로 넘긴다.
+- 실제 절차, 규칙, 생성물 기준은 skill과 `scripts/execute.py`가 기준이다.
 
-## Must create
-- `CLAUDE.md`
-- `.claude/commands/*`
-- `.claude/settings.json`
-- `config/ccs-map.yaml`
-- `docs/*`
-- `prompts/*`
-- `tasks/feature/_template.md`
-- `tasks/qa/_template.md`
-- `scripts/execute.py`
-- `scripts/hooks/*`
-- `outputs/plans/`
-- `outputs/runs/`
+## 입력
+- 프로젝트 초기화 요청
+- 필요하면 bootstrap 목적 설명
 
-## Rules
-- Bootstrap only.
-- Do not perform feature implementation.
-- Do not create branch/commit automation.
-- Keep outputs simple and file-based.
+## 출력
+- 초기화 관련 문서/설정 skeleton
+- dry-run 또는 실행 결과 요약
+
+## 참고
+- 본체: `skills/flow-init.md`
+- 실행기: `scripts/execute.py`
