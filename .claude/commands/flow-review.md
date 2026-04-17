@@ -11,6 +11,7 @@
 - 필요하면 관련 task/doc 경로
 
 ## 출력
+- `.workflow/tasks/review/<slug>.json`
 - review 결과 또는 dry-run 요약
 
 ## 참고

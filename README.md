@@ -64,18 +64,19 @@ rmdir .tmp 2>/dev/null || true
 
 ## 포함된 흐름
 
-- `flow-init` — 설치된 scaffold 자산을 기준으로 워크스페이스를 확인하고 init 결과를 남김
+- `flow-init` — PRD/ARCHITECTURE/QA/DESIGN 기준 질문지를 만들고 init task JSON을 남김
 - `flow-feature` — feature task 문서 생성 후 계획/구현
 - `flow-qa` — QA 수정 문서 생성 후 계획/구현
-- `flow-review` — 문서와 태스크 기준 리뷰만 수행
+- `flow-review` — 문서와 태스크 기준 리뷰 JSON 생성 후 검토 수행
 - `/flow-plan` — 구현 없이 계획만 수행
-- 현재 v0 `/flow-plan`은 `.workflow/tasks/plan/*.json` 계획 산출물을 남기는 docs-first 흐름이다.
+- 현재 v0 `/flow-plan`은 `.workflow/tasks/plan/*.json` 하나를 canonical 계획 산출물로 남기는 docs-first 흐름이다.
 
 ## init vs install
 
 - `install.py` — scaffold 파일을 프로젝트에 복사하고 설치 로그를 남기는 진짜 설치 단계
-- `execute.py init` / `flow-init` — 이미 설치된 scaffold를 기준으로 init dry-run/live 결과를 남기는 운영 단계
-- 즉, 설치와 운영 초기화는 일부러 분리돼 있다. 파일 배포는 install, 워크플로우 실행은 init이다.
+- `execute.py init` / `flow-init` — 이미 설치된 scaffold를 기준으로 질문 기반 init task를 만들고 dry-run/live 결과를 남기는 운영 단계
+- init은 planner를 돌리지 않고 `.workflow/tasks/init/<slug>.json` 질문지만 유지/갱신한다.
+- 즉, 설치와 운영 초기화는 일부러 분리돼 있다. 파일 배포는 install, 워크플로우 실행은 init 질문지 작성이다.
 
 ## 핵심 규칙
 
@@ -126,8 +127,8 @@ v0는 실실행보다 dry-run 검증을 우선한다.
 flow-init으로 이 프로젝트를 초기화해줘.
 flow-feature로 "로그인 기능 구현" 작업 문서를 만들고 dry-run 기준으로 계획/구현 흐름까지 준비해줘.
 flow-qa로 "QA-001 홈 버튼 클릭 안됨" 이슈 문서를 만들고 dry-run 기준으로 수정 흐름을 준비해줘.
-flow-review로 "이번 변경 QA 관점 점검" 리뷰 문서를 만들어줘.
-/flow-plan으로 "결제 기능 작업 분해" 계획 문서를 만들어줘.
+flow-review로 "이번 변경 QA 관점 점검" 리뷰 JSON을 만들어줘.
+/flow-plan으로 "결제 기능 작업 분해" 계획 산출물을 만들어줘.
 ```
 
 ## 구성
@@ -139,7 +140,7 @@ flow-review로 "이번 변경 QA 관점 점검" 리뷰 문서를 만들어줘.
 - `DESIGN.md` — 타깃 프로젝트용 기본 디자인 기준 문서
 - `.workflow/docs/UI_GUIDE.md` — 구버전 호환용 fallback 문서, 없으면 무시 가능
 - `.workflow/prompts/` — role prompt 템플릿
-- `.workflow/tasks/` — feature / plan / QA task 템플릿과 생성 task 문서
+- `.workflow/tasks/` — feature / plan / QA / review JSON 템플릿과 생성 산출물
 - `.workflow/scripts/execute.py` — orchestrator
 - `.workflow/scripts/install.py` — 설치 + 단계 로그 출력
 - `.workflow/scripts/patch_claude_md.py` — CLAUDE.md 섹션 패치 스크립트
@@ -148,11 +149,14 @@ flow-review로 "이번 변경 QA 관점 점검" 리뷰 문서를 만들어줘.
 
 ## artifact naming
 
-- task 문서: `.workflow/tasks/<mode>/<slug>.md`
-- plan도 예외가 아니다. `/flow-plan`은 `.workflow/tasks/plan/<slug>.json`을 만든다.
-- 실행 결과: `.workflow/outputs/run/<mode>-<slug>-<timestamp>.json`
-- 계획 결과: `.workflow/outputs/plan/<mode>-<slug>-<timestamp>.json`
-- 계획 본문 문서: `.workflow/tasks/plan/<slug>.json`
+- init 결과: `.workflow/tasks/init/<slug>.json`
+- feature 결과: `.workflow/tasks/feature/<slug>.json`
+- qa 결과: `.workflow/tasks/qa/<slug>.json`
+- plan 결과: `.workflow/tasks/plan/<slug>.json`
+  - 기본값: `status: draft`, `approved: false`
+  - `--skip-plan`에 쓰려면 `approved: true` 또는 `status: approved`로 명시 승인되어 있어야 한다
+- review 결과: `.workflow/tasks/review/<slug>.json`
+- run 이력 JSON은 따로 남기지 않는다. 각 task JSON이 canonical 산출물이다.
 - slug는 `slugify()` 규칙을 따른다. 영문/숫자/한글만 남기고 나머지는 `-`로 접는다.
 
 ## 검증

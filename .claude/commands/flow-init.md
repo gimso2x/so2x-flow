@@ -11,7 +11,8 @@
 - 필요하면 bootstrap 목적 설명
 
 ## 출력
-- 초기화 관련 문서/설정 skeleton
+- `.workflow/tasks/init/<slug>.json` 질문지 산출물
+- PRD/ARCHITECTURE/QA/DESIGN에 매핑된 질문 목록
 - dry-run 또는 실행 결과 요약
 
 ## 참고

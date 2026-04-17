@@ -40,7 +40,6 @@ Use this skill to create a validated plan document without implementation.
 
 ## Outputs
 - `.workflow/tasks/plan/<slug>.json`
-- `.workflow/outputs/plan/<mode>-<slug>-<timestamp>.json`
 - planner 결과 요약 또는 dry-run 출력
 
 ## Forbidden
@@ -55,7 +54,7 @@ Use this skill to create a validated plan document without implementation.
 ## Runtime policy
 - decomposition은 명시적으로 남긴다
 - canonical 계획 산출물은 `.workflow/tasks/plan/` 아래 JSON으로 남긴다
-- machine output은 `.workflow/outputs/plan/` 아래 JSON만 남긴다
+- plan은 중복 출력 경로를 만들지 않고 `.workflow/tasks/plan/` JSON 하나만 남긴다
 - v0 기본은 `--dry-run`
 - live 실행은 `runtime.allow_live_run=true`일 때만 허용
 - 현재 v0 `/flow-plan`은 markdown 계획 문서를 만들지 않는다.

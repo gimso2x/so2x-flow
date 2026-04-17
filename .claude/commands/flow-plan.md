@@ -6,7 +6,7 @@
 - plan 요청을 `flow-plan` skill로 넘긴다.
 - 실제 계획 생성 규칙과 출력 형식은 skill과 `.workflow/scripts/execute.py`가 기준이다.
 - 현재 v0 `/flow-plan`은 `.workflow/tasks/plan/<slug>.json` 생성이 기본 전제다.
-- markdown 계획 문서를 쓰지 않는 프로젝트라면 현재 `/flow-plan`을 그대로 쓰지 말고 별도 출력 모드가 필요하다.
+- plan은 중복 산출물을 만들지 않고 `.workflow/tasks/plan/<slug>.json` 하나만 남긴다.
 
 ## 입력
 - 계획 요청 한 줄

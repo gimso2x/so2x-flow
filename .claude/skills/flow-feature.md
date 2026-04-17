@@ -12,6 +12,7 @@ Use this skill when a new product or engineering feature is requested.
 - `.workflow/docs/ADR.md`
 - 필요 시 `DESIGN.md`
 - 가능하면 직전 `flow-plan` 산출물 또는 승인된 설계 메모
+- `--skip-plan`은 `approved: true` 또는 `status: approved`가 들어간 plan JSON이 있을 때만 허용한다
 
 ## Goal
 - `flow-feature`는 설계가 덜 된 요청을 통째로 삼키는 명령이 아니다.
@@ -47,11 +48,12 @@ feature task와 응답에는 최소한 아래 항목이 있어야 한다.
 - `runtime.allow_live_run` 없이 live 실행 금지
 
 ## Runtime policy
-- 먼저 `.workflow/tasks/feature/<slug>.md`를 만든다
+- `.workflow/tasks/feature/<slug>.json`을 먼저 만든다
 - task에는 승인된 방향과 이번 slice를 명시한다
 - 승인된 plan이 없으면 여기서 멈추고 `/flow-plan` 선행 여부를 먼저 묻는다
+- `--skip-plan`은 matching plan JSON에 `approved: true` 또는 `status: approved`가 있을 때만 허용한다
 - `Proposed Steps`를 planner가 채운 뒤 implementer를 실행한다
-- canonical 사람용 plan 문서 후보는 `.workflow/tasks/plan/*.md`만 본다
+- canonical plan 후보는 `.workflow/tasks/plan/*.json`만 본다
 - 최신 plan이 있어도 요청과 안 맞으면 연결하지 않는다
 - implementer는 planner 결과와 승인된 plan 문맥이 있을 때만 그 최소 범위로 실행한다
 - v0 기본은 `--dry-run`

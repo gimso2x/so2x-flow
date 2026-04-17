@@ -7,14 +7,13 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 GENERATED_PATHS = [
-    ROOT / ".workflow" / "outputs",
     ROOT / ".workflow" / "scripts" / "__pycache__",
     ROOT / "tests" / "__pycache__",
-    ROOT / ".workflow" / "tasks" / "feature" / "로그인-기능-구현.md",
-    ROOT / ".workflow" / "tasks" / "feature" / "세션-만료-처리.md",
-    ROOT / ".workflow" / "tasks" / "feature" / "프로필-편집.md",
-    ROOT / ".workflow" / "tasks" / "qa" / "qa-001-홈-버튼-클릭-안됨.md",
-    ROOT / ".workflow" / "tasks" / "qa" / "qa-009-토글-오동작.md",
+    ROOT / ".workflow" / "tasks" / "feature" / "로그인-기능-구현.json",
+    ROOT / ".workflow" / "tasks" / "feature" / "세션-만료-처리.json",
+    ROOT / ".workflow" / "tasks" / "feature" / "프로필-편집.json",
+    ROOT / ".workflow" / "tasks" / "qa" / "qa-001-홈-버튼-클릭-안됨.json",
+    ROOT / ".workflow" / "tasks" / "qa" / "qa-009-토글-오동작.json",
 ]
 
 

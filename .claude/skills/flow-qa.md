@@ -14,8 +14,7 @@ Use this skill when a QA issue or bug report needs a document-first fix flow.
 - 필요 시 관련 task 문서
 
 ## Outputs
-- `.workflow/tasks/qa/<slug>.md`
-- `.workflow/outputs/run/qa-<slug>-<timestamp>.json`
+- `.workflow/tasks/qa/<slug>.json`
 
 ## Forbidden
 - QA task 문서 없이 수정 시작 금지
@@ -23,7 +22,7 @@ Use this skill when a QA issue or bug report needs a document-first fix flow.
 - `runtime.allow_live_run` 없이 live 실행 금지
 
 ## Runtime policy
-- 먼저 `.workflow/tasks/qa/<slug>.md`를 만든다
+- `.workflow/tasks/qa/<slug>.json`을 먼저 만든다
 - reproduction / expected / actual / minimal fix를 명시한다
 - qa_planner를 먼저 실행하고 implementer는 그 결과를 따른다
 - v0 기본은 `--dry-run`

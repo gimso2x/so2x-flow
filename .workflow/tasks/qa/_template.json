@@ -1,0 +1,18 @@
+{
+  "title": "",
+  "issue_summary": "",
+  "qa_id": "",
+  "references": [
+    ".workflow/docs/QA.md"
+  ],
+  "reproduction": [],
+  "expected": [],
+  "actual": [],
+  "suspected_scope": [],
+  "minimal_fix": [],
+  "regression_checklist": [
+    "Original issue no longer reproduces",
+    "Adjacent flow still works",
+    "No broader scope added without approval"
+  ]
+}

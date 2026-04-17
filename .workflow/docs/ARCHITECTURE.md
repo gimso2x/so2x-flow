@@ -8,7 +8,7 @@
 - `.workflow/tasks/`: generated task documents
 - `.workflow/scripts/execute.py`: thin orchestrator
 - `.workflow/scripts/ccs_runner.py`: runner resolution and command construction
-- `.workflow/outputs/`: run artifacts
+- `.workflow/tasks/`: generated JSON artifacts
 
 ## Core Rules
 - Docs first.
@@ -24,7 +24,7 @@
 4. Prompt is built per role.
 5. Runner is resolved (`ccs` or `claude`).
 6. Role outputs are saved.
-7. Run payload JSON is written to `.workflow/outputs/run/` or `.workflow/outputs/plan/`, while the canonical plan document stays in `.workflow/tasks/plan/`.
+7. Feature / QA / plan payload JSON is written directly to `.workflow/tasks/<mode>/` and reused as the canonical artifact.
 
 ## Testing Notes
 - v0 focuses on dry-run behavior.

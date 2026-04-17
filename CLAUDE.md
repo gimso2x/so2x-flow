@@ -2,8 +2,8 @@
 
 ## Core workflow skills
 - `flow-init`: bootstrap only
-- `flow-feature`: create `.workflow/tasks/feature/<slug>.md` first, then execute
-- `flow-qa`: create `.workflow/tasks/qa/<slug>.md` first, then execute
+- `flow-feature`: create `.workflow/tasks/feature/<slug>.json` first, then execute
+- `flow-qa`: create `.workflow/tasks/qa/<slug>.json` first, then execute
 - `flow-review`: review against workflow docs and task artifacts
 - `flow-plan`: planning only, no implementation
 
@@ -34,8 +34,8 @@
 - `.workflow/docs/UI_GUIDE.md` (legacy fallback only; ignore it if the file does not exist)
 
 ## Execution rules
-- For feature work, create `.workflow/tasks/feature/<slug>.md` first.
-- For QA work, create `.workflow/tasks/qa/<slug>.md` first.
+- For feature work, create `.workflow/tasks/feature/<slug>.json` first.
+- For QA work, create `.workflow/tasks/qa/<slug>.json` first.
 - `Proposed Steps` must exist before implementation.
 - Use `.workflow/config/ccs-map.yaml` to select `auto`, `ccs`, or `claude` runner.
 - In v0, `.workflow/scripts/execute.py` is validated primarily in `--dry-run` mode.

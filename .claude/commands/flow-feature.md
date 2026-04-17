@@ -12,7 +12,7 @@
 - 가능하면 직전 flow-plan 승인 방향
 
 ## 출력
-- `.workflow/tasks/feature/<slug>.md`
+- `.workflow/tasks/feature/<slug>.json`
 - planner -> implementer 흐름 결과 또는 dry-run 요약
 - 매칭된 최신 plan이 있으면 그 경로와 매칭 사유, 없으면 미연결 사유
 - 승인된 plan이 없으면 여기서 멈추고 `/flow-plan`으로 먼저 범위를 확정할지 묻는다

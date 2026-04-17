@@ -11,7 +11,7 @@
 - 필요하면 QA ID, 재현 조건, 기대 동작
 
 ## 출력
-- `.workflow/tasks/qa/<slug>.md`
+- `.workflow/tasks/qa/<slug>.json`
 - qa-planner -> implementer 흐름 결과 또는 dry-run 요약
 
 ## 참고

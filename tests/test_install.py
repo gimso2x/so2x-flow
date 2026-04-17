@@ -30,7 +30,7 @@ def test_install_copies_flow_scaffold_into_target_project(tmp_path: Path):
     assert (target / ".workflow" / "config" / "ccs-map.yaml").exists()
     assert (target / ".workflow" / "docs" / "PRD.md").exists()
     assert (target / ".workflow" / "prompts" / "planner.md").exists()
-    assert (target / ".workflow" / "tasks" / "feature" / "_template.md").exists()
+    assert (target / ".workflow" / "tasks" / "feature" / "_template.json").exists()
     assert (target / ".workflow" / "scripts" / "execute.py").exists()
     assert (target / "DESIGN.md").exists()
     settings = json.loads((target / ".claude" / "settings.json").read_text(encoding="utf-8"))
@@ -61,8 +61,8 @@ def test_install_force_overwrites_existing_files(tmp_path: Path):
 def test_install_does_not_copy_generated_task_artifacts(tmp_path: Path):
     target = tmp_path / "app"
     run_install(target)
-    assert not (target / ".workflow" / "tasks" / "feature" / "로그인-기능-구현.md").exists()
-    assert not (target / ".workflow" / "tasks" / "qa" / "qa-001-홈-버튼-클릭-안됨.md").exists()
+    assert not (target / ".workflow" / "tasks" / "feature" / "로그인-기능-구현.json").exists()
+    assert not (target / ".workflow" / "tasks" / "qa" / "qa-001-홈-버튼-클릭-안됨.json").exists()
 
 
 def test_install_can_patch_existing_claude_md_without_duplicate_section(tmp_path: Path):
@@ -106,15 +106,22 @@ def test_readme_uses_exit_trap_cleanup_and_hook_examples():
 
 
 def test_command_and_skill_docs_use_workflow_paths_consistently():
+    init_command = (ROOT / ".claude" / "commands" / "flow-init.md").read_text(encoding="utf-8")
     feature_command = (ROOT / ".claude" / "commands" / "flow-feature.md").read_text(encoding="utf-8")
     qa_command = (ROOT / ".claude" / "commands" / "flow-qa.md").read_text(encoding="utf-8")
+    init_skill = (ROOT / ".claude" / "skills" / "flow-init.md").read_text(encoding="utf-8")
     feature_skill = (ROOT / ".claude" / "skills" / "flow-feature.md").read_text(encoding="utf-8")
     qa_skill = (ROOT / ".claude" / "skills" / "flow-qa.md").read_text(encoding="utf-8")
     plan_skill = (ROOT / ".claude" / "skills" / "flow-plan.md").read_text(encoding="utf-8")
     plan_command = (ROOT / ".claude" / "commands" / "flow-plan.md").read_text(encoding="utf-8")
-    assert "`.workflow/tasks/feature/<slug>.md`" in feature_command
-    assert "`.workflow/tasks/qa/<slug>.md`" in qa_command
-    assert "승인된 plan이 없으면 여기서 멈추고" in feature_command
+    review_command = (ROOT / ".claude" / "commands" / "flow-review.md").read_text(encoding="utf-8")
+    assert "`.workflow/tasks/init/<slug>.json`" in init_command
+    assert "PRD/ARCHITECTURE/QA/DESIGN에 매핑된 질문 목록" in init_command
+    assert "`.workflow/tasks/init/<slug>.json` canonical init artifact" in init_skill
+    assert "질문 없이 PRD/ARCHITECTURE/DESIGN 내용을 지어내기 금지" in init_skill
+    assert "`.workflow/tasks/feature/<slug>.json`" in feature_command
+    assert "`.workflow/tasks/qa/<slug>.json`" in qa_command
+    assert "`.workflow/tasks/review/<slug>.json`" in review_command
     assert "승인된 방향이 없으면 바로 구현으로 밀지 않는다" in feature_skill
     assert "## Input" in feature_skill
     assert "## Output contract" in feature_skill
@@ -123,7 +130,7 @@ def test_command_and_skill_docs_use_workflow_paths_consistently():
     assert "## Outputs" in qa_skill
     assert "## Forbidden" in qa_skill
     assert "`.workflow/tasks/plan/<slug>.json`" in plan_skill
-    assert "markdown 계획 문서를 쓰지 않는 프로젝트라면 현재 `/flow-plan`을 그대로 쓰지 말고" in plan_command
+    assert "중복 산출물을 만들지 않고 `.workflow/tasks/plan/<slug>.json` 하나만 남긴다" in plan_command
     assert "현재 v0 `/flow-plan`은 markdown 계획 문서를 만들지 않는다." in plan_skill
     assert "승인 전에는 /flow-feature로 자동 전환하지 않는다" in plan_skill
     assert "이 설계 방향으로 확정할까요? (y/n)" in plan_command
@@ -134,10 +141,15 @@ def test_readme_documents_init_install_split_and_artifact_naming():
     assert "## init vs install" in readme
     assert "설치와 운영 초기화는 일부러 분리돼 있다" in readme
     assert "## artifact naming" in readme
-    assert "`.workflow/outputs/run/<mode>-<slug>-<timestamp>.json`" in readme
+    assert "run 이력 JSON은 따로 남기지 않는다. 각 task JSON이 canonical 산출물이다." in readme
+    assert "- init 결과: `.workflow/tasks/init/<slug>.json`" in readme
+    assert "- `flow-init` — PRD/ARCHITECTURE/QA/DESIGN 기준 질문지를 만들고 init task JSON을 남김" in readme
+    assert "`--skip-plan`에 쓰려면 `approved: true` 또는 `status: approved`로 명시 승인되어 있어야 한다" in readme
     assert "- `/flow-plan` — 구현 없이 계획만 수행" in readme
-    assert "현재 v0 `/flow-plan`은 `.workflow/tasks/plan/*.json` 계획 산출물을 남기는 docs-first 흐름이다." in readme
-    assert '/flow-plan으로 "결제 기능 작업 분해" 계획 문서를 만들어줘.' in readme
+    assert "- `flow-review` — 문서와 태스크 기준 리뷰 JSON 생성 후 검토 수행" in readme
+    assert "질문 기반 init task를 만들고 dry-run/live 결과를 남기는 운영 단계" in readme
+    assert "현재 v0 `/flow-plan`은 `.workflow/tasks/plan/*.json` 하나를 canonical 계획 산출물로 남기는 docs-first 흐름이다." in readme
+    assert '/flow-plan으로 "결제 기능 작업 분해" 계획 산출물을 만들어줘.' in readme
 
 
 def test_readme_install_prompt_forces_single_turn_completion_without_recap_only():

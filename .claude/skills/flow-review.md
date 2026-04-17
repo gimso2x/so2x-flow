@@ -14,6 +14,7 @@ Use this skill to review planned or implemented work against project documents.
 - 필요 시 관련 task 문서
 
 ## Outputs
+- `.workflow/tasks/review/<slug>.json`
 - Spec Gap
 - Architecture Concern
 - Test Gap

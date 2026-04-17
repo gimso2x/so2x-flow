@@ -1,0 +1,25 @@
+{
+  "title": "",
+  "summary": "",
+  "context": [],
+  "related_docs": [
+    ".workflow/docs/PRD.md",
+    ".workflow/docs/ARCHITECTURE.md",
+    ".workflow/docs/ADR.md",
+    "DESIGN.md"
+  ],
+  "latest_approved_flow_plan_output": "",
+  "approved_direction": {
+    "summary": "",
+    "source_plan_artifact": ""
+  },
+  "approval_gate": [],
+  "implementation_slice": [],
+  "relevant_files": [],
+  "out_of_scope": [],
+  "proposed_steps": [],
+  "acceptance": [],
+  "verification": [],
+  "follow_up_slice": [],
+  "next_step_prompt": ""
+}

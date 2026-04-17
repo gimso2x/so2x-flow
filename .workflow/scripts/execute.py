@@ -19,8 +19,6 @@ if str(SCRIPT_DIR) not in sys.path:
 from ccs_runner import resolve_runner, run_role, run_role_subprocess
 
 CONFIG_PATH = WORKFLOW_ROOT / "config" / "ccs-map.yaml"
-OUTPUT_RUNS = WORKFLOW_ROOT / "outputs" / "run"
-OUTPUT_PLANS = WORKFLOW_ROOT / "outputs" / "plan"
 PLAN_TASKS = WORKFLOW_ROOT / "tasks" / "plan"
 PROMPTS_DIR = WORKFLOW_ROOT / "prompts"
 
@@ -48,13 +46,11 @@ BOOTSTRAP_ARTIFACTS = [
     ".workflow/prompts/implementer.md",
     ".workflow/prompts/qa-planner.md",
     ".workflow/prompts/reviewer.md",
-    ".workflow/tasks/feature/_template.md",
-    ".workflow/tasks/qa/_template.md",
+    ".workflow/tasks/feature/_template.json",
+    ".workflow/tasks/qa/_template.json",
     ".workflow/scripts/hooks/tdd-guard.sh",
     ".workflow/scripts/hooks/dangerous-cmd-guard.sh",
     ".workflow/scripts/hooks/circuit-breaker.sh",
-    ".workflow/outputs/plan/.gitkeep",
-    ".workflow/outputs/run/.gitkeep",
 ]
 
 BOOTSTRAP_DIRS = [
@@ -65,10 +61,10 @@ BOOTSTRAP_DIRS = [
     ".workflow/prompts",
     ".workflow/scripts/hooks",
     ".workflow/tasks/feature",
+    ".workflow/tasks/init",
     ".workflow/tasks/qa",
     ".workflow/tasks/plan",
-    ".workflow/outputs/plan",
-    ".workflow/outputs/run",
+    ".workflow/tasks/review",
 ]
 
 
@@ -174,10 +170,23 @@ def match_plan_to_request(request: str, plan_path: Path) -> tuple[bool, float, s
     )
 
 
-def select_approved_plan(request: str) -> tuple[str | None, str]:
+def is_plan_explicitly_approved(plan_path: Path) -> bool:
+    try:
+        payload = json.loads(plan_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+    return bool(payload.get("approved") is True or payload.get("status") == "approved")
+
+
+def select_approved_plan(request: str, require_explicit_approval: bool = False) -> tuple[str | None, str]:
     artifacts = canonical_plan_artifacts()
     if not artifacts:
         return None, "no plan artifacts found"
+
+    if require_explicit_approval:
+        artifacts = [artifact for artifact in artifacts if is_plan_explicitly_approved(artifact)]
+        if not artifacts:
+            return None, "no explicitly approved plan artifacts found"
 
     best_match: Path | None = None
     best_score = -1.0
@@ -238,13 +247,15 @@ def collect_design_doc(mode: str, with_design: bool) -> str | None:
 
 def collect_docs(mode: str, extra_docs: list[str] | None, task: str | None = None, with_design: bool = False) -> tuple[list[str], str | None]:
     if mode == "init":
-        docs = []
+        docs = [".workflow/docs/PRD.md", ".workflow/docs/ARCHITECTURE.md", ".workflow/docs/ADR.md", ".workflow/docs/QA.md", "DESIGN.md"]
     elif mode == "feature":
         docs = [".workflow/docs/PRD.md", ".workflow/docs/ARCHITECTURE.md", ".workflow/docs/ADR.md"]
     elif mode == "qa":
         docs = [".workflow/docs/QA.md", ".workflow/docs/PRD.md", ".workflow/docs/ARCHITECTURE.md", ".workflow/docs/ADR.md"]
+    elif mode == "plan":
+        docs = [".workflow/docs/PRD.md", ".workflow/docs/ARCHITECTURE.md", ".workflow/docs/ADR.md"]
     elif mode == "review":
-        docs = [".workflow/docs/PRD.md", ".workflow/docs/ARCHITECTURE.md", ".workflow/docs/ADR.md", ".workflow/docs/QA.md"]
+        docs = [".workflow/docs/QA.md", ".workflow/docs/PRD.md", ".workflow/docs/ARCHITECTURE.md", ".workflow/docs/ADR.md"]
     else:
         docs = [".workflow/docs/PRD.md", ".workflow/docs/ARCHITECTURE.md", ".workflow/docs/ADR.md"]
 
@@ -284,109 +295,107 @@ def load_prompt_template(role: str) -> str:
     return load_text(prompt_path_for_role(role))
 
 
-def render_feature_task(request: str, approved_plan_path: str | None = None) -> str:
+def render_feature_task(request: str, approved_plan_path: str | None = None) -> dict:
     plan_ref = approved_plan_path or "(none matched request)"
     if approved_plan_path:
-        next_step_prompt = "- 승인된 방향이 있으니, 이번 slice를 진행할까요? (y/n)"
-        approval_hint = "- 승인된 방향이 있으니 이번 실행 여부만 확인하고, 새 범위 제안은 덧붙이지 않는다."
+        next_step_prompt = "승인된 방향이 있으니, 이번 slice를 진행할까요? (y/n)"
+        approval_hint = "승인된 방향이 있으니 이번 실행 여부만 확인하고, 새 범위 제안은 덧붙이지 않는다."
     else:
-        next_step_prompt = "- 이 요청은 아직 승인된 방향이 없으니, /flow-plan으로 먼저 범위를 확정할까요? (y/n)"
-        approval_hint = "- 승인된 plan이 없으면 여기서 멈추고 /flow-plan으로 먼저 범위를 확정할지 묻는다."
-    return f'''# Feature Task
-
-## Title
-{request}
-
-## Summary
-- Requested feature: {request}
-
-## Context
-- Capture user-facing context and constraints here.
-
-## Related Docs
-- .workflow/docs/PRD.md
-- .workflow/docs/ARCHITECTURE.md
-- .workflow/docs/ADR.md
-- DESIGN.md
-- Latest approved flow-plan output: {plan_ref}
-
-## Approved Direction
-- Summarize the agreed direction from flow-plan or the latest approval note.
-- Source plan artifact: {approved_plan_path or "(none)"}
-
-## Approval Gate
-{approval_hint}
-
-## Implementation Slice
-- Define the smallest implementation slice for this run.
-
-## Relevant Files
-- List candidate files to inspect or modify.
-
-## Out of Scope
-- Explicitly list what this task will not change.
-
-## Proposed Steps
-1. Confirm the approved direction and implementation slice.
-2. Identify the smallest implementation change.
-3. Implement and verify the slice.
-
-## Acceptance
-- Define the minimum accepted outcome for this slice.
-
-## Verification
-- List the checks required before considering this slice done.
-
-## Follow-up Slice
-- Describe the next smallest slice after this one.
-
-## Next Step Prompt
-{next_step_prompt}
-'''
+        next_step_prompt = "이 요청은 아직 승인된 방향이 없으니, /flow-plan으로 먼저 범위를 확정할까요? (y/n)"
+        approval_hint = "승인된 plan이 없으면 여기서 멈추고 /flow-plan으로 먼저 범위를 확정할지 묻는다."
+    return {
+        "title": request,
+        "summary": f"Requested feature: {request}",
+        "context": ["Capture user-facing context and constraints here."],
+        "related_docs": [
+            ".workflow/docs/PRD.md",
+            ".workflow/docs/ARCHITECTURE.md",
+            ".workflow/docs/ADR.md",
+            "DESIGN.md",
+        ],
+        "latest_approved_flow_plan_output": plan_ref,
+        "approved_direction": {
+            "summary": "Summarize the agreed direction from flow-plan or the latest approval note.",
+            "source_plan_artifact": approved_plan_path or "(none)",
+        },
+        "approval_gate": [approval_hint],
+        "implementation_slice": ["Define the smallest implementation slice for this run."],
+        "relevant_files": ["List candidate files to inspect or modify."],
+        "out_of_scope": ["Explicitly list what this task will not change."],
+        "proposed_steps": [
+            "Confirm the approved direction and implementation slice.",
+            "Identify the smallest implementation change.",
+            "Implement and verify the slice.",
+        ],
+        "acceptance": ["Define the minimum accepted outcome for this slice."],
+        "verification": ["List the checks required before considering this slice done."],
+        "follow_up_slice": ["Describe the next smallest slice after this one."],
+        "next_step_prompt": next_step_prompt,
+    }
 
 
-def render_qa_task(request: str, qa_id: str | None) -> str:
+def render_qa_task(request: str, qa_id: str | None) -> dict:
     qa_label = qa_id or "QA-TBD"
-    return f'''# QA Fix Task
+    return {
+        "title": request,
+        "issue_summary": "Summarize the bug and affected user flow.",
+        "qa_id": qa_label,
+        "references": [
+            ".workflow/docs/QA.md",
+            "Related screenshots, issues, or logs if available.",
+        ],
+        "reproduction": ["Describe how to reproduce the issue."],
+        "expected": ["Describe the intended behavior."],
+        "actual": ["Describe the current broken behavior."],
+        "suspected_scope": ["List the likely files, modules, or UI areas involved."],
+        "minimal_fix": ["Describe the smallest safe repair."],
+        "regression_checklist": [
+            "Original issue no longer reproduces",
+            "Adjacent flow still works",
+            "No broader scope added without approval",
+        ],
+    }
 
-## Title
-{request}
 
-## Issue Summary
-- Summarize the bug and affected user flow.
+def render_review_task(request: str, docs_used: list[str], task: str | None = None) -> dict:
+    return {
+        "title": request,
+        "related_docs": docs_used,
+        "related_task": task,
+        "review_focus": [
+            "Spec Gap",
+            "Architecture Concern",
+            "Test Gap",
+            "QA Watchpoints",
+        ],
+        "findings": [],
+        "next_step_prompt": "이 리뷰 결과를 기준으로 후속 수정이 필요할까요? (y/n)",
+    }
 
-## QA ID
-{qa_label}
 
-## References
-- .workflow/docs/QA.md
-- Related screenshots, issues, or logs if available.
-
-## Reproduction
-- Describe how to reproduce the issue.
-
-## Expected
-- Describe the intended behavior.
-
-## Actual
-- Describe the current broken behavior.
-
-## Suspected Scope
-- List the likely files, modules, or UI areas involved.
-
-## Minimal Fix
-- Describe the smallest safe repair.
-
-## Regression Checklist
-- [ ] Original issue no longer reproduces
-- [ ] Adjacent flow still works
-- [ ] No broader scope added without approval
-'''
+def render_init_task(request: str) -> dict:
+    return {
+        "title": request,
+        "status": "needs_user_input",
+        "questions": [
+            {"id": "project_name", "question": "프로젝트 이름이 무엇인가요?", "target_doc": ".workflow/docs/PRD.md"},
+            {"id": "goal", "question": "이 프로젝트의 핵심 목표 한 줄은 무엇인가요?", "target_doc": ".workflow/docs/PRD.md"},
+            {"id": "users", "question": "주요 사용자는 누구인가요?", "target_doc": ".workflow/docs/PRD.md"},
+            {"id": "scope", "question": "이번 버전에 꼭 포함할 범위는 무엇인가요?", "target_doc": ".workflow/docs/PRD.md"},
+            {"id": "out_of_scope", "question": "이번 버전에서 하지 않을 범위는 무엇인가요?", "target_doc": ".workflow/docs/PRD.md"},
+            {"id": "architecture", "question": "예상 기술 스택이나 구조 제약이 있나요?", "target_doc": ".workflow/docs/ARCHITECTURE.md"},
+            {"id": "qa", "question": "초기 QA에서 가장 먼저 확인해야 할 시나리오는 무엇인가요?", "target_doc": ".workflow/docs/QA.md"},
+            {"id": "design", "question": "디자인/UX 기준이 있나요? 없으면 원하는 분위기를 알려주세요.", "target_doc": "DESIGN.md"}
+        ],
+        "next_step_prompt": "위 질문들에 답해주면 flow-init이 문서를 하나씩 채워갈게요."
+    }
 
 
 def render_plan_doc(request: str, docs_used: list[str]) -> dict:
     return {
         "request": request,
+        "status": "draft",
+        "approved": False,
         "related_docs": docs_used,
         "context_snapshot": "현재 프로젝트 구조와 관련 문서를 기준으로 핵심 맥락을 요약한다.",
         "open_questions": ["한 번에 하나씩 확인이 필요한 질문을 적는다."],
@@ -449,14 +458,45 @@ def build_prompt(
     return "\n".join(lines)
 
 
-def save_run_outputs(payload: dict, output_name: str) -> Path:
-    target_dir = OUTPUT_PLANS if payload["mode"] == "plan" else OUTPUT_RUNS
-    target_dir.mkdir(parents=True, exist_ok=True)
-    json_path = target_dir / f"{output_name}.json"
-    json_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-    return json_path
+def save_task_payload(payload: dict) -> Path | None:
+    artifacts = payload.get("artifacts") or []
+    if not artifacts or not artifacts[0].endswith(".json"):
+        return None
+    target_path = PROJECT_ROOT / artifacts[0]
+    existing = json.loads(target_path.read_text(encoding="utf-8")) if target_path.exists() else {}
+    merged = {**existing, **payload}
+    if payload.get("mode") == "plan" and existing:
+        if existing.get("approved") is True:
+            merged["approved"] = True
+        if existing.get("status") == "approved":
+            merged["status"] = "approved"
+    target_path.write_text(json.dumps(merged, ensure_ascii=False, indent=2), encoding="utf-8")
+    return target_path
 
 
+def write_initial_task(path: Path, content: dict, preserve_existing: bool = False) -> None:
+    if preserve_existing and path.exists():
+        existing = json.loads(path.read_text(encoding="utf-8"))
+        merged = {**existing}
+        merged.setdefault("title", content["title"])
+        answers = existing.get("answers")
+        has_answers = bool(answers)
+        merged["status"] = existing.get("status", "needs_user_input") if has_answers else "needs_user_input"
+        merged["questions"] = content["questions"]
+        merged["next_step_prompt"] = content["next_step_prompt"]
+        path.write_text(json.dumps(merged, ensure_ascii=False, indent=2), encoding="utf-8")
+        return
+    path.write_text(json.dumps(content, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def write_plan_task(path: Path, content: dict) -> None:
+    if path.exists():
+        existing = json.loads(path.read_text(encoding="utf-8"))
+        if existing.get("approved") is True:
+            content["approved"] = True
+        if existing.get("status") == "approved":
+            content["status"] = "approved"
+    path.write_text(json.dumps(content, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 def print_summary(payload: dict) -> None:
@@ -479,6 +519,14 @@ def print_summary(payload: dict) -> None:
     print("commands:")
     for item in payload["role_results"]:
         print(f"  - {item['role']}: {item['command_preview']}")
+    print("role_outputs:")
+    for item in payload["role_results"]:
+        print(f"  - {item['role']} output:")
+        if item["output"]:
+            for line in item["output"].splitlines():
+                print(f"    {line}")
+        else:
+            print("    ")
     print("artifacts:")
     for artifact in payload["artifacts"]:
         print(f"  - {artifact}")
@@ -488,40 +536,55 @@ def print_summary(payload: dict) -> None:
 def main() -> int:
     args = parse_args()
     mode = canonical_mode(args.mode)
-    artifacts = ensure_bootstrap_files() if mode == "init" else []
+    bootstrap_artifacts = ensure_bootstrap_files() if mode == "init" else []
+    artifacts = list(bootstrap_artifacts) if mode == "init" else []
     config = load_config()
     docs_used, design_doc = collect_docs(mode, args.docs, args.task, args.with_design)
     docs_bundle = load_docs_bundle(docs_used)
     configured_roles = config["modes"][mode]["roles"]
     skip_roles = {"planner", "qa_planner"} if args.skip_plan else set()
-    roles = [role for role in configured_roles if role not in skip_roles]
+    roles = [] if mode == "init" else [role for role in configured_roles if role not in skip_roles]
     planner_output = None
     task_path = None
     approved_plan_path = None
     approved_plan_match_reason = None
 
     if mode == "feature":
-        approved_plan_path, approved_plan_match_reason = select_approved_plan(args.request)
+        approved_plan_path, approved_plan_match_reason = select_approved_plan(args.request, require_explicit_approval=args.skip_plan)
         if approved_plan_path and approved_plan_path not in docs_used:
             docs_used.append(approved_plan_path)
             docs_bundle = load_docs_bundle(docs_used)
-        task_path = f".workflow/tasks/feature/{slugify(args.request)}.md"
+        if args.skip_plan and approved_plan_path is None:
+            raise SystemExit("skip-plan requires an explicitly approved plan artifact; run /flow-plan, mark it approved, or omit --skip-plan")
+        task_path = f".workflow/tasks/feature/{slugify(args.request)}.json"
         path = PROJECT_ROOT / task_path
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(render_feature_task(args.request, approved_plan_path), encoding="utf-8")
+        path.write_text(json.dumps(render_feature_task(args.request, approved_plan_path), ensure_ascii=False, indent=2), encoding="utf-8")
         artifacts.append(task_path)
-    elif mode == "qa":
-        task_path = f".workflow/tasks/qa/{slugify(args.request)}.md"
+    elif mode == "init":
+        task_path = f".workflow/tasks/init/{slugify(args.request)}.json"
         path = PROJECT_ROOT / task_path
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(render_qa_task(args.request, args.qa_id), encoding="utf-8")
+        write_initial_task(path, render_init_task(args.request), preserve_existing=True)
+        artifacts = [task_path]
+    elif mode == "qa":
+        task_path = f".workflow/tasks/qa/{slugify(args.request)}.json"
+        path = PROJECT_ROOT / task_path
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(render_qa_task(args.request, args.qa_id), ensure_ascii=False, indent=2), encoding="utf-8")
         artifacts.append(task_path)
     elif mode == "plan":
         task_path = f".workflow/tasks/plan/{slugify(args.request)}.json"
         path = PROJECT_ROOT / task_path
         path.parent.mkdir(parents=True, exist_ok=True)
+        write_plan_task(path, render_plan_doc(args.request, docs_used))
+        artifacts.append(task_path)
+    elif mode == "review":
+        task_path = f".workflow/tasks/review/{slugify(args.request)}.json"
+        path = PROJECT_ROOT / task_path
+        path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(
-            json.dumps(render_plan_doc(args.request, docs_used), ensure_ascii=False, indent=2),
+            json.dumps(render_review_task(args.request, docs_used, args.task), ensure_ascii=False, indent=2),
             encoding="utf-8",
         )
         artifacts.append(task_path)
@@ -571,8 +634,6 @@ def main() -> int:
         if role in {"planner", "qa_planner"}:
             planner_output = result.output
 
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
-    output_name = args.output_name or f"{mode}-{slugify(args.request)}-{timestamp}"
     payload = {
         "mode": mode,
         "request": args.request,
@@ -588,11 +649,11 @@ def main() -> int:
         "roles": roles,
         "role_results": role_results,
         "artifacts": artifacts,
-        "output_json": "",
+        "output_json": artifacts[0] if artifacts and artifacts[0].endswith(".json") else "",
     }
-    json_path = save_run_outputs(payload, output_name)
-    payload["output_json"] = str(json_path.relative_to(PROJECT_ROOT))
-    json_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    json_path = save_task_payload(payload)
+    if json_path is not None:
+        payload["output_json"] = str(json_path.relative_to(PROJECT_ROOT))
     print_summary(payload)
     return 0
 
