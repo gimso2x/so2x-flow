@@ -78,3 +78,27 @@ def test_install_can_patch_existing_claude_md_without_duplicate_section(tmp_path
     run_install(target, "--patch-claude-md")
     second = claude_md.read_text(encoding="utf-8")
     assert second.count("## so2x-flow") == 1
+
+
+def test_install_rewrites_incomplete_managed_claude_section(tmp_path: Path):
+    target = tmp_path / "app"
+    target.mkdir()
+    claude_md = target / "CLAUDE.md"
+    claude_md.write_text(
+        "# local guide\n\n<!-- so2x-flow:managed:start -->\n## so2x-flow\n- stale\n<!-- so2x-flow:managed:end -->\n",
+        encoding="utf-8",
+    )
+
+    run_install(target, "--patch-claude-md")
+    rewritten = claude_md.read_text(encoding="utf-8")
+    assert "- stale" not in rewritten
+    assert "<!-- so2x-flow:managed:start -->" in rewritten
+    assert "존재하지 않으면 이 파일은 무시한다" in rewritten
+
+
+def test_readme_uses_exit_trap_cleanup_and_hook_examples():
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    assert "trap 'rm -rf .tmp/so2x-flow; rmdir .tmp 2>/dev/null || true' EXIT" in readme
+    assert "예: `rm -rf`, 무차별 삭제/이동 같은 명령 차단" in readme
+    assert "예: task 문서 없이 바로 구현부터 하려는 프롬프트 견제" in readme
+    assert "예: 종료 전에 빠진 검증이나 다음 액션 누락 방지" in readme
