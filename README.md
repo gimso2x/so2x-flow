@@ -68,7 +68,7 @@ rmdir .tmp 2>/dev/null || true
 - `flow-feature` — feature task 문서 생성 후 계획/구현
 - `flow-qa` — QA 수정 문서 생성 후 계획/구현
 - `flow-review` — 문서와 태스크 기준 리뷰만 수행
-- `flow-plan` — 구현 없이 계획만 수행
+- `/flow-plan` — 구현 없이 계획만 수행
 
 ## init vs install
 
@@ -126,7 +126,7 @@ flow-init으로 이 프로젝트를 초기화해줘.
 flow-feature로 "로그인 기능 구현" 작업 문서를 만들고 dry-run 기준으로 계획/구현 흐름까지 준비해줘.
 flow-qa로 "QA-001 홈 버튼 클릭 안됨" 이슈 문서를 만들고 dry-run 기준으로 수정 흐름을 준비해줘.
 flow-review로 "이번 변경 QA 관점 점검" 리뷰 문서를 만들어줘.
-flow-plan으로 "결제 기능 작업 분해" 계획 문서를 만들어줘.
+/flow-plan으로 "결제 기능 작업 분해" 계획 문서를 만들어줘.
 ```
 
 ## 구성

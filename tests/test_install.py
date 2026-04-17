@@ -133,6 +133,8 @@ def test_readme_documents_init_install_split_and_artifact_naming():
     assert "설치와 운영 초기화는 일부러 분리돼 있다" in readme
     assert "## artifact naming" in readme
     assert "`.workflow/outputs/run/<mode>-<slug>-<timestamp>.json`" in readme
+    assert "- `/flow-plan` — 구현 없이 계획만 수행" in readme
+    assert '/flow-plan으로 "결제 기능 작업 분해" 계획 문서를 만들어줘.' in readme
 
 
 def test_readme_install_prompt_forces_single_turn_completion_without_recap_only():
