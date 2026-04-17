@@ -12,7 +12,7 @@ Requirements: Claude Code, Git, Python 3.10+, `ccs` optional, `claude` CLI optio
 Open Claude Code and paste this. Claude does the rest.
 
 ```text
-Install so2x-flow: run git clone --single-branch --depth 1 https://github.com/gimso2x/so2x-flow.git .so2x-flow && cd .so2x-flow && python3 scripts/execute.py init "so2x-flow bootstrap" --dry-run then add a "so2x-flow" section to CLAUDE.md that says to use the flow-init, flow-feature, flow-qa, flow-review, and flow-plan skills for docs-first execution, always create task docs before implementation, use DESIGN.md as the primary design reference and docs/UI_GUIDE.md only as fallback, and use config/ccs-map.yaml for runner selection with auto -> ccs when available, otherwise claude -p. Then ask the user if they also want to add so2x-flow to the current project.
+Install so2x-flow: run git clone --single-branch --depth 1 https://github.com/gimso2x/so2x-flow.git .so2x-flow && cd .so2x-flow && python3 scripts/execute.py init "so2x-flow bootstrap" --dry-run then add a "so2x-flow" section to CLAUDE.md that says to use the flow-init, flow-feature, flow-qa, flow-review, and flow-plan skills for docs-first execution, always create task docs before implementation, use DESIGN.md as the primary design reference and docs/UI_GUIDE.md only as fallback, and use config/ccs-map.yaml for runner selection with auto -> ccs when available, otherwise claude -p.
 ```
 
 ## Included workflows
