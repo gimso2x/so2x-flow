@@ -112,11 +112,36 @@ def test_feature_dry_run_does_not_link_unrelated_latest_plan_artifact(tmp_path: 
     feature_result = run_execute(workspace, "feature", "로그인 기능 구현", "--dry-run")
     feature_payload = read_json(output_path(workspace, feature_result.stdout, "output_json"))
     assert feature_payload["approved_plan_path"] is None
-    assert feature_payload["approved_plan_match_reason"].startswith("latest plan slug mismatch")
+    assert feature_payload["approved_plan_match_reason"].startswith("no sufficiently similar plan")
     assert ".workflow/tasks/plan/결제-기능-설계-확정.md" not in feature_payload["docs_used"]
     task_text = (workspace / feature_payload["artifacts"][0]).read_text(encoding="utf-8")
     assert "Latest approved flow-plan output: (none matched request)" in task_text
     assert "Source plan artifact: (none)" in task_text
+
+
+def test_feature_dry_run_selects_best_matching_plan_even_if_latest_plan_is_unrelated(tmp_path: Path):
+    workspace = make_workspace(tmp_path)
+    run_execute(workspace, "plan", "로그인 기능 설계 확정", "--dry-run")
+    run_execute(workspace, "plan", "결제 기능 설계 확정", "--dry-run")
+
+    feature_result = run_execute(workspace, "feature", "로그인 기능 구현", "--dry-run")
+    feature_payload = read_json(output_path(workspace, feature_result.stdout, "output_json"))
+
+    assert feature_payload["approved_plan_path"] == ".workflow/tasks/plan/로그인-기능-설계-확정.md"
+    assert feature_payload["approved_plan_match_reason"].startswith("matched plan similarity")
+    assert ".workflow/tasks/plan/로그인-기능-설계-확정.md" in feature_payload["docs_used"]
+    assert ".workflow/tasks/plan/결제-기능-설계-확정.md" not in feature_payload["docs_used"]
+
+
+def test_feature_dry_run_rejects_plan_when_only_generic_tokens_overlap(tmp_path: Path):
+    workspace = make_workspace(tmp_path)
+    run_execute(workspace, "plan", "사용자 경험 개선 설계 확정", "--dry-run")
+
+    feature_result = run_execute(workspace, "feature", "알림 기능 구현", "--dry-run")
+    feature_payload = read_json(output_path(workspace, feature_result.stdout, "output_json"))
+
+    assert feature_payload["approved_plan_path"] is None
+    assert feature_payload["approved_plan_match_reason"].startswith("no sufficiently similar plan")
 
 
 def test_feature_dry_run_marks_missing_ui_guide_as_optional_when_design_missing(tmp_path: Path):

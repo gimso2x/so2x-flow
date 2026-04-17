@@ -116,6 +116,7 @@ GENERIC_PLAN_TOKENS = {
     "v1",
     "v2",
 }
+PLAN_SIMILARITY_THRESHOLD = 0.34
 
 
 def canonical_plan_artifacts() -> list[Path]:
@@ -137,7 +138,7 @@ def slug_tokens(text: str) -> set[str]:
     return {token for token in slug.split("-") if token and token not in GENERIC_PLAN_TOKENS}
 
 
-def match_plan_to_request(request: str, plan_path: Path) -> tuple[bool, str]:
+def plan_similarity_score(request: str, plan_path: Path) -> tuple[float, list[str]]:
     request_slug = slugify(request)
     plan_slug = slugify(plan_path.stem)
     request_tokens = slug_tokens(request)
@@ -145,23 +146,55 @@ def match_plan_to_request(request: str, plan_path: Path) -> tuple[bool, str]:
     shared_tokens = sorted(request_tokens & plan_tokens)
 
     if request_slug == plan_slug:
-        return True, f"matched plan slug exactly: {plan_slug}"
+        return 1.0, shared_tokens
     if request_slug and plan_slug and (request_slug in plan_slug or plan_slug in request_slug):
-        return True, f"matched plan slug by containment: {plan_slug}"
-    if shared_tokens:
-        return True, f"matched plan topic tokens: {', '.join(shared_tokens)}"
-    return False, f"latest plan slug mismatch: request={request_slug}, latest_plan={plan_slug}"
+        return 0.95, shared_tokens
+    if not request_tokens or not plan_tokens or not shared_tokens:
+        return 0.0, shared_tokens
+
+    union_size = len(request_tokens | plan_tokens)
+    if union_size == 0:
+        return 0.0, shared_tokens
+    return len(shared_tokens) / union_size, shared_tokens
+
+
+def match_plan_to_request(request: str, plan_path: Path) -> tuple[bool, float, str]:
+    request_slug = slugify(request)
+    plan_slug = slugify(plan_path.stem)
+    score, shared_tokens = plan_similarity_score(request, plan_path)
+    if score >= PLAN_SIMILARITY_THRESHOLD:
+        if score == 1.0:
+            return True, score, f"matched plan similarity exact slug: {plan_slug} (score={score:.2f})"
+        if score >= 0.95:
+            return True, score, f"matched plan similarity by containment: {plan_slug} (score={score:.2f})"
+        return True, score, f"matched plan similarity via topics: {', '.join(shared_tokens)} (score={score:.2f})"
+    return False, score, (
+        "no sufficiently similar plan: "
+        f"request={request_slug}, candidate={plan_slug}, score={score:.2f}, threshold={PLAN_SIMILARITY_THRESHOLD:.2f}"
+    )
 
 
 def select_approved_plan(request: str) -> tuple[str | None, str]:
     artifacts = canonical_plan_artifacts()
     if not artifacts:
         return None, "no plan artifacts found"
-    latest = artifacts[0]
-    matched, reason = match_plan_to_request(request, latest)
-    if not matched:
-        return None, reason
-    return str(latest.relative_to(PROJECT_ROOT)), reason
+
+    best_match: Path | None = None
+    best_score = -1.0
+    best_reason = "no sufficiently similar plan"
+
+    for artifact in artifacts:
+        matched, score, reason = match_plan_to_request(request, artifact)
+        if matched and score > best_score:
+            best_match = artifact
+            best_score = score
+            best_reason = reason
+
+    if best_match is None:
+        latest = artifacts[0]
+        _, _, latest_reason = match_plan_to_request(request, latest)
+        return None, latest_reason
+    return str(best_match.relative_to(PROJECT_ROOT)), best_reason
 
 
 def load_config() -> dict:
