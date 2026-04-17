@@ -102,6 +102,24 @@ def load_text(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
+def latest_plan_artifact() -> str | None:
+    plans_dir = PROJECT_ROOT / ".workflow" / "outputs" / "plans"
+    if not plans_dir.exists():
+        return None
+    preferred = [
+        path for path in plans_dir.glob("*.md")
+        if path.name != ".gitkeep" and path.is_file() and not path.name.startswith("plan-")
+    ]
+    candidates = preferred or [
+        path for path in plans_dir.glob("*.md")
+        if path.name != ".gitkeep" and path.is_file()
+    ]
+    if not candidates:
+        return None
+    latest = max(candidates, key=lambda path: path.stat().st_mtime)
+    return str(latest.relative_to(PROJECT_ROOT))
+
+
 def ensure_bootstrap_files() -> list[str]:
     artifacts: list[str] = []
     for rel_dir in BOOTSTRAP_DIRS:
@@ -177,7 +195,8 @@ def load_prompt_template(role: str) -> str:
     return load_text(prompt_path_for_role(role))
 
 
-def render_feature_task(request: str) -> str:
+def render_feature_task(request: str, approved_plan_path: str | None = None) -> str:
+    plan_ref = approved_plan_path or "(none found)"
     return f'''# Feature Task
 
 ## Title
@@ -194,10 +213,11 @@ def render_feature_task(request: str) -> str:
 - .workflow/docs/ARCHITECTURE.md
 - .workflow/docs/ADR.md
 - DESIGN.md
-- (Optional) latest approved flow-plan output
+- Latest approved flow-plan output: {plan_ref}
 
 ## Approved Direction
 - Summarize the agreed direction from flow-plan or the latest approval note.
+- Source plan artifact: {plan_ref}
 
 ## Implementation Slice
 - Define the smallest implementation slice for this run.
@@ -316,6 +336,7 @@ def build_prompt(
     qa_id: str | None,
     planner_output: str | None,
     design_doc: str | None,
+    approved_plan_path: str | None = None,
 ) -> str:
     prompt_template = load_prompt_template(role)
     lines = [
@@ -324,6 +345,7 @@ def build_prompt(
         f"request: {request}",
         f"docs_used: {', '.join(docs_used) if docs_used else '(none)'}",
         f"design_doc: {design_doc or '(none)'}",
+        f"approved_plan_path: {approved_plan_path or '(none)'}",
         "",
         "prompt_template:",
         prompt_template.strip(),
@@ -367,6 +389,7 @@ def render_markdown_summary(payload: dict) -> str:
             f"- Fallback Used: {payload['fallback_used']}",
             f"- Fallback Reason: {payload['fallback_reason'] or '(none)'}",
             f"- Design Doc: {payload['design_doc'] or '(none)'}",
+            f"- Approved Plan: {payload.get('approved_plan_path') or '(none)'}",
             "",
             "## Docs Used",
             *[f"- {doc}" for doc in docs_used],
@@ -397,6 +420,7 @@ def print_summary(payload: dict) -> None:
     print(f"fallback_used: {payload['fallback_used']}")
     print(f"fallback_reason: {payload['fallback_reason'] or '(none)'}")
     print(f"design_doc: {payload['design_doc'] or '(none)'}")
+    print(f"approved_plan_path: {payload.get('approved_plan_path') or '(none)'}")
     print("docs_used:")
     for doc in payload["docs_used"]:
         print(f"  - {doc}")
@@ -425,12 +449,16 @@ def main() -> int:
     roles = [role for role in configured_roles if role not in skip_roles]
     planner_output = None
     task_path = None
+    approved_plan_path = latest_plan_artifact() if mode == "feature" else None
 
     if mode == "feature":
+        if approved_plan_path and approved_plan_path not in docs_used:
+            docs_used.append(approved_plan_path)
+            docs_bundle = load_docs_bundle(docs_used)
         task_path = f".workflow/tasks/feature/{slugify(args.request)}.md"
         path = PROJECT_ROOT / task_path
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(render_feature_task(args.request), encoding="utf-8")
+        path.write_text(render_feature_task(args.request, approved_plan_path), encoding="utf-8")
         artifacts.append(task_path)
     elif mode == "qa":
         task_path = f".workflow/tasks/qa/{slugify(args.request)}.md"
@@ -457,7 +485,7 @@ def main() -> int:
             **config["roles"][role],
             **role_config,
         }
-        prompt = build_prompt(role, mode, args.request, docs_used, docs_bundle, task_path, args.qa_id, planner_output, design_doc)
+        prompt = build_prompt(role, mode, args.request, docs_used, docs_bundle, task_path, args.qa_id, planner_output, design_doc, approved_plan_path)
         if args.dry_run:
             result = run_role(
                 runner=resolution.selected_runner,
@@ -501,6 +529,7 @@ def main() -> int:
         "fallback_used": resolution.fallback_used,
         "fallback_reason": resolution.fallback_reason,
         "design_doc": design_doc,
+        "approved_plan_path": approved_plan_path,
         "docs_used": docs_used,
         "roles": roles,
         "role_results": role_results,
