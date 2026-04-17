@@ -133,3 +133,9 @@ def test_readme_documents_init_install_split_and_artifact_naming():
     assert "설치와 운영 초기화는 일부러 분리돼 있다" in readme
     assert "## artifact naming" in readme
     assert "`.workflow/outputs/run/<mode>-<slug>-<timestamp>.json`" in readme
+
+
+def test_readme_install_prompt_forces_single_turn_completion_without_recap_only():
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    assert "1~4단계를 한 턴에서 끝까지 실제로 실행한 뒤 마지막에만 결과를 짧게 정리해" in readme
+    assert 'recap이나 "다음으로 ~ 하면 됩니다" 같은 안내만 남기지 말고' in readme
