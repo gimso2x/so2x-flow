@@ -1,5 +1,6 @@
 runtime:
   runner: auto
+  allow_live_run: false
   claude_command: claude
   claude_headless_flag: -p
 roles:

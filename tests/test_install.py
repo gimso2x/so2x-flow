@@ -21,6 +21,8 @@ def run_install(target: Path, *extra: str) -> subprocess.CompletedProcess[str]:
 def test_install_copies_flow_scaffold_into_target_project(tmp_path: Path):
     target = tmp_path / "app"
     result = run_install(target)
+    assert "step 1/4: copy scaffold files" in result.stdout
+    assert "step 4/4: install complete" in result.stdout
     assert "copied_count:" in result.stdout
     assert (target / ".claude" / "commands" / "flow-init.md").exists()
     assert (target / ".claude" / "skills" / "flow-feature.md").exists()
@@ -60,3 +62,19 @@ def test_install_does_not_copy_generated_task_artifacts(tmp_path: Path):
     run_install(target)
     assert not (target / ".workflow" / "tasks" / "feature" / "로그인-기능-구현.md").exists()
     assert not (target / ".workflow" / "tasks" / "qa" / "qa-001-홈-버튼-클릭-안됨.md").exists()
+
+
+def test_install_can_patch_existing_claude_md_without_duplicate_section(tmp_path: Path):
+    target = tmp_path / "app"
+    target.mkdir()
+    claude_md = target / "CLAUDE.md"
+    claude_md.write_text("# local guide\n", encoding="utf-8")
+
+    run_install(target, "--patch-claude-md")
+    first = claude_md.read_text(encoding="utf-8")
+    assert "## so2x-flow" in first
+    assert "존재하지 않으면 이 파일은 무시한다" in first
+
+    run_install(target, "--patch-claude-md")
+    second = claude_md.read_text(encoding="utf-8")
+    assert second.count("## so2x-flow") == 1

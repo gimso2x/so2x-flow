@@ -62,6 +62,23 @@ def test_feature_dry_run_collects_design_doc_creates_task_and_chains_planner_to_
     assert "role: planner" in implementer_output
 
 
+def test_feature_dry_run_marks_missing_ui_guide_as_optional_when_design_missing():
+    design = ROOT / "DESIGN.md"
+    ui_guide = ROOT / ".workflow" / "docs" / "UI_GUIDE.md"
+    design_backup = design.read_text(encoding="utf-8")
+    ui_backup = ui_guide.read_text(encoding="utf-8")
+    design.unlink()
+    ui_guide.unlink()
+    try:
+        result = run_execute("feature", "알림 설정", "--dry-run")
+    finally:
+        design.write_text(design_backup, encoding="utf-8")
+        ui_guide.write_text(ui_backup, encoding="utf-8")
+    payload = read_json(output_path(result.stdout, "output_json"))
+    assert payload["design_doc"] is None
+    assert ".workflow/docs/UI_GUIDE.md" not in payload["docs_used"]
+
+
 def test_qa_dry_run_prioritizes_qa_doc_and_uses_qa_planner():
     result = run_execute("qa", "QA-001 홈 버튼 클릭 안됨", "--qa-id", "QA-001", "--dry-run")
     payload = read_json(output_path(result.stdout, "output_json"))
@@ -141,3 +158,14 @@ def test_requested_ccs_falls_back_to_claude_when_ccs_missing():
 def test_execute_uses_runner_resolution_layer():
     execute_text = EXECUTE.read_text(encoding="utf-8")
     assert "from ccs_runner import resolve_runner, run_role" in execute_text
+
+
+def test_live_execution_requires_explicit_runtime_opt_in():
+    result = subprocess.run(
+        [sys.executable, str(EXECUTE), "review", "실실행 테스트"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode != 0
+    assert "allow_live_run" in result.stderr

@@ -11,34 +11,46 @@ so2x-flow는 Claude Code에서 feature, QA, review, plan 작업을 문서 기준
 
 Claude Code를 프로젝트 루트에서 열고 아래 문구를 그대로 붙여 넣으면 된다.
 전역 `~/.claude/skills`가 아니라 현재 프로젝트 내부에 설치시키는 용도다.
+긴 원샷 프롬프트로 몰아넣지 말고, 단계가 드러나게 시키는 쪽이 덜 멍청하다.
 
 ```text
-현재 작업 디렉토리를 프로젝트 루트로 보고 so2x-flow를 설치해줘. 중간 확인 질문 없이 한국어로 진행하고, 새 설계 문서나 task 문서는 만들지 마. 이 순서를 그대로 지켜: 1) `mkdir -p .tmp && git clone --single-branch --depth 1 https://github.com/gimso2x/so2x-flow.git .tmp/so2x-flow` 실행 2) `python3 .tmp/so2x-flow/.workflow/scripts/install.py --target .` 실행 3) 프로젝트 루트 `CLAUDE.md`에 `## so2x-flow` 섹션이 없으면 추가하고, 그 아래에 docs-first 실행에는 현재 프로젝트의 `.claude/skills` 아래 `flow-init`, `flow-feature`, `flow-qa`, `flow-review`, `flow-plan` 스킬을 사용하고, 구현 전에 항상 `.workflow/tasks` 아래 task 문서를 먼저 만들고, `DESIGN.md`를 기본 디자인 기준 문서로 사용하며 `.workflow/docs/UI_GUIDE.md`는 fallback으로만 쓰고, runner 선택은 `.workflow/config/ccs-map.yaml`을 따르며 `auto`면 `ccs`가 있으면 `ccs`, 없으면 `claude -p`를 사용한다고 적어 4) 삭제 전에 `.claude/skills/flow-init.md`, `.claude/commands/flow-init.md`, `.workflow/scripts/execute.py`, `.workflow/config/ccs-map.yaml` 존재를 확인해 5) 마지막에 `rm -rf .tmp/so2x-flow`와 `rmdir .tmp 2>/dev/null || true`를 실행해 정리해 6) 끝나면 수행한 일과 확인 결과만 한국어로 짧게 보고해.
+현재 작업 디렉토리를 프로젝트 루트로 보고 so2x-flow를 설치해줘. 중간 확인 질문 없이 한국어로 진행하고, 새 설계 문서나 task 문서는 만들지 마.
+
+1. `mkdir -p .tmp && git clone --single-branch --depth 1 https://github.com/gimso2x/so2x-flow.git .tmp/so2x-flow` 를 실행하고 성공/실패를 바로 보고해.
+2. `python3 .tmp/so2x-flow/.workflow/scripts/install.py --target . --patch-claude-md` 를 실행하고, install.py가 출력하는 `step 1/4`부터 `step 4/4`까지 그대로 보고해.
+3. `.claude/skills/flow-init.md`, `.claude/commands/flow-init.md`, `.workflow/scripts/execute.py`, `.workflow/config/ccs-map.yaml` 존재 여부를 각각 확인해.
+4. `rm -rf .tmp/so2x-flow` 와 `rmdir .tmp 2>/dev/null || true` 를 실행해 정리하고, 마지막에 어떤 단계가 성공했고 실패한 단계가 있는지만 짧게 정리해.
 ```
 
-### 방법 B — 셸 한 줄 설치
+### 방법 B — 셸 설치
 
-Claude Code 말고 바로 설치하고 싶으면 프로젝트 루트에서 이 한 줄을 실행하면 된다.
+Claude Code 말고 바로 설치하고 싶으면 프로젝트 루트에서 아래 순서로 실행하면 된다.
+원라이너에 heredoc까지 우겨 넣는 건 복붙 사고 유발기라 뺐다.
 
 ```bash
-mkdir -p .tmp && git clone --single-branch --depth 1 https://github.com/gimso2x/so2x-flow.git .tmp/so2x-flow && python3 .tmp/so2x-flow/.workflow/scripts/install.py --target . && test -f .claude/skills/flow-init.md && test -f .claude/commands/flow-init.md && test -f .workflow/scripts/execute.py && test -f .workflow/config/ccs-map.yaml && rm -rf .tmp/so2x-flow && rmdir .tmp 2>/dev/null || true
+mkdir -p .tmp
+git clone --single-branch --depth 1 https://github.com/gimso2x/so2x-flow.git .tmp/so2x-flow
+python3 .tmp/so2x-flow/.workflow/scripts/install.py --target .
+test -f .claude/skills/flow-init.md
+test -f .claude/commands/flow-init.md
+test -f .workflow/scripts/execute.py
+test -f .workflow/config/ccs-map.yaml
+rm -rf .tmp/so2x-flow
+rmdir .tmp 2>/dev/null || true
 ```
 
 기존 `CLAUDE.md`에 so2x-flow 섹션까지 자동으로 붙이고 싶으면 아래처럼 실행하면 된다.
 
 ```bash
-mkdir -p .tmp && git clone --single-branch --depth 1 https://github.com/gimso2x/so2x-flow.git .tmp/so2x-flow && python3 .tmp/so2x-flow/.workflow/scripts/install.py --target . && test -f .claude/skills/flow-init.md && test -f .claude/commands/flow-init.md && test -f .workflow/scripts/execute.py && test -f .workflow/config/ccs-map.yaml && python3 - <<'PY'
-from pathlib import Path
-p = Path('CLAUDE.md')
-base = p.read_text(encoding='utf-8') if p.exists() else ''
-section = "\n## so2x-flow\ndocs-first 실행에는 현재 프로젝트의 .claude/skills 아래 flow-init, flow-feature, flow-qa, flow-review, flow-plan 스킬을 사용하고, 구현 전에 항상 .workflow/tasks 아래 task 문서를 먼저 만들고, DESIGN.md를 기본 디자인 기준 문서로 사용하며 .workflow/docs/UI_GUIDE.md는 fallback으로만 쓰고, runner 선택은 .workflow/config/ccs-map.yaml을 따르며 auto면 ccs가 있으면 ccs, 없으면 claude -p를 사용한다.\n"
-if '## so2x-flow' not in base:
-    if base and not base.endswith('\n'):
-        base += '\n'
-    base += section
-    p.write_text(base, encoding='utf-8')
-PY
-rm -rf .tmp/so2x-flow && rmdir .tmp 2>/dev/null || true
+mkdir -p .tmp
+git clone --single-branch --depth 1 https://github.com/gimso2x/so2x-flow.git .tmp/so2x-flow
+python3 .tmp/so2x-flow/.workflow/scripts/install.py --target . --patch-claude-md
+test -f .claude/skills/flow-init.md
+test -f .claude/commands/flow-init.md
+test -f .workflow/scripts/execute.py
+test -f .workflow/config/ccs-map.yaml
+rm -rf .tmp/so2x-flow
+rmdir .tmp 2>/dev/null || true
 ```
 
 ## 포함된 흐름
@@ -55,9 +67,10 @@ rm -rf .tmp/so2x-flow && rmdir .tmp 2>/dev/null || true
 - Explore → Plan → Implement → Verify 순서 유지
 - task/plan 문서 없이 구현하지 않음
 - feature와 QA를 같은 급의 workflow로 다룸
-- `DESIGN.md`를 기본 디자인 기준 문서로 사용
+- scaffold 자체를 수정할 때는 `DESIGN.md`보다 구조/실행 원칙을 먼저 본다
 - orchestration은 얇게 유지
 - hooks는 `.claude/settings.json`에서 결정론적으로 강제
+- v0 기본 검증은 live 실행보다 `--dry-run` 우선
 
 ## runner 정책
 
@@ -66,8 +79,25 @@ rm -rf .tmp/so2x-flow && rmdir .tmp 2>/dev/null || true
 - `auto` — `ccs`가 있으면 사용, 없으면 `claude -p`
 - `ccs` — `ccs` 사용, 없으면 `claude -p`로 fallback
 - `claude` — 항상 `claude -p`
+- `allow_live_run: false` 가 기본값이다. 실실행은 명시적으로 켜기 전까지 막는다.
 
 v0는 실실행보다 dry-run 검증을 우선한다.
+
+## hooks
+
+`.claude/settings.json`에 들어 있는 guardrail은 말뿐인 훈수가 아니라 실제 hook 연결이다.
+
+- `PreToolUse` + `dangerous-cmd-guard.sh` — 위험한 Bash 명령을 치기 전에 가드
+- `UserPromptSubmit` + `tdd-guard.sh` — task 문서/계획 없이 바로 구현으로 튀는 흐름을 견제
+- `Stop` + `circuit-breaker.sh` — 종료 직전 최소한의 브레이크 포인트 제공
+
+즉, `CLAUDE.md`에 적힌 규칙은 설명이고, 실제 강제는 여기서 한다.
+
+## design 문서 정책
+
+- `DESIGN.md`는 기본적으로 타깃 프로젝트 UI/UX 기준 문서다.
+- so2x-flow scaffold 자체를 손볼 때는 이 파일을 억지로 주 참고 문서로 삼지 않는다.
+- `.workflow/docs/UI_GUIDE.md`는 legacy fallback이다. 파일이 없으면 그냥 무시하면 된다.
 
 ## 바로 써보는 문구
 
@@ -87,16 +117,18 @@ flow-plan으로 "결제 기능 작업 분해" 계획 문서를 만들어줘.
 - `.claude/commands/` — slash command 진입점
 - `.claude/settings.json` — Claude hooks / guardrails
 - `.workflow/docs/` — PRD / ARCHITECTURE / ADR / QA 문서
-- `DESIGN.md` — 기본 디자인 기준 문서
-- `.workflow/docs/UI_GUIDE.md` — 구버전 호환용 fallback 문서
+- `DESIGN.md` — 타깃 프로젝트용 기본 디자인 기준 문서
+- `.workflow/docs/UI_GUIDE.md` — 구버전 호환용 fallback 문서, 없으면 무시 가능
 - `.workflow/prompts/` — role prompt 템플릿
 - `.workflow/tasks/` — feature / QA task 템플릿
 - `.workflow/scripts/execute.py` — orchestrator
+- `.workflow/scripts/install.py` — 설치 + 단계 로그 출력
+- `.workflow/scripts/patch_claude_md.py` — CLAUDE.md 섹션 패치 스크립트
 - `.workflow/scripts/ccs_runner.py` — runner 결정과 command 구성
 - `tests/` — dry-run 테스트
 
 ## 검증
 
 ```bash
-python3 -m pytest tests/test_ccs_runner.py tests/test_execute.py -q
+python3 -m pytest tests/test_install.py tests/test_ccs_runner.py tests/test_execute.py -q
 ```

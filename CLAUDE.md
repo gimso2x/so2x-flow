@@ -30,8 +30,8 @@
 - `.workflow/docs/ARCHITECTURE.md`
 - `.workflow/docs/ADR.md`
 - `.workflow/docs/QA.md`
-- `DESIGN.md` (primary design reference)
-- `.workflow/docs/UI_GUIDE.md` (legacy fallback only)
+- `DESIGN.md` (target-project UI reference, optional for scaffold-only work)
+- `.workflow/docs/UI_GUIDE.md` (legacy fallback only; ignore it if the file does not exist)
 
 ## Execution rules
 - For feature work, create `.workflow/tasks/feature/<slug>.md` first.
@@ -39,4 +39,5 @@
 - `Proposed Steps` must exist before implementation.
 - Use `.workflow/config/ccs-map.yaml` to select `auto`, `ccs`, or `claude` runner.
 - In v0, `.workflow/scripts/execute.py` is validated primarily in `--dry-run` mode.
+- `runtime.allow_live_run` stays `false` by default. Live execution is opt-in.
 - Use `.claude/settings.json` hooks as deterministic guardrails; do not rely on CLAUDE.md text alone for enforcement.
