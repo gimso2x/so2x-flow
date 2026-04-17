@@ -1,7 +1,7 @@
 # so2x-flow
 
 so2x-flow는 Claude Code에서 feature, QA, review, plan 작업을 문서 기준으로 굴리기 위한 docs-first 경량 하네스다.
-대화에만 의존하지 않고, 작업 근거와 흐름을 markdown으로 남기게 만든다.
+대화에만 의존하지 않고, 작업 근거와 흐름을 문서로 남기게 만든다.
 
 ## 빠른 설치
 
@@ -62,13 +62,57 @@ rm -rf .tmp/so2x-flow
 rmdir .tmp 2>/dev/null || true
 ```
 
+## 기본 프로세스
+
+### 1. 요구사항 입력
+애매한 요구사항, 큰 기능, 방향이 아직 안 정해진 요청은 **무조건 `flow-plan`부터** 시작한다.
+
+`flow-plan`이 하는 일:
+- 옵션 2~3개 비교
+- trade-off 정리
+- 추천안 1개 선택
+- 구현 slice 분해
+- 검증 기준 작성
+- canonical plan artifact 저장
+- 승인 질문
+
+즉 지금 구조에서 `flow-plan`은 아래를 내부적으로 흡수한다.
+- brainstorming
+- writing-plans
+
+### 2. 승인
+`flow-plan` 결과가 승인되면 canonical plan artifact가 기준 문서가 된다.
+
+### 3. 실행
+그 다음에만 `flow-feature`로 들어간다.
+
+`flow-feature`가 하는 일:
+- 승인된 방향 확인
+- 이번 최소 구현 slice 선택
+- planner -> implementer 실행
+- verification 정리
+
+중요:
+- `flow-feature`는 생각/비교/재기획 단계가 아니다.
+- 승인된 plan이 없으면 구현으로 밀지 않고 멈춘다.
+
+### 4. 이후 보조 흐름
+- 버그/QA 수정: `flow-qa`
+- 계획/구현 검토: `flow-review`
+
+## 한 줄 워크플로우
+
+```text
+요구사항 입력 -> flow-plan -> 승인 -> flow-feature -> flow-review 또는 flow-qa
+```
+
 ## 포함된 흐름
 
 - `flow-init` — PRD/ARCHITECTURE/QA/DESIGN 기준 질문지를 만들고 init task JSON을 남김
-- `flow-feature` — feature task 문서 생성 후 계획/구현
+- `flow-feature` — 승인된 slice 실행
 - `flow-qa` — QA 수정 문서 생성 후 계획/구현
 - `flow-review` — 문서와 태스크 기준 리뷰 JSON 생성 후 검토 수행
-- `/flow-plan` — 구현 없이 계획만 수행
+- `flow-plan` — thinking + planning + approval
 - 현재 v0 `/flow-plan`은 `.workflow/tasks/plan/*.json` 하나를 canonical 계획 산출물로 남기는 docs-first 흐름이다.
 
 ## init vs install
@@ -77,6 +121,31 @@ rmdir .tmp 2>/dev/null || true
 - `execute.py init` / `flow-init` — 이미 설치된 scaffold를 기준으로 질문 기반 init task를 만들고 dry-run/live 결과를 남기는 운영 단계
 - init은 planner를 돌리지 않고 `.workflow/tasks/init/<slug>.json` 질문지만 유지/갱신한다.
 - 즉, 설치와 운영 초기화는 일부러 분리돼 있다. 파일 배포는 install, 워크플로우 실행은 init 질문지 작성이다.
+
+## 언제 무엇부터 시작하나
+
+### `flow-plan`으로 시작
+이런 경우:
+- 기능 요구사항이 아직 뭉뚱그려져 있음
+- 옵션 비교가 필요함
+- 어디까지 만들지 범위를 먼저 정해야 함
+- 구현 전에 slice와 검증 기준을 먼저 고정하고 싶음
+
+### `flow-feature`로 시작
+이런 경우만:
+- 이미 승인된 plan이 있음
+- 이번에 구현할 slice가 명확함
+- planner/implementer가 새 방향을 발명하면 안 됨
+
+### `flow-qa`로 시작
+이런 경우:
+- 버그 수정
+- QA 이슈 재현/actual/expected가 이미 있음
+
+### `flow-review`로 시작
+이런 경우:
+- 구현 또는 계획을 문서 기준으로 점검하고 싶음
+- Spec Gap / Test Gap / QA Watchpoints를 보고 싶음
 
 ## 핵심 규칙
 
@@ -93,13 +162,24 @@ rmdir .tmp 2>/dev/null || true
 
 `.workflow/config/ccs-map.yaml`에서 설정한다.
 
-- `auto` — `ccs`가 있으면 사용, 없으면 `claude -p`
-- `ccs` — `ccs` 사용, 없으면 `claude -p`로 fallback
+- `auto` — `ccs`가 있으면 우선 사용
+- role별 `ccs_profile` preflight 실패 시 해당 role만 `claude -p`로 fallback
+- fallback 이유는 `fallback_reason`에 기록
 - `claude` — 항상 `claude -p`
 - `allow_live_run: false` 가 기본값이다. 실실행은 명시적으로 켜기 전까지 막는다.
 - `allow_live_run`은 반드시 YAML boolean `true`/`false` 값이어야 한다. 문자열 `"true"`, `"false"` 같은 값은 허용하지 않는다.
 
-v0는 실실행보다 dry-run 검증을 우선한다.
+`ccs` shortcut 호출 규약:
+
+```text
+ccs <profile> "prompt"
+```
+
+주의:
+- shortcut 실행에 `-p` 전제 금지
+- shortcut 실행에 `--model <same-profile>` 전제 금지
+- v0는 실실행보다 dry-run 검증을 우선한다
+- `runtime.allow_live_run`은 YAML boolean `true` / `false` 여야 한다
 
 ## hooks
 
@@ -125,8 +205,9 @@ v0는 실실행보다 dry-run 검증을 우선한다.
 아래는 셸 명령이 아니라 Claude Code에 그대로 붙여 넣는 예시다.
 
 ```text
-flow-init으로 이 프로젝트를 초기화해줘.
-flow-feature로 "로그인 기능 구현" 작업 문서를 만들고 dry-run 기준으로 계획/구현 흐름까지 준비해줘.
+flow-plan으로 "결제 기능 작업 분해" 계획 문서를 만들어줘.
+이 flow-plan 방향을 승인한다. 다음 slice 진행 준비해줘.
+flow-feature로 "결제 기능 1차 slice"를 승인된 방향 기준으로 진행해줘.
 flow-qa로 "QA-001 홈 버튼 클릭 안됨" 이슈 문서를 만들고 dry-run 기준으로 수정 흐름을 준비해줘.
 flow-review로 "이번 변경 QA 관점 점검" 리뷰 JSON을 만들어줘.
 /flow-plan으로 "결제 기능 작업 분해" 계획 산출물을 만들어줘.
@@ -155,13 +236,10 @@ flow-review로 "이번 변경 QA 관점 점검" 리뷰 JSON을 만들어줘.
 - qa 결과: `.workflow/tasks/qa/<slug>.json`
 - plan 결과: `.workflow/tasks/plan/<slug>.json`
   - 기본값: `status: draft`, `approved: false`
-  - `--skip-plan`에 쓰려면 `approved: true` 또는 `status: approved`로 명시 승인되어 있어야 한다
 - review 결과: `.workflow/tasks/review/<slug>.json`
-- run 이력 JSON은 따로 남기지 않는다. 각 task JSON이 canonical 산출물이다.
-- slug는 `slugify()` 규칙을 따른다. 영문/숫자/한글만 남기고 나머지는 `-`로 접는다.
 
 ## 검증
 
 ```bash
-python3 -m pytest tests/test_install.py tests/test_ccs_runner.py tests/test_execute.py -q
+python3 -m pytest tests/test_ccs_runner.py tests/test_execute.py -q
 ```

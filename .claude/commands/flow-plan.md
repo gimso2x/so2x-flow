@@ -3,20 +3,23 @@
 이 명령은 `.claude/skills/flow-plan.md`를 호출하는 얇은 진입점이다.
 
 ## 역할
-- plan 요청을 `flow-plan` skill로 넘긴다.
+- 요구사항을 `flow-plan` skill로 넘긴다.
 - 실제 계획 생성 규칙과 출력 형식은 skill과 `.workflow/scripts/execute.py`가 기준이다.
 - 현재 v0 `/flow-plan`은 `.workflow/tasks/plan/<slug>.json` 생성이 기본 전제다.
 - plan은 중복 산출물을 만들지 않고 `.workflow/tasks/plan/<slug>.json` 하나만 남긴다.
+- `flow-plan` 안에서 brainstorming + writing-plans 성격을 함께 처리한다.
 
 ## 입력
-- 계획 요청 한 줄
+- 요구사항/아이디어/문제 한 줄
 - 필요하면 관련 범위나 제약
 
 ## 출력
 - 계획 문서 또는 dry-run 요약
 - 응답에는 가능하면 아래가 보여야 한다.
+  - 옵션 2~3개 비교
   - 추천안 1개
-  - 남아 있는 확인 질문
+  - 구현 slice 초안
+  - 검증 기준
   - 승인 필요 여부
   - 마지막 한 줄의 설계 확정 질문
 
@@ -25,7 +28,7 @@
 - 승인 전에는 `/flow-feature`로 자동 전환하자는 식으로 몰아가지 않는다.
 - 마지막은 즉답 가능한 닫힌 질문으로 끝낸다.
 - 권장 형식:
-  - `이 설계 방향으로 확정할까요? (y/n)`
+  - `이 설계/구현 계획 방향으로 확정할까요? (y/n)`
 
 ## 주의
 - `/flow-plan` dry-run도 canonical 계획 산출물 `.workflow/tasks/plan/<slug>.json`을 만든다.

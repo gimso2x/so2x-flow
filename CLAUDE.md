@@ -2,10 +2,10 @@
 
 ## Core workflow skills
 - `flow-init`: bootstrap only
-- `flow-feature`: create `.workflow/tasks/feature/<slug>.json` first, then execute
+- `flow-feature`: execute only after an approved plan exists
 - `flow-qa`: create `.workflow/tasks/qa/<slug>.json` first, then execute
 - `flow-review`: review against workflow docs and task artifacts
-- `flow-plan`: planning only, no implementation
+- `flow-plan`: thinking + planning + approval, no implementation
 
 ## Claude Code working style
 - Follow Explore → Plan → Implement → Verify.
@@ -34,10 +34,14 @@
 - `.workflow/docs/UI_GUIDE.md` (legacy fallback only; ignore it if the file does not exist)
 
 ## Execution rules
-- For feature work, create `.workflow/tasks/feature/<slug>.json` first.
+- Start ambiguous or new requirements with `flow-plan` first.
+- `flow-plan` absorbs brainstorming + writing-plans and leaves an approved canonical plan artifact.
+- For feature work, only execute `flow-feature` after an approved plan exists, then create the feature task document first.
 - For QA work, create `.workflow/tasks/qa/<slug>.json` first.
 - `Proposed Steps` must exist before implementation.
 - Use `.workflow/config/ccs-map.yaml` to select `auto`, `ccs`, or `claude` runner.
 - In v0, `.workflow/scripts/execute.py` is validated primarily in `--dry-run` mode.
-- `runtime.allow_live_run` stays `false` by default. Live execution is opt-in.
+- `runtime.allow_live_run` must be a real YAML boolean (`true` or `false`), not a string.
+- `ccs` shortcut roles run as `ccs <profile> "prompt"`; do not assume `-p` or `--model` for shortcut execution.
+- If a configured `ccs_profile` is missing, execute-level preflight falls back that role to `claude -p` when Claude is available; the reason is printed in `fallback_reason`.
 - Use `.claude/settings.json` hooks as deterministic guardrails; do not rely on CLAUDE.md text alone for enforcement.
