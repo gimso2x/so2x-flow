@@ -97,6 +97,7 @@ rmdir .tmp 2>/dev/null || true
 - `ccs` — `ccs` 사용, 없으면 `claude -p`로 fallback
 - `claude` — 항상 `claude -p`
 - `allow_live_run: false` 가 기본값이다. 실실행은 명시적으로 켜기 전까지 막는다.
+- `allow_live_run`은 반드시 YAML boolean `true`/`false` 값이어야 한다. 문자열 `"true"`, `"false"` 같은 값은 허용하지 않는다.
 
 v0는 실실행보다 dry-run 검증을 우선한다.
 
