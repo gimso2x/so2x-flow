@@ -122,6 +122,21 @@ def test_plan_dry_run_writes_outputs_under_plans_directory(tmp_path: Path):
     assert output_md.parent == plans_dir
     assert payload["artifacts"] == [".workflow/outputs/plans/결제-기능-작업-분해.md"]
 
+    plan_text = (workspace / payload["artifacts"][0]).read_text(encoding="utf-8")
+    assert "## Context Snapshot" in plan_text
+    assert "## Open Questions" in plan_text
+    assert "## Options" in plan_text
+    assert "## Recommendation" in plan_text
+    assert "## Approval Gate" in plan_text
+    assert "## Next Step Prompt" in plan_text
+
+    planner_output = payload["role_results"][0]["output"]
+    assert "Context Snapshot" in planner_output
+    assert "Options" in planner_output
+    assert "Recommendation" in planner_output
+    assert "Approval Gate" in planner_output
+    assert "Next Step Prompt" in planner_output
+
 
 def test_skip_plan_removes_planner_role_from_feature_run(tmp_path: Path):
     workspace = make_workspace(tmp_path)
