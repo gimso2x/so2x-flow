@@ -519,3 +519,38 @@ def test_live_ccs_execution_surfaces_codex_auth_guidance(tmp_path: Path):
     assert result.returncode != 0
     assert "ccs is installed but Codex auth is not configured" in result.stderr
     assert "run `ccs setup` or `ccs codex --auth`" in result.stderr
+
+
+
+def test_docs_first_smoke_plan_feature_qa_sequence(tmp_path: Path):
+    workspace = make_workspace(tmp_path)
+
+    plan_result = run_execute(workspace, "plan", "로그인 폼 validation과 submit 흐름 추가", "--dry-run")
+    plan_payload = read_json(output_path(workspace, plan_result.stdout, "output_json"))
+    plan_path = workspace / plan_payload["artifacts"][0]
+    plan_json = read_json(plan_path)
+    assert plan_json["request"] == "로그인 폼 validation과 submit 흐름 추가"
+    assert plan_json["status"] == "draft"
+    assert plan_json["approved"] is False
+
+    plan_json["approved"] = True
+    plan_json["status"] = "approved"
+    plan_path.write_text(json.dumps(plan_json, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    feature_result = run_execute(workspace, "feature", "로그인 폼 validation과 submit 흐름 추가", "--skip-plan", "--dry-run")
+    feature_payload = read_json(output_path(workspace, feature_result.stdout, "output_json"))
+    feature_json = read_json(workspace / feature_payload["artifacts"][0])
+    assert feature_payload["roles"] == ["implementer"]
+    assert feature_payload["approved_plan_path"] == plan_payload["artifacts"][0]
+    assert feature_json["latest_approved_flow_plan_output"] == plan_payload["artifacts"][0]
+    assert feature_json["approved_direction"]["source_plan_artifact"] == plan_payload["artifacts"][0]
+    assert feature_json["verification"] == ["List the checks required before considering this slice done."]
+
+    qa_result = run_execute(workspace, "qa", "로그인 실패시 에러 메시지와 재시도 동작 점검", "--qa-id", "QA-101", "--dry-run")
+    qa_payload = read_json(output_path(workspace, qa_result.stdout, "output_json"))
+    qa_json = read_json(workspace / qa_payload["artifacts"][0])
+    assert qa_payload["docs_used"][0] == ".workflow/docs/QA.md"
+    assert qa_payload["roles"] == ["qa_planner", "implementer"]
+    assert qa_json["qa_id"] == "QA-101"
+    assert qa_json["reproduction"] == ["Describe how to reproduce the issue."]
+    assert qa_json["minimal_fix"] == ["Describe the smallest safe repair."]
