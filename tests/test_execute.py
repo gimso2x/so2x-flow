@@ -80,6 +80,8 @@ def test_feature_dry_run_collects_design_doc_creates_task_and_chains_planner_to_
     assert "## Next Step Prompt" in task_text
     assert "Latest approved flow-plan output: (none matched request)" in task_text
     assert "Source plan artifact: (none)" in task_text
+    assert "승인된 plan이 없으면 여기서 멈추고 /flow-plan으로 먼저 범위를 확정할지 묻는다." in task_text
+    assert "이 요청은 아직 승인된 방향이 없으니, /flow-plan으로 먼저 범위를 확정할까요? (y/n)" in task_text
 
     implementer_output = payload["role_results"][1]["output"]
     assert "planner_output:" in implementer_output
@@ -102,6 +104,7 @@ def test_feature_dry_run_links_matching_latest_plan_artifact(tmp_path: Path):
     task_text = (workspace / feature_payload["artifacts"][0]).read_text(encoding="utf-8")
     assert "Latest approved flow-plan output: .workflow/tasks/plan/로그인-기능-설계-확정.md" in task_text
     assert "Source plan artifact: .workflow/tasks/plan/로그인-기능-설계-확정.md" in task_text
+    assert "승인된 방향이 있으니, 이번 slice를 진행할까요? (y/n)" in task_text
     implementer_output = feature_payload["role_results"][1]["output"]
     assert f"approved_plan_path: {plan_payload['artifacts'][0]}" in implementer_output
 
@@ -201,6 +204,7 @@ def test_plan_dry_run_writes_outputs_under_plans_directory(tmp_path: Path):
     assert "## Recommendation" in plan_text
     assert "## Approval Gate" in plan_text
     assert "## Next Step Prompt" in plan_text
+    assert "이 설계 방향으로 확정할까요? (y/n)" in plan_text
 
     planner_output = payload["role_results"][0]["output"]
     assert "Context Snapshot" in planner_output

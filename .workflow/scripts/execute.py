@@ -286,6 +286,12 @@ def load_prompt_template(role: str) -> str:
 
 def render_feature_task(request: str, approved_plan_path: str | None = None) -> str:
     plan_ref = approved_plan_path or "(none matched request)"
+    if approved_plan_path:
+        next_step_prompt = "- 승인된 방향이 있으니, 이번 slice를 진행할까요? (y/n)"
+        approval_hint = "- 승인된 방향이 있으니 이번 실행 여부만 확인하고, 새 범위 제안은 덧붙이지 않는다."
+    else:
+        next_step_prompt = "- 이 요청은 아직 승인된 방향이 없으니, /flow-plan으로 먼저 범위를 확정할까요? (y/n)"
+        approval_hint = "- 승인된 plan이 없으면 여기서 멈추고 /flow-plan으로 먼저 범위를 확정할지 묻는다."
     return f'''# Feature Task
 
 ## Title
@@ -307,6 +313,9 @@ def render_feature_task(request: str, approved_plan_path: str | None = None) -> 
 ## Approved Direction
 - Summarize the agreed direction from flow-plan or the latest approval note.
 - Source plan artifact: {approved_plan_path or "(none)"}
+
+## Approval Gate
+{approval_hint}
 
 ## Implementation Slice
 - Define the smallest implementation slice for this run.
@@ -332,7 +341,7 @@ def render_feature_task(request: str, approved_plan_path: str | None = None) -> 
 - Describe the next smallest slice after this one.
 
 ## Next Step Prompt
-- 다음으로 <남은 slice 요약>까지 이어서 진행하시겠습니까? (y/n)
+{next_step_prompt}
 '''
 
 
@@ -408,10 +417,11 @@ def render_plan_doc(request: str, docs_used: list[str]) -> str:
         "5. 구현 전 검증 기준을 적는다.",
         "",
         "## Approval Gate",
-        "- 이 설계 방향으로 확정할지 사용자 승인을 요청한다.",
+        "- 이 설계 방향 자체를 확정할지 사용자 승인을 요청한다.",
+        "- 승인 전에는 /flow-feature로 자동 전환하거나 다음 실행을 기정사실화하지 않는다.",
         "",
         "## Next Step Prompt",
-        "- 다음으로 /flow-feature <요청 요약> 구현 계획까지 이어가시겠습니까? (y/n)",
+        "- 이 설계 방향으로 확정할까요? (y/n)",
     ])
 
 

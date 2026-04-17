@@ -26,7 +26,7 @@ Use this skill to create a validated plan document without implementation.
 6. 설계 초안 제시
 7. 승인 필요 여부 명시
 8. 계획 산출물 저장
-9. 마지막은 `/flow-feature ... 진행하시겠습니까? (y/n)`처럼 닫힌 질문으로 끝낸다
+9. 마지막은 `/flow-feature`로 자동 전환하자는 문장이 아니라, 이 설계 방향 자체를 확정할지 묻는 닫힌 질문으로 끝낸다
 
 ## Output contract
 계획 응답과 산출물에는 최소한 아래 항목이 있어야 한다.
@@ -49,6 +49,8 @@ Use this skill to create a validated plan document without implementation.
 - 질문 없이 바로 단일안으로 확정 금지
 - 추천안 없이 오픈 이슈만 나열하고 끝내기 금지
 - 승인 요청 없이 구현 단계로 밀어넣기 금지
+- 승인 전에는 `/flow-feature`로 자동 전환하거나 다음 실행을 기정사실화하지 않는다
+- 승인 전에는 /flow-feature로 자동 전환하지 않는다
 
 ## Runtime policy
 - decomposition은 명시적으로 남긴다

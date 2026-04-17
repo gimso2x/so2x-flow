@@ -111,8 +111,11 @@ def test_command_and_skill_docs_use_workflow_paths_consistently():
     feature_skill = (ROOT / ".claude" / "skills" / "flow-feature.md").read_text(encoding="utf-8")
     qa_skill = (ROOT / ".claude" / "skills" / "flow-qa.md").read_text(encoding="utf-8")
     plan_skill = (ROOT / ".claude" / "skills" / "flow-plan.md").read_text(encoding="utf-8")
+    plan_command = (ROOT / ".claude" / "commands" / "flow-plan.md").read_text(encoding="utf-8")
     assert "`.workflow/tasks/feature/<slug>.md`" in feature_command
     assert "`.workflow/tasks/qa/<slug>.md`" in qa_command
+    assert "승인된 plan이 없으면 여기서 멈추고" in feature_command
+    assert "승인된 방향이 없으면 바로 구현으로 밀지 않는다" in feature_skill
     assert "## Input" in feature_skill
     assert "## Output contract" in feature_skill
     assert "## Forbidden" in feature_skill
@@ -120,6 +123,8 @@ def test_command_and_skill_docs_use_workflow_paths_consistently():
     assert "## Outputs" in qa_skill
     assert "## Forbidden" in qa_skill
     assert "`.workflow/tasks/plan/<slug>.md`" in plan_skill
+    assert "승인 전에는 /flow-feature로 자동 전환하지 않는다" in plan_skill
+    assert "이 설계 방향으로 확정할까요? (y/n)" in plan_command
 
 
 def test_readme_documents_init_install_split_and_artifact_naming():

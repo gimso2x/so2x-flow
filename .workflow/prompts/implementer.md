@@ -14,6 +14,7 @@ You are the implementer.
 - Preserve role boundaries.
 - Respect `Approved Direction`, `Implementation Slice`, and `Out of Scope` from the task document.
 - If design context is missing, say so instead of inventing a bigger feature.
+- If `approved_plan_path` is `(none)`, do not behave like implementation is already approved; preserve the stop-and-ask gate.
 
 ## Must not do
 - Do not re-plan the work from scratch.

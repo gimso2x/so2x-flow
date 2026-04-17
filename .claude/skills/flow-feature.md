@@ -21,11 +21,12 @@ Use this skill when a new product or engineering feature is requested.
 ## Required flow
 1. 입력 feature 요청을 task 문서로 정리한다
 2. 관련 plan/설계 승인 맥락이 있는지 확인한다
-3. 이번 실행 범위를 최소 구현 slice로 축소한다
-4. `Proposed Steps`를 planner가 구체화한다
-5. implementer는 planner 결과만 따라 최소 범위로 실행한다
-6. 검증 결과와 남은 범위를 분리해서 적는다
-7. 마지막은 다음 slice 진행 여부를 묻는 닫힌 질문으로 끝낸다
+3. 승인된 방향이 없으면 바로 구현으로 밀지 말고, 여기서 멈춘 뒤 `/flow-plan` 선행 여부를 사용자에게 먼저 묻는다
+4. 승인된 방향이 있을 때만 이번 실행 범위를 최소 구현 slice로 축소한다
+5. `Proposed Steps`를 planner가 구체화한다
+6. implementer는 planner 결과만 따라 최소 범위로 실행한다
+7. 검증 결과와 남은 범위를 분리해서 적는다
+8. 마지막은 자동 다음 단계 제안이 아니라, 현재 slice 진행 여부 또는 plan 선행 여부를 묻는 닫힌 질문으로 끝낸다
 
 ## Output contract
 feature task와 응답에는 최소한 아래 항목이 있어야 한다.
@@ -40,14 +41,17 @@ feature task와 응답에는 최소한 아래 항목이 있어야 한다.
 ## Forbidden
 - task 문서 없이 구현 시작 금지
 - 설계 맥락 없이 planner/implementer가 범위를 새로 발명하는 것 금지
+- 승인된 방향이 없는데도 바로 구현으로 밀어붙이는 것 금지
+- 승인된 방향이 없으면 바로 구현으로 밀지 않는다
 - implementer가 planner 없이 범위를 재정의하는 것 금지
 - `runtime.allow_live_run` 없이 live 실행 금지
 
 ## Runtime policy
 - 먼저 `.workflow/tasks/feature/<slug>.md`를 만든다
 - task에는 승인된 방향과 이번 slice를 명시한다
+- 승인된 plan이 없으면 여기서 멈추고 `/flow-plan` 선행 여부를 먼저 묻는다
 - `Proposed Steps`를 planner가 채운 뒤 implementer를 실행한다
-- 최신 `.workflow/outputs/plans/*.md` 중 canonical plan 문서를 찾고, 요청 슬러그/주제 토큰이 맞을 때만 feature에 연결한다
+- canonical 사람용 plan 문서 후보는 `.workflow/tasks/plan/*.md`만 본다
 - 최신 plan이 있어도 요청과 안 맞으면 연결하지 않는다
 - implementer는 planner 결과와 승인된 plan 문맥이 있을 때만 그 최소 범위로 실행한다
 - v0 기본은 `--dry-run`
