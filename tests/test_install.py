@@ -1,3 +1,4 @@
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -29,6 +30,10 @@ def test_install_copies_flow_scaffold_into_target_project(tmp_path: Path):
     assert (target / "tasks" / "feature" / "_template.md").exists()
     assert (target / "scripts" / "execute.py").exists()
     assert (target / "DESIGN.md").exists()
+    settings = json.loads((target / ".claude" / "settings.json").read_text(encoding="utf-8"))
+    assert "PreToolUse" in settings["hooks"]
+    assert settings["hooks"]["PreToolUse"][0]["matcher"] == "Bash"
+    assert settings["hooks"]["PreToolUse"][0]["hooks"][0]["type"] == "command"
 
 
 def test_install_does_not_overwrite_existing_files_without_force(tmp_path: Path):

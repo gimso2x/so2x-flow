@@ -27,10 +27,12 @@ so2x-flow를 현재 프로젝트에 설치해줘. 중간에 확인 질문하지 
 ## 핵심 규칙
 
 - docs first
+- Explore → Plan → Implement → Verify 순서 유지
 - task/plan 문서 없이 구현하지 않음
 - feature와 QA를 같은 급의 workflow로 다룸
 - `DESIGN.md`를 기본 디자인 기준 문서로 사용
 - orchestration은 얇게 유지
+- hooks는 `.claude/settings.json`에서 결정론적으로 강제
 
 ## runner 정책
 
@@ -57,6 +59,8 @@ flow-plan으로 "결제 기능 작업 분해" 계획 문서를 만들어줘.
 ## 구성
 
 - `.claude/skills/` — workflow 본체
+- `.claude/commands/` — slash command 진입점
+- `.claude/settings.json` — Claude hooks / guardrails
 - `docs/` — PRD / ARCHITECTURE / ADR / QA 문서
 - `DESIGN.md` — 기본 디자인 기준 문서
 - `docs/UI_GUIDE.md` — 구버전 호환용 fallback 문서

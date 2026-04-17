@@ -1,14 +1,35 @@
 {
   "hooks": {
-    "preToolUse": [
-      "scripts/hooks/dangerous-cmd-guard.sh"
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "scripts/hooks/dangerous-cmd-guard.sh"
+          }
+        ]
+      }
     ],
-    "postToolUse": [],
-    "userPromptSubmit": [
-      "scripts/hooks/tdd-guard.sh"
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "scripts/hooks/tdd-guard.sh"
+          }
+        ]
+      }
     ],
-    "stop": [
-      "scripts/hooks/circuit-breaker.sh"
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "scripts/hooks/circuit-breaker.sh"
+          }
+        ]
+      }
     ]
   }
 }
