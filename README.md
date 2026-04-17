@@ -98,7 +98,13 @@ rmdir .tmp 2>/dev/null || true
 
 ### 4. 이후 보조 흐름
 - 버그/QA 수정: `flow-qa`
+  - root cause 먼저
+  - 가능하면 failing reproduction/test 먼저
+  - minimal fix 후 회귀 검증
 - 계획/구현 검토: `flow-review`
+  - spec gap
+  - quality/regression risk
+  - independent verification
 
 ## 한 줄 워크플로우
 
@@ -109,9 +115,9 @@ rmdir .tmp 2>/dev/null || true
 ## 포함된 흐름
 
 - `flow-init` — PRD/ARCHITECTURE/QA/DESIGN 기준 질문지를 만들고 init task JSON을 남김
-- `flow-feature` — 승인된 slice 실행
-- `flow-qa` — QA 수정 문서 생성 후 계획/구현
-- `flow-review` — 문서와 태스크 기준 리뷰 JSON 생성 후 검토 수행
+- `flow-feature` — 승인된 slice 실행 + 가능하면 TDD + review gate
+- `flow-qa` — systematic debugging + test-first bugfix 흐름
+- `flow-review` — independent verification / code review 성격의 검토
 - `flow-plan` — thinking + planning + approval
 - 현재 v0 `/flow-plan`은 `.workflow/tasks/plan/*.json` 하나를 canonical 계획 산출물로 남기는 docs-first 흐름이다.
 
@@ -153,6 +159,10 @@ rmdir .tmp 2>/dev/null || true
 - Explore → Plan → Implement → Verify 순서 유지
 - task/plan 문서 없이 구현하지 않음
 - feature와 QA를 같은 급의 workflow로 다룸
+- 새 동작/버그 수정은 가능하면 test-first로 진행
+- bugfix는 root cause 파악 전 추측성 patch 금지
+- 구현 완료는 review gate 통과 전까지 완료가 아님
+- slice가 충분히 독립적이면 task 단위 실행/검토를 분리
 - scaffold 자체를 수정할 때는 `DESIGN.md`보다 구조/실행 원칙을 먼저 본다
 - orchestration은 얇게 유지
 - hooks는 `.claude/settings.json`에서 결정론적으로 강제
@@ -237,6 +247,7 @@ flow-review로 "이번 변경 QA 관점 점검" 리뷰 JSON을 만들어줘.
 - plan 결과: `.workflow/tasks/plan/<slug>.json`
   - 기본값: `status: draft`, `approved: false`
 - review 결과: `.workflow/tasks/review/<slug>.json`
+- run 이력 JSON은 따로 남기지 않는다. 각 task JSON이 canonical 산출물이다.
 
 ## 검증
 

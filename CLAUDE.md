@@ -39,6 +39,10 @@
 - For feature work, only execute `flow-feature` after an approved plan exists, then create the feature task document first.
 - For QA work, create `.workflow/tasks/qa/<slug>.json` first.
 - `Proposed Steps` must exist before implementation.
+- New behavior or bugfix work should prefer TDD: failing reproduction/test first, then minimal code.
+- QA/debug work should follow root-cause-first debugging; do not guess-fix before reproduction and investigation.
+- Slice completion should pass a review gate (spec compliance / quality / regression risk) before being treated as done.
+- If work splits cleanly, prefer subagent-style task isolation per slice rather than one giant mixed execution context.
 - Use `.workflow/config/ccs-map.yaml` to select `auto`, `ccs`, or `claude` runner.
 - In v0, `.workflow/scripts/execute.py` is validated primarily in `--dry-run` mode.
 - `runtime.allow_live_run` must be a real YAML boolean (`true` or `false`), not a string.

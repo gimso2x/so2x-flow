@@ -19,6 +19,8 @@ Use this skill when an approved product or engineering slice is ready to execute
 - `flow-feature`는 설계/옵션 비교 단계가 아니라, 승인된 방향에서 이번에 구현할 최소 slice를 실행하는 단계다.
 - planner와 implementer는 새 방향을 발명하는 역할이 아니라, 승인된 방향을 안전하게 실행하는 역할이다.
 - brainstorming이나 writing-plans 성격의 작업은 여기서 하지 않고 `flow-plan`에서 끝낸다.
+- 구현은 가능하면 `test-driven-development`를 따르고, slice 완료 뒤에는 independent review gate를 통과해야 한다.
+- slice가 충분히 독립적이면 `subagent-driven-development`처럼 task 단위로 실행/검토를 분리할 수 있다.
 
 ## Required flow
 1. 입력 feature 요청을 task 문서로 정리한다
@@ -27,8 +29,10 @@ Use this skill when an approved product or engineering slice is ready to execute
 4. 승인된 방향이 있을 때만 이번 실행 범위를 최소 구현 slice로 축소한다
 5. `Proposed Steps`를 planner가 구체화한다
 6. implementer는 planner 결과만 따라 최소 범위로 실행한다
-7. 검증 결과와 남은 범위를 분리해서 적는다
-8. 마지막은 자동 다음 단계 제안이 아니라, 현재 slice 진행 여부 또는 plan 선행 여부를 묻는 닫힌 질문으로 끝낸다
+7. 새 동작/버그 수정은 가능하면 failing test를 먼저 만들고 구현한다
+8. slice 구현 후 spec/quality review gate를 통과시킨다
+9. 검증 결과와 남은 범위를 분리해서 적는다
+10. 마지막은 자동 다음 단계 제안이 아니라, 현재 slice 진행 여부 또는 plan 선행 여부를 묻는 닫힌 질문으로 끝낸다
 
 ## Output contract
 feature task와 응답에는 최소한 아래 항목이 있어야 한다.
@@ -37,6 +41,7 @@ feature task와 응답에는 최소한 아래 항목이 있어야 한다.
 - `Out of Scope`
 - `Proposed Steps`
 - `Verification`
+- `Review Gate`
 - `Follow-up Slice`
 - `Next Step Prompt`
 
@@ -44,7 +49,10 @@ feature task와 응답에는 최소한 아래 항목이 있어야 한다.
 - task 문서 없이 구현 시작 금지
 - 설계 맥락 없이 planner/implementer가 범위를 새로 발명하는 것 금지
 - 승인된 방향이 없는데도 바로 구현으로 밀어붙이는 것 금지
+- 승인된 방향이 없으면 바로 구현으로 밀지 않는다
 - brainstorming / writeplan / option comparison을 여기서 다시 수행하는 것 금지
+- failing test 없이 바로 코드부터 쓰는 것 금지(예외는 명시적으로 제한)
+- review gate 없이 끝났다고 처리하는 것 금지
 - implementer가 planner 없이 범위를 재정의하는 것 금지
 - `runtime.allow_live_run` 없이 live 실행 금지
 
@@ -57,5 +65,6 @@ feature task와 응답에는 최소한 아래 항목이 있어야 한다.
 - canonical plan 후보는 `.workflow/tasks/plan/*.json`만 본다
 - 최신 plan이 있어도 요청과 안 맞으면 연결하지 않는다
 - implementer는 planner 결과와 승인된 plan 문맥이 있을 때만 그 최소 범위로 실행한다
+- slice 완료 후에는 최소한 spec compliance와 code quality/review 관점을 다시 확인한다
 - v0 기본은 `--dry-run`
 - live 실행은 `runtime.allow_live_run=true`일 때만 허용
