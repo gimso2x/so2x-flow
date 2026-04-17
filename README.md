@@ -142,6 +142,7 @@ rmdir .tmp 2>/dev/null || true
 - 이미 승인된 plan이 있음
 - 이번에 구현할 slice가 명확함
 - planner/implementer가 새 방향을 발명하면 안 됨
+- `--skip-plan`에 쓰려면 `approved: true` 또는 `status: approved`로 명시 승인되어 있어야 한다
 
 ### `flow-qa`로 시작
 이런 경우:

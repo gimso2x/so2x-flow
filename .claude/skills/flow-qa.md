@@ -28,6 +28,16 @@ Use this skill when a QA issue or bug report needs a document-first fix flow.
 7. 수정 후 failing test/reproduction과 전체 관련 검증을 다시 돌린다
 8. 검증 결과와 남은 리스크를 분리해서 적는다
 
+## Outputs
+- `.workflow/tasks/qa/<slug>.json`
+- `Reproduction`
+- `Expected`
+- `Actual`
+- `Root Cause Hypothesis`
+- `Minimal Fix`
+- `Verification`
+- `Residual Risk`
+
 ## Output contract
 - `.workflow/tasks/qa/<slug>.json`
 - `Reproduction`
