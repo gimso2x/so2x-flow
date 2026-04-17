@@ -1,0 +1,12 @@
+__pycache__/
+.pytest_cache/
+.workflow/scripts/__pycache__/
+.workflow/outputs/**
+!.workflow/outputs/plans/
+!.workflow/outputs/plans/.gitkeep
+!.workflow/outputs/runs/
+!.workflow/outputs/runs/.gitkeep
+.workflow/tasks/feature/*.md
+.workflow/tasks/qa/*.md
+!.workflow/tasks/feature/_template.md
+!.workflow/tasks/qa/_template.md
