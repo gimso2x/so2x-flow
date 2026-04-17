@@ -1,6 +1,6 @@
 # /flow-qa
 
-이 명령은 `skills/flow-qa.md`를 호출하는 얇은 진입점이다.
+이 명령은 `.claude/skills/flow-qa.md`를 호출하는 얇은 진입점이다.
 
 ## 역할
 - QA 이슈 요청을 `flow-qa` skill로 넘긴다.
@@ -15,5 +15,5 @@
 - qa-planner -> implementer 흐름 결과 또는 dry-run 요약
 
 ## 참고
-- 본체: `skills/flow-qa.md`
+- 본체: `.claude/skills/flow-qa.md`
 - 실행기: `scripts/execute.py`

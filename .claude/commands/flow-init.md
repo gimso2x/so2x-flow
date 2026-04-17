@@ -1,6 +1,6 @@
 # /flow-init
 
-이 명령은 `skills/flow-init.md`를 호출하는 얇은 진입점이다.
+이 명령은 `.claude/skills/flow-init.md`를 호출하는 얇은 진입점이다.
 
 ## 역할
 - so2x-flow 초기화 요청을 `flow-init` skill로 넘긴다.
@@ -15,5 +15,5 @@
 - dry-run 또는 실행 결과 요약
 
 ## 참고
-- 본체: `skills/flow-init.md`
+- 본체: `.claude/skills/flow-init.md`
 - 실행기: `scripts/execute.py`

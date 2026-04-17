@@ -11,6 +11,6 @@
 
 원칙
 - command는 진입점만 담당한다.
-- 실제 절차와 규칙은 `skills/*.md`가 기준이다.
+- 실제 절차와 규칙은 `.claude/skills/*.md`가 기준이다.
 - 실제 실행은 `scripts/execute.py`가 담당한다.
 - command 문서에 workflow 로직을 중복해서 넣지 않는다.

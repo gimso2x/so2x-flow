@@ -13,7 +13,7 @@ Claude Code를 열고 아래 문구를 그대로 붙여 넣으면 된다.
 중간에 확인 질문하지 말고, 한국어로 진행하고, 아래에 적힌 범위까지만 처리하게 만드는 용도다.
 
 ```text
-so2x-flow를 설치해줘. 중간에 확인 질문하지 말고 한국어로 진행해줘. 정확히 이 범위만 처리해줘: 1) git clone --single-branch --depth 1 https://github.com/gimso2x/so2x-flow.git .so2x-flow 실행 2) cd .so2x-flow && python3 scripts/execute.py init "so2x-flow bootstrap" --dry-run 실행 3) 프로젝트 루트 CLAUDE.md에 "so2x-flow" 섹션 추가. 그 섹션에는 docs-first 실행에는 flow-init, flow-feature, flow-qa, flow-review, flow-plan 스킬을 사용하고, 구현 전에 항상 task 문서를 먼저 만들고, DESIGN.md를 기본 디자인 기준 문서로 사용하며 docs/UI_GUIDE.md는 fallback으로만 쓰고, runner 선택은 config/ccs-map.yaml을 따르며 auto면 ccs가 있으면 ccs, 없으면 claude -p를 사용한다고 적어줘. 설치 범위를 넘어서 새 설계 문서나 task 문서를 추가로 만들지 말고, 끝나면 무엇을 했는지만 한국어로 짧게 보고해줘.
+so2x-flow를 설치해줘. 중간에 확인 질문하지 말고 한국어로 진행해줘. 정확히 이 범위만 처리해줘: 1) git clone --single-branch --depth 1 https://github.com/gimso2x/so2x-flow.git ~/.claude/skills/so2x-flow 실행 2) cd ~/.claude/skills/so2x-flow && python3 scripts/execute.py init "so2x-flow bootstrap" --dry-run 실행 3) 프로젝트 루트 CLAUDE.md에 "so2x-flow" 섹션 추가. 그 섹션에는 docs-first 실행에는 ~/.claude/skills/so2x-flow/.claude/skills 아래의 flow-init, flow-feature, flow-qa, flow-review, flow-plan 스킬을 사용하고, 구현 전에 항상 task 문서를 먼저 만들고, DESIGN.md를 기본 디자인 기준 문서로 사용하며 docs/UI_GUIDE.md는 fallback으로만 쓰고, runner 선택은 config/ccs-map.yaml을 따르며 auto면 ccs가 있으면 ccs, 없으면 claude -p를 사용한다고 적어줘. 설치 범위를 넘어서 새 설계 문서나 task 문서를 추가로 만들지 말고, 끝나면 무엇을 했는지만 한국어로 짧게 보고해줘.
 ```
 
 ## 포함된 흐름
@@ -56,7 +56,7 @@ flow-plan으로 "결제 기능 작업 분해" 계획 문서를 만들어줘.
 
 ## 구성
 
-- `skills/` — workflow 본체
+- `.claude/skills/` — workflow 본체
 - `docs/` — PRD / ARCHITECTURE / ADR / QA 문서
 - `DESIGN.md` — 기본 디자인 기준 문서
 - `docs/UI_GUIDE.md` — 구버전 호환용 fallback 문서

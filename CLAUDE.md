@@ -12,7 +12,7 @@
 - Treat feature work and QA work as first-class flows.
 - Keep orchestration thin.
 - Prefer small explicit documents over hidden state.
-- Skills are the workflow source of truth; commands are optional wrappers.
+- `.claude/skills/` is the workflow source of truth; commands are optional wrappers.
 
 ## Required docs
 - `docs/PRD.md`

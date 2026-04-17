@@ -1,7 +1,7 @@
 # ARCHITECTURE
 
 ## Structure
-- `skills/`: workflow definitions
+- `.claude/skills/`: workflow definitions
 - `docs/`: source-of-truth product and QA docs
 - `DESIGN.md`: root design reference
 - `prompts/`: role prompt templates

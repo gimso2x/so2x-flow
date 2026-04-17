@@ -27,14 +27,14 @@ MODE_ALIASES = {
 }
 
 BOOTSTRAP_FILES: dict[str, str] = {
-    "CLAUDE.md": "# so2x-flow workspace guide\n\nSee `skills/` for workflow definitions and `config/ccs-map.yaml` for runner policy.\n",
+    "CLAUDE.md": "# so2x-flow workspace guide\n\nSee `.claude/skills/` for workflow definitions and `config/ccs-map.yaml` for runner policy.\n",
     ".claude/settings.json": '{\n  "hooks": {\n    "preToolUse": [\n      "scripts/hooks/dangerous-cmd-guard.sh"\n    ],\n    "postToolUse": [],\n    "userPromptSubmit": [\n      "scripts/hooks/tdd-guard.sh"\n    ],\n    "stop": [\n      "scripts/hooks/circuit-breaker.sh"\n    ]\n  }\n}\n',
-    "skills/README.md": "# so2x-flow skills\n\nWorkflow source of truth.\n",
-    "skills/flow-init.md": "# flow-init\n\nBootstrap only.\n",
-    "skills/flow-feature.md": "# flow-feature\n\nCreate task docs before implementation.\n",
-    "skills/flow-qa.md": "# flow-qa\n\nCreate QA task docs before fixes.\n",
-    "skills/flow-review.md": "# flow-review\n\nReview only, no code changes.\n",
-    "skills/flow-plan.md": "# flow-plan\n\nPlanning only, no implementation.\n",
+    ".claude/skills/README.md": "# so2x-flow skills\n\nWorkflow source of truth.\n",
+    ".claude/skills/flow-init.md": "# flow-init\n\nBootstrap only.\n",
+    ".claude/skills/flow-feature.md": "# flow-feature\n\nCreate task docs before implementation.\n",
+    ".claude/skills/flow-qa.md": "# flow-qa\n\nCreate QA task docs before fixes.\n",
+    ".claude/skills/flow-review.md": "# flow-review\n\nReview only, no code changes.\n",
+    ".claude/skills/flow-plan.md": "# flow-plan\n\nPlanning only, no implementation.\n",
     "config/ccs-map.yaml": "runtime:\n  runner: auto\n",
     "docs/PRD.md": "# PRD\n",
     "docs/ARCHITECTURE.md": "# ARCHITECTURE\n",
@@ -56,7 +56,7 @@ BOOTSTRAP_FILES: dict[str, str] = {
 
 BOOTSTRAP_DIRS = [
     ".claude",
-    "skills",
+    ".claude/skills",
     "config",
     "docs",
     "prompts",

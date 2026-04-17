@@ -1,6 +1,6 @@
 # /flow-review
 
-이 명령은 `skills/flow-review.md`를 호출하는 얇은 진입점이다.
+이 명령은 `.claude/skills/flow-review.md`를 호출하는 얇은 진입점이다.
 
 ## 역할
 - review 요청을 `flow-review` skill로 넘긴다.
@@ -14,5 +14,5 @@
 - review 결과 또는 dry-run 요약
 
 ## 참고
-- 본체: `skills/flow-review.md`
+- 본체: `.claude/skills/flow-review.md`
 - 실행기: `scripts/execute.py`

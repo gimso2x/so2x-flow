@@ -39,7 +39,7 @@ def test_init_dry_run_writes_outputs_and_lists_bootstrap_artifacts():
     result = run_execute("init", "개인용 운동 코칭 앱 MVP", "--dry-run")
     payload = read_json(output_path(result.stdout, "output_json"))
     assert payload["mode"] == "init"
-    assert "skills/flow-init.md" in payload["artifacts"]
+    assert ".claude/skills/flow-init.md" in payload["artifacts"]
     assert "DESIGN.md" in payload["artifacts"]
     assert payload["roles"] == ["planner"]
 
