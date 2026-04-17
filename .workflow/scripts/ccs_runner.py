@@ -137,6 +137,7 @@ def run_role_subprocess(
         role_config=role_config,
         runtime_config=runtime_config,
     )
+    preview = command_preview(command)
     try:
         completed = subprocess.run(command, capture_output=True, text=True, timeout=timeout, check=True)
     except subprocess.TimeoutExpired:
@@ -147,5 +148,4 @@ def run_role_subprocess(
         ) from exc
     engine = role_config.get("engine", role_config.get("claude_role", role))
     model = role_config.get("model", runner)
-    preview = command_preview(command)
     return RoleResult(role=role, runner=runner, engine=engine, model=model, status="success", output=completed.stdout, command=command, command_preview=preview)

@@ -83,3 +83,53 @@ def test_run_role_live_path_requires_real_runner():
         assert "live claude execution" in str(exc).lower()
     else:
         raise AssertionError("Expected NotImplementedError for live path")
+
+
+def test_run_role_subprocess_timeout_raises_runner_error_with_command_preview(monkeypatch):
+    def fake_run(*args, **kwargs):
+        raise runner.subprocess.TimeoutExpired(cmd=args[0], timeout=kwargs.get("timeout", 300))
+
+    monkeypatch.setattr(runner.subprocess, "run", fake_run)
+
+    try:
+        runner.run_role_subprocess(
+            runner="claude",
+            role="reviewer",
+            prompt="hello",
+            role_config={"command": "claude", "claude_role": "reviewer"},
+            runtime_config={"claude_headless_flag": "-p"},
+            timeout=7,
+        )
+    except runner.RunnerError as exc:
+        message = str(exc)
+        assert "runner=claude role=reviewer timed out after 7s" in message
+        assert "claude --append-system-prompt role=reviewer -p hello" in message
+    else:
+        raise AssertionError("Expected RunnerError for timeout path")
+
+
+def test_run_role_subprocess_command_failure_raises_runner_error_with_stderr(monkeypatch):
+    def fake_run(*args, **kwargs):
+        raise runner.subprocess.CalledProcessError(
+            returncode=17,
+            cmd=args[0],
+            stderr="boom",
+        )
+
+    monkeypatch.setattr(runner.subprocess, "run", fake_run)
+
+    try:
+        runner.run_role_subprocess(
+            runner="ccs",
+            role="planner",
+            prompt="hello",
+            role_config={"command": "ccs", "engine": "codex", "model": "codex"},
+            timeout=11,
+        )
+    except runner.RunnerError as exc:
+        message = str(exc)
+        assert "runner=ccs role=planner exited 17" in message
+        assert "stderr: boom" in message
+        assert "ccs codex --model codex -p hello" in message
+    else:
+        raise AssertionError("Expected RunnerError for subprocess failure path")
