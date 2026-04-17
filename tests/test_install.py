@@ -113,12 +113,12 @@ def test_command_and_skill_docs_use_workflow_paths_consistently():
     assert "`.workflow/tasks/feature/<slug>.md`" in feature_command
     assert "`.workflow/tasks/qa/<slug>.md`" in qa_command
     assert "## Input" in feature_skill
-    assert "## Outputs" in feature_skill
+    assert "## Output contract" in feature_skill
     assert "## Forbidden" in feature_skill
     assert "## Input" in qa_skill
     assert "## Outputs" in qa_skill
     assert "## Forbidden" in qa_skill
-    assert "`.workflow/outputs/plans/`" in plan_skill
+    assert "`.workflow/tasks/plan/<slug>.md`" in plan_skill
 
 
 def test_readme_documents_init_install_split_and_artifact_naming():
@@ -126,4 +126,4 @@ def test_readme_documents_init_install_split_and_artifact_naming():
     assert "## init vs install" in readme
     assert "설치와 운영 초기화는 일부러 분리돼 있다" in readme
     assert "## artifact naming" in readme
-    assert "`.workflow/outputs/runs/<mode>-<slug>-<timestamp>.json|md`" in readme
+    assert "`.workflow/outputs/run/<mode>-<slug>-<timestamp>.json`" in readme

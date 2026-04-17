@@ -96,12 +96,12 @@ def test_feature_dry_run_links_matching_latest_plan_artifact(tmp_path: Path):
     plan_payload = read_json(output_path(workspace, plan_result.stdout, "output_json"))
     feature_result = run_execute(workspace, "feature", "로그인 기능 구현", "--dry-run")
     feature_payload = read_json(output_path(workspace, feature_result.stdout, "output_json"))
-    assert feature_payload["approved_plan_path"] == ".workflow/outputs/plans/로그인-기능-설계-확정.md"
+    assert feature_payload["approved_plan_path"] == ".workflow/tasks/plan/로그인-기능-설계-확정.md"
     assert feature_payload["approved_plan_match_reason"].startswith("matched plan ")
     assert feature_payload["approved_plan_path"] in feature_payload["docs_used"]
     task_text = (workspace / feature_payload["artifacts"][0]).read_text(encoding="utf-8")
-    assert "Latest approved flow-plan output: .workflow/outputs/plans/로그인-기능-설계-확정.md" in task_text
-    assert "Source plan artifact: .workflow/outputs/plans/로그인-기능-설계-확정.md" in task_text
+    assert "Latest approved flow-plan output: .workflow/tasks/plan/로그인-기능-설계-확정.md" in task_text
+    assert "Source plan artifact: .workflow/tasks/plan/로그인-기능-설계-확정.md" in task_text
     implementer_output = feature_payload["role_results"][1]["output"]
     assert f"approved_plan_path: {plan_payload['artifacts'][0]}" in implementer_output
 
@@ -113,7 +113,7 @@ def test_feature_dry_run_does_not_link_unrelated_latest_plan_artifact(tmp_path: 
     feature_payload = read_json(output_path(workspace, feature_result.stdout, "output_json"))
     assert feature_payload["approved_plan_path"] is None
     assert feature_payload["approved_plan_match_reason"].startswith("latest plan slug mismatch")
-    assert ".workflow/outputs/plans/결제-기능-설계-확정.md" not in feature_payload["docs_used"]
+    assert ".workflow/tasks/plan/결제-기능-설계-확정.md" not in feature_payload["docs_used"]
     task_text = (workspace / feature_payload["artifacts"][0]).read_text(encoding="utf-8")
     assert "Latest approved flow-plan output: (none matched request)" in task_text
     assert "Source plan artifact: (none)" in task_text
@@ -158,17 +158,18 @@ def test_review_dry_run_uses_reviewer_only_and_includes_design_doc(tmp_path: Pat
 
 def test_plan_dry_run_writes_outputs_under_plans_directory(tmp_path: Path):
     workspace = make_workspace(tmp_path)
-    plans_dir = workspace / ".workflow" / "outputs" / "plans"
+    plans_dir = workspace / ".workflow" / "outputs" / "plan"
+    plan_tasks_dir = workspace / ".workflow" / "tasks" / "plan"
     result = run_execute(workspace, "plan", "결제 기능 작업 분해", "--dry-run")
     output_json = output_path(workspace, result.stdout, "output_json")
-    output_md = output_path(workspace, result.stdout, "output_md")
     payload = read_json(output_json)
     assert payload["mode"] == "plan"
     assert output_json.parent == plans_dir
-    assert output_md.parent == plans_dir
-    assert payload["artifacts"] == [".workflow/outputs/plans/결제-기능-작업-분해.md"]
+    assert "output_md" not in result.stdout
+    assert payload["artifacts"] == [".workflow/tasks/plan/결제-기능-작업-분해.md"]
 
     plan_text = (workspace / payload["artifacts"][0]).read_text(encoding="utf-8")
+    assert (plan_tasks_dir / "결제-기능-작업-분해.md").exists()
     assert "## Context Snapshot" in plan_text
     assert "## Open Questions" in plan_text
     assert "## Options" in plan_text

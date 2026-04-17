@@ -19,8 +19,9 @@ if str(SCRIPT_DIR) not in sys.path:
 from ccs_runner import resolve_runner, run_role, run_role_subprocess
 
 CONFIG_PATH = WORKFLOW_ROOT / "config" / "ccs-map.yaml"
-OUTPUT_RUNS = WORKFLOW_ROOT / "outputs" / "runs"
-OUTPUT_PLANS = WORKFLOW_ROOT / "outputs" / "plans"
+OUTPUT_RUNS = WORKFLOW_ROOT / "outputs" / "run"
+OUTPUT_PLANS = WORKFLOW_ROOT / "outputs" / "plan"
+PLAN_TASKS = WORKFLOW_ROOT / "tasks" / "plan"
 PROMPTS_DIR = WORKFLOW_ROOT / "prompts"
 
 MODE_ALIASES = {
@@ -52,8 +53,8 @@ BOOTSTRAP_ARTIFACTS = [
     ".workflow/scripts/hooks/tdd-guard.sh",
     ".workflow/scripts/hooks/dangerous-cmd-guard.sh",
     ".workflow/scripts/hooks/circuit-breaker.sh",
-    ".workflow/outputs/plans/.gitkeep",
-    ".workflow/outputs/runs/.gitkeep",
+    ".workflow/outputs/plan/.gitkeep",
+    ".workflow/outputs/run/.gitkeep",
 ]
 
 BOOTSTRAP_DIRS = [
@@ -65,8 +66,9 @@ BOOTSTRAP_DIRS = [
     ".workflow/scripts/hooks",
     ".workflow/tasks/feature",
     ".workflow/tasks/qa",
-    ".workflow/outputs/plans",
-    ".workflow/outputs/runs",
+    ".workflow/tasks/plan",
+    ".workflow/outputs/plan",
+    ".workflow/outputs/run",
 ]
 
 
@@ -117,13 +119,13 @@ GENERIC_PLAN_TOKENS = {
 
 
 def canonical_plan_artifacts() -> list[Path]:
-    if not OUTPUT_PLANS.exists():
+    if not PLAN_TASKS.exists():
         return []
     return sorted(
         [
             path
-            for path in OUTPUT_PLANS.glob("*.md")
-            if path.name != ".gitkeep" and not path.name.startswith("plan-")
+            for path in PLAN_TASKS.glob("*.md")
+            if path.name != ".gitkeep"
         ],
         key=lambda path: path.stat().st_mtime,
         reverse=True,
@@ -168,24 +170,6 @@ def load_config() -> dict:
 
 def load_text(path: Path) -> str:
     return path.read_text(encoding="utf-8")
-
-
-def latest_plan_artifact() -> str | None:
-    plans_dir = PROJECT_ROOT / ".workflow" / "outputs" / "plans"
-    if not plans_dir.exists():
-        return None
-    preferred = [
-        path for path in plans_dir.glob("*.md")
-        if path.name != ".gitkeep" and path.is_file() and not path.name.startswith("plan-")
-    ]
-    candidates = preferred or [
-        path for path in plans_dir.glob("*.md")
-        if path.name != ".gitkeep" and path.is_file()
-    ]
-    if not candidates:
-        return None
-    latest = max(candidates, key=lambda path: path.stat().st_mtime)
-    return str(latest.relative_to(PROJECT_ROOT))
 
 
 def ensure_bootstrap_files() -> list[str]:
@@ -433,53 +417,14 @@ def build_prompt(
     return "\n".join(lines)
 
 
-def save_run_outputs(payload: dict, markdown: str, output_name: str) -> tuple[Path, Path]:
+def save_run_outputs(payload: dict, output_name: str) -> Path:
     target_dir = OUTPUT_PLANS if payload["mode"] == "plan" else OUTPUT_RUNS
     target_dir.mkdir(parents=True, exist_ok=True)
     json_path = target_dir / f"{output_name}.json"
-    md_path = target_dir / f"{output_name}.md"
     json_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-    md_path.write_text(markdown, encoding="utf-8")
-    return json_path, md_path
+    return json_path
 
 
-def render_markdown_summary(payload: dict) -> str:
-    docs_used = payload["docs_used"] or ["(none)"]
-    artifacts = payload["artifacts"] or ["(none)"]
-    return "\n".join(
-        [
-            "# Run Summary",
-            "",
-            "## Request Summary",
-            f"- Mode: {payload['mode']}",
-            f"- Request: {payload['request']}",
-            f"- Dry Run: {payload['dry_run']}",
-            f"- Requested Runner: {payload['requested_runner']}",
-            f"- Selected Runner: {payload['selected_runner']}",
-            f"- Fallback Used: {payload['fallback_used']}",
-            f"- Fallback Reason: {payload['fallback_reason'] or '(none)'}",
-            f"- Design Doc: {payload['design_doc'] or '(none)'}",
-            f"- Approved Plan: {payload.get('approved_plan_path') or '(none)'}",
-            f"- Approved Plan Match Reason: {payload.get('approved_plan_match_reason') or '(none)'}",
-            "",
-            "## Docs Used",
-            *[f"- {doc}" for doc in docs_used],
-            "",
-            "## Roles Executed",
-            *[
-                f"- {item['role']} ({item['runner']} / {item['engine']}:{item['model']}) -> {item['status']}"
-                for item in payload['role_results']
-            ],
-            "",
-            "## Artifact List",
-            *[f"- {item}" for item in artifacts],
-            "",
-            "## Final Summary",
-            f"- Output JSON: {payload['output_json']}",
-            f"- Output MD: {payload['output_md']}",
-            "",
-        ]
-    )
 
 
 def print_summary(payload: dict) -> None:
@@ -506,7 +451,6 @@ def print_summary(payload: dict) -> None:
     for artifact in payload["artifacts"]:
         print(f"  - {artifact}")
     print(f"output_json: {payload['output_json']}")
-    print(f"output_md: {payload['output_md']}")
 
 
 def main() -> int:
@@ -541,7 +485,7 @@ def main() -> int:
         path.write_text(render_qa_task(args.request, args.qa_id), encoding="utf-8")
         artifacts.append(task_path)
     elif mode == "plan":
-        task_path = f".workflow/outputs/plans/{slugify(args.request)}.md"
+        task_path = f".workflow/tasks/plan/{slugify(args.request)}.md"
         path = PROJECT_ROOT / task_path
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(render_plan_doc(args.request, docs_used), encoding="utf-8")
@@ -610,13 +554,10 @@ def main() -> int:
         "role_results": role_results,
         "artifacts": artifacts,
         "output_json": "",
-        "output_md": "",
     }
-    json_path, md_path = save_run_outputs(payload, render_markdown_summary(payload), output_name)
+    json_path = save_run_outputs(payload, output_name)
     payload["output_json"] = str(json_path.relative_to(PROJECT_ROOT))
-    payload["output_md"] = str(md_path.relative_to(PROJECT_ROOT))
     json_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-    md_path.write_text(render_markdown_summary(payload), encoding="utf-8")
     print_summary(payload)
     return 0
 

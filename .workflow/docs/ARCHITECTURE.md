@@ -24,7 +24,7 @@
 4. Prompt is built per role.
 5. Runner is resolved (`ccs` or `claude`).
 6. Role outputs are saved.
-7. Run summary is written to `outputs/runs/` or `outputs/plans/`.
+7. Run payload JSON is written to `.workflow/outputs/run/` or `.workflow/outputs/plan/`, while the canonical plan document stays in `.workflow/tasks/plan/`.
 
 ## Testing Notes
 - v0 focuses on dry-run behavior.
