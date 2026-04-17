@@ -118,6 +118,7 @@ rmdir .tmp 2>/dev/null || true
 - `flow-feature` — 승인된 slice 실행 + 가능하면 TDD + review gate
 - `flow-qa` — systematic debugging + test-first bugfix 흐름
 - `flow-review` — independent verification / code review 성격의 검토
+- `flow-review` — 문서와 태스크 기준 리뷰 JSON 생성 후 검토 수행
 - `flow-plan` — thinking + planning + approval
 - `/flow-plan` — 구현 없이 계획만 수행
 - 현재 v0 `/flow-plan`은 `.workflow/tasks/plan/*.json` 하나를 canonical 계획 산출물로 남기는 docs-first 흐름이다.
