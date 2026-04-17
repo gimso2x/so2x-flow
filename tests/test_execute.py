@@ -453,6 +453,7 @@ def test_execute_uses_runner_resolution_layer_and_live_runner_path(tmp_path: Pat
     execute = (ROOT / ".workflow" / "scripts" / "execute.py").read_text(encoding="utf-8")
     assert "from ccs_runner import resolve_runner, run_role, run_role_subprocess" in execute
     assert "from task_artifacts import (" in execute
+    assert "from workflow_context import (" in execute
 
     workspace = make_workspace(tmp_path)
     fake_runner = workspace / "fake-claude.sh"

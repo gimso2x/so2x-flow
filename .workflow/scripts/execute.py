@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -26,6 +25,12 @@ from task_artifacts import (
     save_task_payload,
     write_initial_task,
     write_plan_task,
+)
+from workflow_context import (
+    collect_docs,
+    load_docs_bundle,
+    select_approved_plan,
+    slugify,
 )
 
 CONFIG_PATH = WORKFLOW_ROOT / "config" / "ccs-map.yaml"
@@ -96,126 +101,6 @@ def canonical_mode(mode: str) -> str:
     return MODE_ALIASES.get(mode, mode)
 
 
-def slugify(text: str) -> str:
-    text = text.lower().strip()
-    text = re.sub(r"[^a-z0-9가-힣]+", "-", text)
-    return text.strip("-") or "run"
-
-
-GENERIC_PLAN_TOKENS = {
-    "plan",
-    "feature",
-    "flow",
-    "task",
-    "tasks",
-    "request",
-    "요청",
-    "기능",
-    "설계",
-    "확정",
-    "작업",
-    "분해",
-    "구현",
-    "개선",
-    "초안",
-    "버전",
-    "v1",
-    "v2",
-}
-PLAN_SIMILARITY_THRESHOLD = 0.34
-
-
-def canonical_plan_artifacts() -> list[Path]:
-    if not PLAN_TASKS.exists():
-        return []
-    return sorted(
-        [
-            path
-            for path in PLAN_TASKS.iterdir()
-            if path.is_file() and path.suffix == ".json" and path.name != ".gitkeep"
-        ],
-        key=lambda path: path.stat().st_mtime,
-        reverse=True,
-    )
-
-
-def slug_tokens(text: str) -> set[str]:
-    slug = slugify(text)
-    return {token for token in slug.split("-") if token and token not in GENERIC_PLAN_TOKENS}
-
-
-def plan_similarity_score(request: str, plan_path: Path) -> tuple[float, list[str]]:
-    request_slug = slugify(request)
-    plan_slug = slugify(plan_path.stem)
-    request_tokens = slug_tokens(request)
-    plan_tokens = slug_tokens(plan_path.stem)
-    shared_tokens = sorted(request_tokens & plan_tokens)
-
-    if request_slug == plan_slug:
-        return 1.0, shared_tokens
-    if request_slug and plan_slug and (request_slug in plan_slug or plan_slug in request_slug):
-        return 0.95, shared_tokens
-    if not request_tokens or not plan_tokens or not shared_tokens:
-        return 0.0, shared_tokens
-
-    union_size = len(request_tokens | plan_tokens)
-    if union_size == 0:
-        return 0.0, shared_tokens
-    return len(shared_tokens) / union_size, shared_tokens
-
-
-def match_plan_to_request(request: str, plan_path: Path) -> tuple[bool, float, str]:
-    request_slug = slugify(request)
-    plan_slug = slugify(plan_path.stem)
-    score, shared_tokens = plan_similarity_score(request, plan_path)
-    if score >= PLAN_SIMILARITY_THRESHOLD:
-        if score == 1.0:
-            return True, score, f"matched plan similarity exact slug: {plan_slug} (score={score:.2f})"
-        if score >= 0.95:
-            return True, score, f"matched plan similarity by containment: {plan_slug} (score={score:.2f})"
-        return True, score, f"matched plan similarity via topics: {', '.join(shared_tokens)} (score={score:.2f})"
-    return False, score, (
-        "no sufficiently similar plan: "
-        f"request={request_slug}, candidate={plan_slug}, score={score:.2f}, threshold={PLAN_SIMILARITY_THRESHOLD:.2f}"
-    )
-
-
-def is_plan_explicitly_approved(plan_path: Path) -> bool:
-    try:
-        payload = json.loads(plan_path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return False
-    return bool(payload.get("approved") is True or payload.get("status") == "approved")
-
-
-def select_approved_plan(request: str, require_explicit_approval: bool = False) -> tuple[str | None, str]:
-    artifacts = canonical_plan_artifacts()
-    if not artifacts:
-        return None, "no plan artifacts found"
-
-    if require_explicit_approval:
-        artifacts = [artifact for artifact in artifacts if is_plan_explicitly_approved(artifact)]
-        if not artifacts:
-            return None, "no explicitly approved plan artifacts found"
-
-    best_match: Path | None = None
-    best_score = -1.0
-    best_reason = "no sufficiently similar plan"
-
-    for artifact in artifacts:
-        matched, score, reason = match_plan_to_request(request, artifact)
-        if matched and score > best_score:
-            best_match = artifact
-            best_score = score
-            best_reason = reason
-
-    if best_match is None:
-        latest = artifacts[0]
-        _, _, latest_reason = match_plan_to_request(request, latest)
-        return None, latest_reason
-    return str(best_match.relative_to(PROJECT_ROOT)), best_reason
-
-
 def load_config() -> dict:
     if not CONFIG_PATH.exists():
         raise SystemExit(f"config not found: {CONFIG_PATH}")
@@ -237,58 +122,6 @@ def ensure_bootstrap_files() -> list[str]:
         if path.exists():
             artifacts.append(rel_path)
     return artifacts
-
-
-def collect_design_doc(mode: str, with_design: bool) -> str | None:
-    preferred = PROJECT_ROOT / "DESIGN.md"
-    fallback = WORKFLOW_ROOT / "docs" / "UI_GUIDE.md"
-    if with_design or mode in {"feature", "review", "plan"}:
-        if preferred.exists():
-            return "DESIGN.md"
-        if fallback.exists():
-            return ".workflow/docs/UI_GUIDE.md"
-    if mode == "qa" and with_design:
-        if preferred.exists():
-            return "DESIGN.md"
-        if fallback.exists():
-            return ".workflow/docs/UI_GUIDE.md"
-    return None
-
-
-def collect_docs(mode: str, extra_docs: list[str] | None, task: str | None = None, with_design: bool = False) -> tuple[list[str], str | None]:
-    if mode == "init":
-        docs = [".workflow/docs/PRD.md", ".workflow/docs/ARCHITECTURE.md", ".workflow/docs/ADR.md", ".workflow/docs/QA.md", "DESIGN.md"]
-    elif mode == "feature":
-        docs = [".workflow/docs/PRD.md", ".workflow/docs/ARCHITECTURE.md", ".workflow/docs/ADR.md"]
-    elif mode == "qa":
-        docs = [".workflow/docs/QA.md", ".workflow/docs/PRD.md", ".workflow/docs/ARCHITECTURE.md", ".workflow/docs/ADR.md"]
-    elif mode == "plan":
-        docs = [".workflow/docs/PRD.md", ".workflow/docs/ARCHITECTURE.md", ".workflow/docs/ADR.md"]
-    elif mode == "review":
-        docs = [".workflow/docs/QA.md", ".workflow/docs/PRD.md", ".workflow/docs/ARCHITECTURE.md", ".workflow/docs/ADR.md"]
-    else:
-        docs = [".workflow/docs/PRD.md", ".workflow/docs/ARCHITECTURE.md", ".workflow/docs/ADR.md"]
-
-    design_doc = collect_design_doc(mode, with_design)
-    if design_doc and design_doc not in docs:
-        docs.append(design_doc)
-    if task and task not in docs:
-        docs.append(task)
-    for item in extra_docs or []:
-        if item not in docs:
-            docs.append(item)
-    return docs, design_doc
-
-
-def load_docs_bundle(docs_used: list[str]) -> str:
-    blocks: list[str] = []
-    for rel_path in docs_used:
-        path = PROJECT_ROOT / rel_path
-        if path.exists():
-            blocks.append(f"### {rel_path}\n{load_text(path).strip()}")
-        else:
-            blocks.append(f"### {rel_path}\n(MISSING)")
-    return "\n\n".join(blocks) if blocks else "(none)"
 
 
 def prompt_path_for_role(role: str) -> Path:
@@ -384,8 +217,8 @@ def main() -> int:
     bootstrap_artifacts = ensure_bootstrap_files() if mode == "init" else []
     artifacts = list(bootstrap_artifacts) if mode == "init" else []
     config = load_config()
-    docs_used, design_doc = collect_docs(mode, args.docs, args.task, args.with_design)
-    docs_bundle = load_docs_bundle(docs_used)
+    docs_used, design_doc = collect_docs(PROJECT_ROOT, WORKFLOW_ROOT, mode, args.docs, args.task, args.with_design)
+    docs_bundle = load_docs_bundle(PROJECT_ROOT, docs_used, load_text)
     configured_roles = config["modes"][mode]["roles"]
     skip_roles = {"planner", "qa_planner"} if args.skip_plan else set()
     roles = [] if mode == "init" else [role for role in configured_roles if role not in skip_roles]
@@ -395,10 +228,10 @@ def main() -> int:
     approved_plan_match_reason = None
 
     if mode == "feature":
-        approved_plan_path, approved_plan_match_reason = select_approved_plan(args.request, require_explicit_approval=args.skip_plan)
+        approved_plan_path, approved_plan_match_reason = select_approved_plan(PROJECT_ROOT, PLAN_TASKS, args.request, require_explicit_approval=args.skip_plan)
         if approved_plan_path and approved_plan_path not in docs_used:
             docs_used.append(approved_plan_path)
-            docs_bundle = load_docs_bundle(docs_used)
+            docs_bundle = load_docs_bundle(PROJECT_ROOT, docs_used, load_text)
         if args.skip_plan and approved_plan_path is None:
             raise SystemExit("skip-plan requires an explicitly approved plan artifact; run /flow-plan, mark it approved, or omit --skip-plan")
         task_path = f".workflow/tasks/feature/{slugify(args.request)}.json"
