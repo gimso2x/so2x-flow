@@ -13,7 +13,8 @@ from task_artifacts import (
     write_initial_task,
     write_plan_task,
 )
-from workflow_context import collect_docs, load_docs_bundle, select_approved_plan, slugify
+from workflow_context import select_approved_plan, slugify
+from workflow_docs import collect_docs, load_docs_bundle
 
 
 @dataclass

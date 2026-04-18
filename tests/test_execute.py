@@ -627,6 +627,8 @@ def test_execute_uses_runner_resolution_layer_and_live_runner_path(tmp_path: Pat
     prompt_builder = (ROOT / ".workflow" / "scripts" / "prompt_builder.py").read_text(encoding="utf-8")
     mode_handlers = (ROOT / ".workflow" / "scripts" / "mode_handlers.py").read_text(encoding="utf-8")
     payloads = (ROOT / ".workflow" / "scripts" / "payloads.py").read_text(encoding="utf-8")
+    workflow_context = (ROOT / ".workflow" / "scripts" / "workflow_context.py").read_text(encoding="utf-8")
+    workflow_docs = (ROOT / ".workflow" / "scripts" / "workflow_docs.py").read_text(encoding="utf-8")
     assert "from ccs_runner import resolve_runner" in execute
     assert "from execution_runtime import" in execute
     assert "def run_roles(" in execution_runtime
@@ -634,8 +636,14 @@ def test_execute_uses_runner_resolution_layer_and_live_runner_path(tmp_path: Pat
     assert "runner_resolution" in execution_runtime
     assert "prompt_build" in execution_runtime
     assert "def build_prompt(" in prompt_builder
-    assert "def prepare_mode_context(" in mode_handlers
+    assert "from workflow_docs import collect_docs, load_docs_bundle" in mode_handlers
+    assert "from workflow_context import select_approved_plan, slugify" in mode_handlers
     assert "def build_payload(" in payloads
+    assert "def select_approved_plan(" in workflow_context
+    assert "def collect_docs(" not in workflow_context
+    assert "def load_docs_bundle(" not in workflow_context
+    assert "def collect_docs(" in workflow_docs
+    assert "def load_docs_bundle(" in workflow_docs
 
     workspace = make_workspace(tmp_path)
     fake_runner = workspace / "fake-claude.sh"
