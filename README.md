@@ -291,6 +291,7 @@ python3 .workflow/scripts/release_handoff.py \
 - `RELEASE_BODY_PR7.md`
 
 설치 관점까지 포함한 real-world smoke는 빈 프로젝트 하나 만들어 실제 install 결과를 보는 게 제일 빠르다.
+외부 샘플 target repo 기준 e2e smoke도 `tests/test_execute.py::test_external_sample_repo_install_init_plan_e2e_smoke`로 고정돼 있다.
 
 ```bash
 tmpdir="$(mktemp -d)"

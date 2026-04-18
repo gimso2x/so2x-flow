@@ -206,6 +206,7 @@ def test_readme_documents_smoke_test_entrypoint():
     assert "RELEASE_NOTES_PR7.md" in readme
     assert "RELEASE_BODY_PR7.md" in readme
     assert "설치 관점까지 포함한 real-world smoke는 빈 프로젝트 하나 만들어 실제 install 결과를 보는 게 제일 빠르다." in readme
+    assert "외부 샘플 target repo 기준 e2e smoke도 `tests/test_execute.py::test_external_sample_repo_install_init_plan_e2e_smoke`로 고정돼 있다." in readme
     assert 'tmpdir="$(mktemp -d)"' in readme
     assert 'python3 .workflow/scripts/install.py --target "$tmpdir/app" --patch-claude-md' in readme
     assert 'python3 "$tmpdir/app/.workflow/scripts/execute.py" init "샘플 앱 초기 설정" --dry-run' in readme

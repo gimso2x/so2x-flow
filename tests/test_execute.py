@@ -33,6 +33,27 @@ def run_execute(workspace: Path, *args: str) -> subprocess.CompletedProcess[str]
     )
 
 
+def make_sample_target_repo(tmp_path: Path) -> Path:
+    repo = tmp_path / "sample-target"
+    repo.mkdir()
+    (repo / "README.md").write_text("# sample target\n", encoding="utf-8")
+    (repo / "app.py").write_text("print('sample app')\n", encoding="utf-8")
+    (repo / "CLAUDE.md").write_text("# local target guide\n", encoding="utf-8")
+    subprocess.run(["git", "init", "-b", "main"], cwd=repo, capture_output=True, text=True, check=True)
+    subprocess.run(["git", "config", "user.name", "Hermes"], cwd=repo, capture_output=True, text=True, check=True)
+    subprocess.run(["git", "config", "user.email", "hermes@example.com"], cwd=repo, capture_output=True, text=True, check=True)
+    subprocess.run(["git", "add", "."], cwd=repo, capture_output=True, text=True, check=True)
+    subprocess.run(["git", "commit", "-m", "chore: sample target bootstrap"], cwd=repo, capture_output=True, text=True, check=True)
+    subprocess.run(
+        [sys.executable, str(INSTALL), "--target", str(repo), "--patch-claude-md"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    return repo
+
+
 def read_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
@@ -847,6 +868,28 @@ def test_docs_first_smoke_plan_feature_qa_sequence(tmp_path: Path):
     assert qa_json["qa_id"] == "QA-101"
     assert qa_json["reproduction"] == ["Describe how to reproduce the issue."]
     assert qa_json["minimal_fix"] == ["Describe the smallest safe repair."]
+
+
+def test_external_sample_repo_install_init_plan_e2e_smoke(tmp_path: Path):
+    repo = make_sample_target_repo(tmp_path)
+
+    init_result = run_execute(repo, "init", "외부 샘플 앱 초기 설정", "--dry-run")
+    init_payload = read_json(output_path(repo, init_result.stdout, "output_json"))
+    init_json = read_json(repo / init_payload["artifacts"][0])
+    assert (repo / "README.md").read_text(encoding="utf-8") == "# sample target\n"
+    assert (repo / "app.py").read_text(encoding="utf-8") == "print('sample app')\n"
+    assert "## so2x-flow" in (repo / "CLAUDE.md").read_text(encoding="utf-8")
+    assert init_json["status"] == "needs_user_input"
+    assert init_payload["docs_used"][0] == ".workflow/docs/PRD.md"
+
+    plan_result = run_execute(repo, "plan", "외부 샘플 앱 로그인 흐름 작업 분해", "--dry-run")
+    plan_payload = read_json(output_path(repo, plan_result.stdout, "output_json"))
+    plan_json = read_json(repo / plan_payload["artifacts"][0])
+    assert plan_json["request"] == "외부 샘플 앱 로그인 흐름 작업 분해"
+    assert plan_json["status"] == "draft"
+    assert plan_json["approved"] is False
+    assert (repo / ".workflow" / "scripts" / "execute.py").exists()
+    assert (repo / ".claude" / "commands" / "flow-init.md").exists()
 
 
 def test_live_feature_role_can_fallback_to_claude_when_ccs_profile_missing(tmp_path: Path):
