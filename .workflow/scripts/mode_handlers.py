@@ -1,20 +1,17 @@
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass
 from pathlib import Path
 
-from task_artifacts import (
-    render_feature_task,
-    render_init_task,
-    render_plan_doc,
-    render_qa_task,
-    render_review_task,
-    write_initial_task,
-    write_plan_task,
-)
-from workflow_context import select_approved_plan, slugify
+from workflow_context import select_approved_plan
 from workflow_docs import collect_docs, load_docs_bundle
+from workflow_tasks import (
+    write_feature_task,
+    write_init_task,
+    write_plan_mode_task,
+    write_qa_task,
+    write_review_task,
+)
 
 
 @dataclass
@@ -68,35 +65,20 @@ def prepare_mode_context(
             docs_bundle = load_docs_bundle(project_root, docs_used, load_text)
         if skip_plan and approved_plan_path is None:
             raise SystemExit("skip-plan requires an explicitly approved plan artifact; run /flow-plan, mark it approved, or omit --skip-plan")
-        task_path = f".workflow/tasks/feature/{slugify(request)}.json"
-        path = project_root / task_path
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(render_feature_task(request, approved_plan_path), ensure_ascii=False, indent=2), encoding='utf-8')
+        task_path = write_feature_task(project_root, request, approved_plan_path)
         artifacts.append(task_path)
     elif mode == "init":
-        task_path = f".workflow/tasks/init/{slugify(request)}.json"
-        path = project_root / task_path
-        path.parent.mkdir(parents=True, exist_ok=True)
-        write_initial_task(path, render_init_task(request), preserve_existing=True)
+        task_path = write_init_task(project_root, request)
         artifacts = [task_path]
         roles = []
     elif mode == "qa":
-        task_path = f".workflow/tasks/qa/{slugify(request)}.json"
-        path = project_root / task_path
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(render_qa_task(request, qa_id), ensure_ascii=False, indent=2), encoding='utf-8')
+        task_path = write_qa_task(project_root, request, qa_id)
         artifacts.append(task_path)
     elif mode == "plan":
-        task_path = f".workflow/tasks/plan/{slugify(request)}.json"
-        path = project_root / task_path
-        path.parent.mkdir(parents=True, exist_ok=True)
-        write_plan_task(path, render_plan_doc(request, docs_used))
+        task_path = write_plan_mode_task(project_root, request, docs_used)
         artifacts.append(task_path)
     elif mode == "review":
-        task_path = f".workflow/tasks/review/{slugify(request)}.json"
-        path = project_root / task_path
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(render_review_task(request, docs_used, task), ensure_ascii=False, indent=2), encoding='utf-8')
+        task_path = write_review_task(project_root, request, docs_used, task)
         artifacts.append(task_path)
 
     return ModeContext(
