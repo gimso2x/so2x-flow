@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from workflow_contracts import contract_for_mode
+
 
 def load_text(path: Path) -> str:
     if not path.exists():
@@ -40,14 +42,18 @@ def build_prompt(
     approved_plan_match_reason: str | None = None,
 ) -> str:
     prompt_template = load_prompt_template(prompts_dir, role)
+    mode_contract = contract_for_mode(mode)
+    required_markers = mode_contract.output_contract.markers if mode_contract.output_contract else ()
     lines = [
         f"role: {role}",
         f"mode: {mode}",
+        f"artifact_kind: {mode_contract.artifact_kind}",
         f"request: {request}",
         f"docs_used: {', '.join(docs_used) if docs_used else '(none)'}",
         f"design_doc: {design_doc or '(none)'}",
         f"approved_plan_path: {approved_plan_path or '(none)'}",
         f"approved_plan_match_reason: {approved_plan_match_reason or '(none)'}",
+        f"required_output_markers: {', '.join(required_markers) if required_markers else '(none)'}",
         "",
         "prompt_template:",
         prompt_template.strip(),

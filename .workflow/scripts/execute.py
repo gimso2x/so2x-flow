@@ -53,6 +53,10 @@ BOOTSTRAP_ARTIFACTS = [
     ".workflow/scripts/hooks/tdd-guard.sh",
     ".workflow/scripts/hooks/dangerous-cmd-guard.sh",
     ".workflow/scripts/hooks/circuit-breaker.sh",
+    ".workflow/scripts/hooks/validate-output.sh",
+    ".workflow/scripts/hooks/tool-output-truncator.sh",
+    ".workflow/scripts/hooks/edit-error-recovery.sh",
+    ".workflow/scripts/hooks/tool-failure-tracker.sh",
 ]
 
 BOOTSTRAP_DIRS = [

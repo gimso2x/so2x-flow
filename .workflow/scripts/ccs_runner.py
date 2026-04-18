@@ -1,255 +1,113 @@
 from __future__ import annotations
 
-import shlex
-import shutil
 import subprocess
-from dataclasses import dataclass
+import sys
+from pathlib import Path
 
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
 
-BUILTIN_CCS_PROFILES = {"codex", "claude"}
-DEFAULT_ROLE_TIMEOUT = 300
-MAX_ERROR_OUTPUT_CHARS = 400
+import runner_commands as _commands
+import runner_execution as _execution
+import runner_resolution as _resolution
 
+BUILTIN_CCS_PROFILES = _resolution.BUILTIN_CCS_PROFILES
+DEFAULT_ROLE_TIMEOUT = _execution.DEFAULT_ROLE_TIMEOUT
+MAX_ERROR_OUTPUT_CHARS = _execution.MAX_ERROR_OUTPUT_CHARS
+RoleResult = _execution.RoleResult
+RunnerError = _resolution.RunnerError
+RunnerResolution = _resolution.RunnerResolution
 
-class RunnerError(RuntimeError):
-    """Raised when a runner subprocess fails."""
-
-
-@dataclass
-class RunnerResolution:
-    requested_runner: str
-    selected_runner: str
-    fallback_used: bool
-    fallback_reason: str | None
-
-
-@dataclass
-class RoleResult:
-    role: str
-    runner: str
-    engine: str
-    model: str
-    status: str
-    output: str
-    command: list[str]
-    command_preview: str
-    fallback_reason: str | None = None
+subprocess = subprocess
+_base_has_command = _resolution.has_command
+_base_probe_ccs_profile = _resolution.probe_ccs_profile
 
 
 def has_command(name: str) -> bool:
-    return shutil.which(name) is not None
+    return _base_has_command(name)
 
 
 def resolve_runner(requested_runner: str, *, has_ccs: bool | None = None) -> RunnerResolution:
-    ccs_available = has_ccs if has_ccs is not None else has_command("ccs")
-    normalized = requested_runner or "auto"
-    if normalized == "claude":
-        return RunnerResolution(normalized, "claude", False, None)
-    if normalized == "auto":
-        if ccs_available:
-            return RunnerResolution(normalized, "ccs", False, None)
-        return RunnerResolution(normalized, "claude", True, "ccs not found in PATH")
-    if normalized == "ccs":
-        if ccs_available:
-            return RunnerResolution(normalized, "ccs", False, None)
-        return RunnerResolution(normalized, "claude", True, "ccs not found in PATH")
-    raise ValueError(f"Unsupported runner: {requested_runner}")
+    return _resolution.resolve_runner(requested_runner, has_ccs=has_ccs)
 
 
 def probe_ccs_profile(profile: str, command: str = "ccs") -> tuple[bool, str | None]:
-    try:
-        completed = subprocess.run([command, profile, "--help"], capture_output=True, text=True, timeout=20)
-    except (OSError, subprocess.TimeoutExpired) as exc:
-        return False, str(exc)
-    stderr = (completed.stderr or "").strip()
-    stdout = (completed.stdout or "").strip()
-    combined = "\n".join(part for part in (stdout, stderr) if part).strip()
-    if completed.returncode != 0 and f"Profile '{profile}' not found" in combined:
-        return False, combined
-    return True, combined or None
+    return _base_probe_ccs_profile(profile, command=command)
 
 
 def is_missing_ccs_profile(profile: str, detail: str | None) -> bool:
-    return bool(detail and f"Profile '{profile}' not found" in detail)
+    return _resolution.is_missing_ccs_profile(profile, detail)
 
 
-def resolve_role_runner(
-    *,
-    requested_runner: str,
-    role: str,
-    role_config: dict,
-    runtime_config: dict | None = None,
-    has_ccs: bool | None = None,
-    has_claude: bool | None = None,
-) -> RunnerResolution:
-    runtime = runtime_config or {}
-    base_resolution = resolve_runner(requested_runner, has_ccs=has_ccs)
-    if base_resolution.selected_runner != "ccs":
-        return base_resolution
-
-    profile = role_config.get("ccs_profile") or role_config.get("profile")
-    ccs_command = role_config.get("command", "ccs")
-    if not profile or profile in BUILTIN_CCS_PROFILES:
-        return base_resolution
-
-    profile_ok, detail = probe_ccs_profile(profile, command=ccs_command)
-    if profile_ok:
-        return base_resolution
-    if not is_missing_ccs_profile(profile, detail):
-        raise RunnerError(f"role={role} ccs profile probe failed for '{profile}': {detail or 'unknown error'}")
-
-    fallback_reason = f"role={role} profile '{profile}' is not available via ccs"
-    if detail:
-        fallback_reason = f"{fallback_reason}: {detail}"
-
-    role_claude_config = role_config.get("claude", {}) if isinstance(role_config.get("claude"), dict) else {}
-    claude_command = role_claude_config.get("command") or role_config.get("claude_command") or runtime.get("claude_command", "claude")
-    claude_available = has_claude if has_claude is not None else has_command(claude_command)
-    if claude_available:
-        return RunnerResolution(base_resolution.requested_runner, "claude", True, fallback_reason)
-
-    raise RunnerError(f"{fallback_reason}; claude fallback is unavailable ({claude_command})")
+def resolve_role_runner(**kwargs) -> RunnerResolution:
+    original_probe = _resolution.probe_ccs_profile
+    original_has_command = _resolution.has_command
+    try:
+        _resolution.probe_ccs_profile = probe_ccs_profile
+        _resolution.has_command = has_command
+        return _resolution.resolve_role_runner(**kwargs)
+    finally:
+        _resolution.probe_ccs_profile = original_probe
+        _resolution.has_command = original_has_command
 
 
 def build_ccs_command(role: str, prompt: str, role_config: dict) -> list[str]:
-    profile = role_config.get("ccs_profile") or role_config.get("profile")
-    target = profile or role_config.get("engine", role)
-    command = [role_config.get("command", "ccs"), target]
-    model = role_config.get("model")
-    extra_args = role_config.get("extra_args", [])
-    if model and model != target:
-        command.extend(["--model", model])
-    command.extend(extra_args)
-    command.append(prompt)
-    return command
+    return _commands.build_ccs_command(role=role, prompt=prompt, role_config=role_config)
 
 
 def build_claude_command(role: str, prompt: str, role_config: dict, runtime_config: dict | None = None) -> list[str]:
-    runtime = runtime_config or {}
-    command = [role_config.get("command", runtime.get("claude_command", "claude"))]
-    extra_args = role_config.get("extra_args", [])
-    claude_role = role_config.get("claude_role")
-    if claude_role:
-        command.extend(["--append-system-prompt", f"role={claude_role}"])
-    command.extend(extra_args)
-    command.extend([runtime.get("claude_headless_flag", "-p"), prompt])
-    return command
+    return _commands.build_claude_command(role=role, prompt=prompt, role_config=role_config, runtime_config=runtime_config)
 
 
-def build_runner_command(
-    *,
-    runner: str,
-    role: str,
-    prompt: str,
-    role_config: dict,
-    runtime_config: dict | None = None,
-) -> list[str]:
-    if runner == "ccs":
-        return build_ccs_command(role=role, prompt=prompt, role_config=role_config)
-    if runner == "claude":
-        return build_claude_command(role=role, prompt=prompt, role_config=role_config, runtime_config=runtime_config)
-    raise ValueError(f"Unsupported runner: {runner}")
+def build_runner_command(*, runner: str, role: str, prompt: str, role_config: dict, runtime_config: dict | None = None) -> list[str]:
+    return _commands.build_runner_command(runner=runner, role=role, prompt=prompt, role_config=role_config, runtime_config=runtime_config)
 
 
 def command_preview(command: list[str]) -> str:
-    return shlex.join(command)
-
+    return _commands.command_preview(command)
 
 
 def timeout_for_role(role: str, runtime_config: dict | None = None) -> int:
-    runtime = runtime_config or {}
-    role_timeouts = runtime.get("role_timeouts") or {}
-    if not isinstance(role_timeouts, dict):
-        raise RunnerError("runtime.role_timeouts must be a mapping of role -> timeout seconds")
-    timeout = role_timeouts.get(role, DEFAULT_ROLE_TIMEOUT)
-    if not isinstance(timeout, int) or timeout <= 0:
-        raise RunnerError(f"runtime.role_timeouts.{role} must be a positive integer")
-    return timeout
-
-
-
-def _format_output_snippet(value: str | None) -> str:
-    text = (value or "").strip()
-    if not text:
-        return "(none)"
-    if len(text) <= MAX_ERROR_OUTPUT_CHARS:
-        return text
-    return f"{text[:MAX_ERROR_OUTPUT_CHARS]}...(truncated {len(text) - MAX_ERROR_OUTPUT_CHARS} chars)"
-
+    return _execution.timeout_for_role(role, runtime_config)
 
 
 def authentication_hint(runner: str, stderr: str | None) -> str | None:
-    if runner != "ccs" or not stderr:
-        return None
-    lowered = stderr.lower()
-    if "authentication required for openai codex" in lowered:
-        return "ccs is installed but Codex auth is not configured; run `ccs setup` or `ccs codex --auth` and finish login before live run"
-    return None
+    return _execution.authentication_hint(runner, stderr)
 
 
-def run_role(
-    *,
-    runner: str,
-    role: str,
-    prompt: str,
-    role_config: dict,
-    runtime_config: dict | None = None,
-    dry_run: bool,
-    fallback_reason: str | None = None,
-) -> RoleResult:
-    command = build_runner_command(
-        runner=runner,
-        role=role,
-        prompt=prompt,
-        role_config=role_config,
-        runtime_config=runtime_config,
-    )
-    preview = command_preview(command)
-    engine = role_config.get("engine", role_config.get("claude_role", role))
-    model = role_config.get("model", runner)
-    if dry_run:
-        output = f"[dry-run] runner={runner} role={role} engine={engine} model={model} command={preview}\n\n{prompt}"
-        return RoleResult(role=role, runner=runner, engine=engine, model=model, status="dry-run", output=output, command=command, command_preview=preview, fallback_reason=fallback_reason)
-
-    raise NotImplementedError(f"Live {runner} execution is not implemented yet for role={role}")
+def run_role(**kwargs) -> RoleResult:
+    return _execution.run_role(**kwargs)
 
 
-def run_role_subprocess(
-    *,
-    runner: str,
-    role: str,
-    prompt: str,
-    role_config: dict,
-    runtime_config: dict | None = None,
-    timeout: int | None = None,
-    fallback_reason: str | None = None,
-) -> RoleResult:
-    command = build_runner_command(
-        runner=runner,
-        role=role,
-        prompt=prompt,
-        role_config=role_config,
-        runtime_config=runtime_config,
-    )
-    preview = command_preview(command)
-    resolved_timeout = timeout if timeout is not None else timeout_for_role(role, runtime_config)
+def run_role_subprocess(**kwargs) -> RoleResult:
+    original_run = _execution.subprocess.run
     try:
-        completed = subprocess.run(command, capture_output=True, text=True, timeout=resolved_timeout, check=True)
-    except subprocess.TimeoutExpired:
-        detail = f"runner={runner} role={role} timed out after {resolved_timeout}s: {preview}"
-        if fallback_reason:
-            detail = f"{detail}\nfallback_reason: {fallback_reason}"
-        raise RunnerError(detail)
-    except subprocess.CalledProcessError as exc:
-        hint = authentication_hint(runner, exc.stderr)
-        stdout = _format_output_snippet(getattr(exc, "output", None))
-        stderr = _format_output_snippet(exc.stderr)
-        detail = f"runner={runner} role={role} exited {exc.returncode}: {preview}\nstdout: {stdout}\nstderr: {stderr}"
-        if fallback_reason:
-            detail = f"{detail}\nfallback_reason: {fallback_reason}"
-        if hint:
-            detail = f"{detail}\nhint: {hint}"
-        raise RunnerError(detail) from exc
-    engine = role_config.get("engine", role_config.get("claude_role", role))
-    model = role_config.get("model", runner)
-    return RoleResult(role=role, runner=runner, engine=engine, model=model, status="success", output=completed.stdout, command=command, command_preview=preview, fallback_reason=fallback_reason)
+        _execution.subprocess.run = subprocess.run
+        return _execution.run_role_subprocess(**kwargs)
+    finally:
+        _execution.subprocess.run = original_run
+
+
+__all__ = [
+    "BUILTIN_CCS_PROFILES",
+    "DEFAULT_ROLE_TIMEOUT",
+    "MAX_ERROR_OUTPUT_CHARS",
+    "RoleResult",
+    "RunnerError",
+    "RunnerResolution",
+    "authentication_hint",
+    "build_ccs_command",
+    "build_claude_command",
+    "build_runner_command",
+    "command_preview",
+    "has_command",
+    "is_missing_ccs_profile",
+    "probe_ccs_profile",
+    "resolve_role_runner",
+    "resolve_runner",
+    "run_role",
+    "run_role_subprocess",
+    "subprocess",
+    "timeout_for_role",
+]

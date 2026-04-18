@@ -1,3 +1,10 @@
+---
+validate_prompt: |
+  Confirm the output still keeps the init artifact as .workflow/tasks/init/<slug>.json,
+  includes PRD/ARCHITECTURE/QA/DESIGN question coverage, and stays in needs_user_input
+  until answers exist. Do not fabricate project docs before the user answers.
+---
+
 # flow-init
 
 Use this skill to bootstrap a new so2x-flow workspace.

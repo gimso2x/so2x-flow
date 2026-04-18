@@ -1,3 +1,12 @@
+---
+validate_prompt: |
+  Confirm the output still includes Context Snapshot, Open Questions, Options,
+  Recommendation, Implementation Slices, Verification Gates, Draft Plan,
+  Approval Gate, and Next Step Prompt.
+  The response must not auto-transition into flow-feature before approval.
+  End with a closed approval question.
+---
+
 # flow-plan
 
 Use this skill to turn a rough requirement into an approved implementation plan without implementation.
@@ -6,6 +15,7 @@ Use this skill to turn a rough requirement into an approved implementation plan 
 - `flow-plan`은 구현 전에 방향과 slice를 고정하는 단계다.
 - 실사용 기본 루프는 보통 `flow-plan` → `flow-feature` → `/simplify` 반복 → convergence `0` → squash 순서다.
 - `flow-plan`의 역할은 `/simplify` 이전까지의 구현 방향을 흔들리지 않게 고정하는 데 있다.
+- `/simplify`는 별도 `flow-*` workflow가 아니라 승인된 plan 기준 구현이 끝난 뒤 붙는 마감 루프다.
 
 ## Input
 - 요구사항/문제/아이디어 한 줄

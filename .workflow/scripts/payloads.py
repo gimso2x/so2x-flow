@@ -1,5 +1,14 @@
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
+from workflow_contracts import contract_for_mode
+
 
 def build_payload(
     *,
@@ -18,8 +27,10 @@ def build_payload(
     failed_stage: str | None = None,
     failure_message: str | None = None,
 ) -> dict:
+    contract = contract_for_mode(mode)
     return {
         "mode": mode,
+        "artifact_kind": contract.artifact_kind,
         "request": request,
         "dry_run": dry_run,
         "requested_runner": resolution.requested_runner,
@@ -43,6 +54,7 @@ def build_payload(
 
 def print_summary(payload: dict) -> None:
     print(f"mode: {payload['mode']}")
+    print(f"artifact_kind: {payload['artifact_kind']}")
     print(f"request: {payload['request']}")
     print(f"dry_run: {payload['dry_run']}")
     print(f"requested_runner: {payload['requested_runner']}")

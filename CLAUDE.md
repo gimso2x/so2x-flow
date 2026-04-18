@@ -44,11 +44,14 @@
 - QA/debug work should follow root-cause-first debugging; do not guess-fix before reproduction and investigation.
 - Slice completion should pass a review gate (spec compliance / quality / regression risk) before being treated as done.
 - If work splits cleanly, prefer subagent-style task isolation per slice rather than one giant mixed execution context.
+- `/simplify` is not a separate `flow-*` workflow; it is the default finish loop after `flow-feature` or after implementation based on an approved plan.
 - Use `.workflow/config/ccs-map.yaml` to select `auto`, `ccs`, or `claude` runner.
 - Canonical plan artifacts live at `.workflow/tasks/plan/<slug>.json`.
+- Execution payloads live at `.workflow/outputs/<mode>/<slug>.json`.
 - In v0, `.workflow/scripts/execute.py` is validated primarily in `--dry-run` mode.
 - `runtime.allow_live_run` must be a real YAML boolean (`true` or `false`), not a string.
 - `ccs` shortcut roles run as `ccs <profile> "prompt"`; do not assume `-p` or `--model` for shortcut execution.
 - If a configured `ccs_profile` is missing, execute-level preflight falls back that role to `claude -p` when Claude is available; the reason is printed in `fallback_reason`.
 - role별 `ccs_profile`이 없으면 그 role만 `claude -p`로 fallback하고 이유를 role 결과에 남긴다.
 - Use `.claude/settings.json` hooks as deterministic guardrails; do not rely on CLAUDE.md text alone for enforcement.
+- Validation hooks in this scaffold are lightweight reminders/recovery helpers first, not heavy autonomous control flow.

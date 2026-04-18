@@ -339,7 +339,7 @@ def test_plan_dry_run_uses_single_canonical_task_artifact(tmp_path: Path):
     output_json = output_path(workspace, result.stdout, "output_json")
     payload = read_json(output_json)
     assert payload["mode"] == "plan"
-    assert output_json == workspace / ".workflow" / "tasks" / "plan" / "결제-기능-작업-분해.json"
+    assert output_json == workspace / ".workflow" / "outputs" / "plan" / "결제-기능-작업-분해.json"
     assert "output_md" not in result.stdout
     assert payload["artifacts"] == [".workflow/tasks/plan/결제-기능-작업-분해.json"]
 
@@ -349,7 +349,7 @@ def test_plan_dry_run_uses_single_canonical_task_artifact(tmp_path: Path):
     assert plan_json["status"] == "draft"
     assert plan_json["approved"] is False
     assert ".workflow/docs/PRD.md" in plan_json["related_docs"]
-    assert ".workflow/docs/PRD.md" in plan_json["docs_used"]
+    assert ".workflow/docs/PRD.md" in payload["docs_used"]
     assert "Option A" in plan_json["options"]
     assert plan_json["recommendation"] == "추천안을 한 줄로 명시하고 이유를 붙인다."
     assert "이 설계 방향 자체를 확정할지 사용자 승인을 요청한다." in plan_json["approval_gate"]

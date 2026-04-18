@@ -1,3 +1,10 @@
+---
+validate_prompt: |
+  Confirm the output still includes Reproduction, Expected, Actual, Root Cause Hypothesis,
+  Minimal Fix, Verification, and Residual Risk.
+  The flow must stay root-cause-first and should not skip the QA task artifact.
+---
+
 # flow-qa
 
 Use this skill when a QA issue or bug report needs a document-first fix flow.

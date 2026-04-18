@@ -3,15 +3,14 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from task_artifacts import (
+from artifact_renderers import (
     render_feature_task,
     render_init_task,
     render_plan_doc,
     render_qa_task,
     render_review_task,
-    write_initial_task,
-    write_plan_task,
 )
+from artifact_store import write_initial_task, write_plan_task
 from workflow_context import slugify
 
 

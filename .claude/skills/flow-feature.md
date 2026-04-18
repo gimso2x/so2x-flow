@@ -1,3 +1,11 @@
+---
+validate_prompt: |
+  Confirm the output still includes Approved Direction, Implementation Slice, Out of Scope,
+  Proposed Steps, Verification, Review Gate, Follow-up Slice, and Next Step Prompt.
+  If no approved plan exists, the response must clearly stop and ask whether to run flow-plan first.
+  End with a closed approval question rather than an open-ended suggestion.
+---
+
 # flow-feature
 
 Use this skill when an approved product or engineering slice is ready to execute.
@@ -5,6 +13,7 @@ Use this skill when an approved product or engineering slice is ready to execute
 ## Position in real workflow
 - `flow-feature`는 구현 단계 본체다.
 - 실사용 기본 루프는 보통 `flow-plan` → `flow-feature` → `/simplify` 반복 → convergence `0` → squash 순서다.
+- `/simplify`는 별도 `flow-*` workflow가 아니라 `flow-feature` 뒤에 붙는 기본 마감 루프다.
 - `flow-review`, `flow-qa`는 필요할 때 추가하고, GitHub PR 운영은 선택 사항이다.
 
 ## Input

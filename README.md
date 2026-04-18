@@ -89,6 +89,7 @@ rmdir .tmp 2>/dev/null || true
 ## 실사용 기본 경로
 
 so2x-flow를 실사용할 때 기본 경로는 plan/feature로 구현까지 밀고, PR 직전에는 `/simplify` 반복 루프로 마무리하는 방식이다.
+`/simplify`는 별도 `flow-*` workflow가 아니라, `flow-feature` 완료 뒤나 승인된 plan 기준 구현이 끝난 뒤에 붙는 마감 루프다.
 
 1. 필요하면 `/flow-plan`으로 방향과 slice를 먼저 고정한다.
 2. `/flow-feature`로 구현과 테스트를 끝낸다.
@@ -205,6 +206,14 @@ ccs <profile> "prompt"
 
 - `PreToolUse` + `dangerous-cmd-guard.sh` — 위험한 Bash 명령을 치기 전에 가드
   - 예: `rm -rf`, 무차별 삭제/이동 같은 명령 차단
+- `PostToolUse` + `validate-output.sh` — `flow-*` skill에 validation contract가 있으면 완료 직후 검증 리마인더를 다시 붙인다
+  - 예: 필수 섹션, verification, 승인 게이트 질문 누락 방지
+- `PostToolUse` + `tool-output-truncator.sh` — 큰 도구 출력이 나오면 후속 컨텍스트용 요약을 붙이고 에러 라인은 보존한다
+  - 예: 긴 dry-run/grep/bash 출력은 요약본을 추가하고 error/traceback 라인은 유지
+- `PostToolUseFailure` + `edit-error-recovery.sh` — Edit/Write 실패 패턴별 복구 가이드를 바로 준다
+  - 예: old_string mismatch, ambiguous match, permission 문제 재시도 가이드
+- `PostToolUseFailure` + `tool-failure-tracker.sh` — 같은 도구 실패가 짧은 시간에 반복되면 전략 전환을 유도한다
+  - 예: 같은 patch/edit 실패 3회 이상이면 파일 재읽기나 다른 접근 유도
 - `UserPromptSubmit` + `tdd-guard.sh` — task 문서/계획 없이 바로 구현으로 튀는 흐름을 견제
   - 예: task 문서 없이 바로 구현부터 하려는 프롬프트 견제
 - `Stop` + `circuit-breaker.sh` — 종료 직전 최소한의 브레이크 포인트 제공
@@ -258,7 +267,8 @@ flow-review로 "이번 변경 QA 관점 점검" 리뷰 JSON을 만들어줘.
 - plan 결과: `.workflow/tasks/plan/<slug>.json`
   - 기본값: `status: draft`, `approved: false`
 - review 결과: `.workflow/tasks/review/<slug>.json`
-- run 이력 JSON은 따로 남기지 않는다. 각 task JSON이 canonical 산출물이다.
+- canonical task 산출물은 계속 `.workflow/tasks/...` 아래에 둔다.
+- 실행 결과 payload는 별도로 `.workflow/outputs/<mode>/<slug>.json`에 남긴다.
 
 ## 검증
 

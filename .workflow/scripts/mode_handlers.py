@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from workflow_context import select_approved_plan
+from workflow_contracts import contract_for_mode
 from workflow_docs import collect_docs, load_docs_bundle
 from workflow_tasks import (
     write_feature_task,
@@ -44,7 +45,7 @@ def prepare_mode_context(
 ) -> ModeContext:
     docs_used, design_doc = collect_docs(project_root, workflow_root, mode, docs, task, with_design)
     docs_bundle = load_docs_bundle(project_root, docs_used, load_text)
-    configured_roles = config["modes"][mode]["roles"]
+    configured_roles = contract_for_mode(mode).roles
     skip_roles = {"planner", "qa_planner"} if skip_plan else set()
     roles = [] if mode == "init" else [role for role in configured_roles if role not in skip_roles]
     planner_output = None

@@ -11,6 +11,45 @@
         ]
       }
     ],
+    "PostToolUse": [
+      {
+        "matcher": "Skill",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".workflow/scripts/hooks/validate-output.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash|Read|Grep|Glob|WebFetch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".workflow/scripts/hooks/tool-output-truncator.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".workflow/scripts/hooks/edit-error-recovery.sh"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".workflow/scripts/hooks/tool-failure-tracker.sh"
+          }
+        ]
+      }
+    ],
     "UserPromptSubmit": [
       {
         "hooks": [

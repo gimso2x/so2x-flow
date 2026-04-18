@@ -1,3 +1,10 @@
+---
+validate_prompt: |
+  Confirm the output still includes Spec Gap, Architecture Concern, Test Gap,
+  QA Watchpoints, Security / Regression Risk, and Verdict.
+  Keep the review fail-closed and do not turn it into an implementation patch.
+---
+
 # flow-review
 
 Use this skill to review planned or implemented work against project documents.
