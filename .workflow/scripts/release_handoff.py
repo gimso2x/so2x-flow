@@ -5,6 +5,7 @@ import argparse
 import subprocess
 from collections import OrderedDict
 from pathlib import Path
+from typing import Any
 
 
 def parse_args() -> argparse.Namespace:
@@ -15,6 +16,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--pr-number", type=int, help="Optional PR number used in output filenames and title")
     parser.add_argument("--title", help="Optional release title override")
     parser.add_argument("--repo", default=".", help="Repository root (default: current directory)")
+    parser.add_argument("--publish-pr-body", action="store_true", help="Publish generated PR body to GitHub via gh pr edit")
+    parser.add_argument("--publish-pr-number", type=int, help="Explicit PR number to publish with gh pr edit")
     return parser.parse_args()
 
 
@@ -27,6 +30,23 @@ def git(repo: Path, *args: str) -> str:
         check=True,
     )
     return result.stdout.strip()
+
+
+def run_command(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        list(args),
+        cwd=repo,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+
+
+def gh_json(repo: Path, *args: str) -> Any:
+    result = run_command(repo, "gh", *args)
+    import json
+
+    return json.loads(result.stdout)
 
 
 def diff_range(base_ref: str, head_ref: str) -> str:
@@ -125,6 +145,22 @@ def output_paths(output_dir: Path, pr_number: int | None) -> tuple[Path, Path, s
     return output_dir / f"RELEASE_NOTES{suffix}.md", output_dir / f"RELEASE_BODY{suffix}.md", title
 
 
+def resolve_publish_pr_number(repo: Path, args: argparse.Namespace) -> int:
+    if args.publish_pr_number is not None:
+        return args.publish_pr_number
+    if args.pr_number is not None:
+        return args.pr_number
+    data = gh_json(repo, "pr", "view", "--json", "number")
+    number = data.get("number")
+    if not isinstance(number, int):
+        raise SystemExit("Could not resolve PR number for `gh pr edit`. Pass --publish-pr-number.")
+    return number
+
+
+def publish_pr_body(repo: Path, pr_number: int, body_path: Path) -> None:
+    run_command(repo, "gh", "pr", "edit", str(pr_number), "--body-file", str(body_path))
+
+
 def main() -> int:
     args = parse_args()
     repo = Path(args.repo).resolve()
@@ -159,6 +195,13 @@ def main() -> int:
     print(f"body_path: {body_path}")
     print(f"commit_count: {len(commits)}")
     print(f"changed_file_count: {len(changed_files)}")
+    if args.publish_pr_body:
+        publish_pr_number = resolve_publish_pr_number(repo, args)
+        publish_pr_body(repo, publish_pr_number, body_path)
+        print(f"published_pr_body: true")
+        print(f"published_pr_number: {publish_pr_number}")
+    else:
+        print("published_pr_body: false")
     return 0
 
 

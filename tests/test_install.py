@@ -197,6 +197,8 @@ def test_readme_documents_smoke_test_entrypoint():
     assert "python3 -m pytest tests/test_execute.py -q -k docs_first_smoke_plan_feature_qa_sequence" in readme
     assert "release/handoff 문서 초안은 git diff 기준으로 자동 생성할 수 있다." in readme
     assert "python3 .workflow/scripts/release_handoff.py --base-ref origin/main --head-ref HEAD --pr-number 7 --output-dir ." in readme
+    assert "생성한 PR 본문을 현재 PR에 바로 반영하려면 `gh`를 붙이면 된다." in readme
+    assert "python3 .workflow/scripts/release_handoff.py --base-ref origin/main --head-ref HEAD --output-dir . --publish-pr-body" in readme
     assert "RELEASE_NOTES_PR7.md" in readme
     assert "RELEASE_BODY_PR7.md" in readme
     assert "설치 관점까지 포함한 real-world smoke는 빈 프로젝트 하나 만들어 실제 install 결과를 보는 게 제일 빠르다." in readme

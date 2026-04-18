@@ -1,10 +1,16 @@
+import importlib.util
 import subprocess
 import sys
 from pathlib import Path
+from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / ".workflow" / "scripts" / "release_handoff.py"
+SPEC = importlib.util.spec_from_file_location("so2x_flow_release_handoff", SCRIPT)
+release_handoff = importlib.util.module_from_spec(SPEC)
+assert SPEC.loader is not None
+SPEC.loader.exec_module(release_handoff)
 
 
 def run_script(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:
@@ -81,3 +87,42 @@ def test_release_handoff_handles_empty_diff_range(tmp_path: Path):
     body = (repo / "RELEASE_BODY.md").read_text(encoding="utf-8")
     assert "No commits found between `HEAD` and `HEAD`." in notes
     assert "## Latest commits\n- (none)" in body
+
+
+def test_release_handoff_can_publish_pr_body_with_explicit_pr_number(tmp_path: Path):
+    output_dir = tmp_path / "out"
+    output_dir.mkdir()
+    body_path = output_dir / "RELEASE_BODY.md"
+    body_path.write_text("body\n", encoding="utf-8")
+
+    args = release_handoff.parse_args.__globals__["argparse"].Namespace(
+        publish_pr_number=12,
+        pr_number=None,
+    )
+
+    with patch.object(release_handoff, "run_command") as run_command:
+        resolved = release_handoff.resolve_publish_pr_number(tmp_path, args)
+        release_handoff.publish_pr_body(tmp_path, resolved, body_path)
+
+    assert resolved == 12
+    run_command.assert_called_once_with(tmp_path, "gh", "pr", "edit", "12", "--body-file", str(body_path))
+
+
+def test_release_handoff_resolves_current_pr_number_when_publishing(tmp_path: Path):
+    output_dir = tmp_path / "out"
+    output_dir.mkdir()
+    body_path = output_dir / "RELEASE_BODY.md"
+    body_path.write_text("body\n", encoding="utf-8")
+
+    args = release_handoff.parse_args.__globals__["argparse"].Namespace(
+        publish_pr_number=None,
+        pr_number=None,
+    )
+
+    with patch.object(release_handoff, "gh_json", return_value={"number": 34}) as gh_json, patch.object(release_handoff, "run_command") as run_command:
+        resolved = release_handoff.resolve_publish_pr_number(tmp_path, args)
+        release_handoff.publish_pr_body(tmp_path, resolved, body_path)
+
+    assert resolved == 34
+    gh_json.assert_called_once_with(tmp_path, "pr", "view", "--json", "number")
+    run_command.assert_called_once_with(tmp_path, "gh", "pr", "edit", "34", "--body-file", str(body_path))
