@@ -36,7 +36,7 @@ def build_payload(
         "failed_role": failed_role,
         "failed_stage": failed_stage,
         "failure_message": failure_message,
-        "output_json": artifacts[0] if artifacts and artifacts[0].endswith('.json') else '',
+        "output_json": "",
     }
 
 

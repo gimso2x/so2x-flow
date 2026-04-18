@@ -479,6 +479,38 @@ def test_requested_ccs_falls_back_to_claude_when_ccs_missing(tmp_path: Path):
         assert "claude -p" in payload["role_results"][0]["command_preview"]
 
 
+def test_build_payload_leaves_output_json_empty_until_persisted(tmp_path: Path):
+    workspace = make_workspace(tmp_path)
+    payloads_path = workspace / ".workflow" / "scripts" / "payloads.py"
+    spec = importlib.util.spec_from_file_location("so2x_flow_payloads", payloads_path)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+
+    class Resolution:
+        requested_runner = "claude"
+        selected_runner = "claude"
+        fallback_used = False
+        fallback_reason = None
+
+    payload = module.build_payload(
+        mode="review",
+        request="출력 경로 확인",
+        dry_run=True,
+        resolution=Resolution(),
+        design_doc="DESIGN.md",
+        approved_plan_path=None,
+        approved_plan_match_reason=None,
+        docs_used=[".workflow/docs/QA.md"],
+        roles=["reviewer"],
+        role_results=[],
+        artifacts=[".workflow/tasks/review/출력-경로-확인.json"],
+    )
+
+    assert payload["output_json"] == ""
+
+
+
 def test_execute_uses_runner_resolution_layer_and_live_runner_path(tmp_path: Path):
     execute = (ROOT / ".workflow" / "scripts" / "execute.py").read_text(encoding="utf-8")
     execution_runtime = (ROOT / ".workflow" / "scripts" / "execution_runtime.py").read_text(encoding="utf-8")
