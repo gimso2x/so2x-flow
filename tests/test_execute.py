@@ -511,6 +511,116 @@ def test_build_payload_leaves_output_json_empty_until_persisted(tmp_path: Path):
 
 
 
+def test_run_roles_reports_runner_resolution_stage_separately(tmp_path: Path):
+    workspace = make_workspace(tmp_path)
+    runtime_path = workspace / ".workflow" / "scripts" / "execution_runtime.py"
+    scripts_dir = str(runtime_path.parent)
+    sys.path.insert(0, scripts_dir)
+    try:
+        spec = importlib.util.spec_from_file_location("so2x_flow_execution_runtime", runtime_path)
+        module = importlib.util.module_from_spec(spec)
+        assert spec.loader is not None
+        spec.loader.exec_module(module)
+
+        class Resolution:
+            selected_runner = "ccs"
+
+        class Context:
+            planner_output = None
+            roles = ["implementer"]
+            docs_used = [".workflow/docs/PRD.md"]
+            docs_bundle = "bundle"
+            task_path = None
+            design_doc = "DESIGN.md"
+            approved_plan_path = None
+            approved_plan_match_reason = None
+
+        def fake_resolve_role_runner(**kwargs):
+            raise RuntimeError("probe exploded")
+
+        module.resolve_role_runner = fake_resolve_role_runner
+
+        try:
+            module.run_roles(
+                config={"roles": {"implementer": {"ccs": {"command": "ccs"}}}},
+                resolution=Resolution(),
+                runtime_config={},
+                prompts_dir=workspace / ".workflow" / "prompts",
+                project_root=workspace,
+                mode="feature",
+                request="로그인 기능 구현",
+                context=Context(),
+                qa_id=None,
+                dry_run=True,
+            )
+        except module.ExecutionFailure as exc:
+            assert exc.stage == "runner_resolution"
+            assert exc.role == "implementer"
+            assert exc.role_results == []
+            assert "probe exploded" in exc.message
+        else:
+            raise AssertionError("Expected ExecutionFailure for runner resolution")
+    finally:
+        sys.path.remove(scripts_dir)
+
+
+
+def test_run_roles_reports_prompt_build_stage_separately(tmp_path: Path):
+    workspace = make_workspace(tmp_path)
+    runtime_path = workspace / ".workflow" / "scripts" / "execution_runtime.py"
+    scripts_dir = str(runtime_path.parent)
+    sys.path.insert(0, scripts_dir)
+    try:
+        spec = importlib.util.spec_from_file_location("so2x_flow_execution_runtime", runtime_path)
+        module = importlib.util.module_from_spec(spec)
+        assert spec.loader is not None
+        spec.loader.exec_module(module)
+
+        class Resolution:
+            selected_runner = "claude"
+
+        class RoleResolution:
+            selected_runner = "claude"
+            fallback_reason = None
+
+        class Context:
+            planner_output = None
+            roles = ["reviewer"]
+            docs_used = [".workflow/docs/QA.md"]
+            docs_bundle = "bundle"
+            task_path = None
+            design_doc = "DESIGN.md"
+            approved_plan_path = None
+            approved_plan_match_reason = None
+
+        module.resolve_role_runner = lambda **kwargs: RoleResolution()
+        module.build_prompt = lambda **kwargs: (_ for _ in ()).throw(RuntimeError("prompt template missing"))
+
+        try:
+            module.run_roles(
+                config={"roles": {"reviewer": {"claude": {"command": "claude"}}}},
+                resolution=Resolution(),
+                runtime_config={},
+                prompts_dir=workspace / ".workflow" / "prompts",
+                project_root=workspace,
+                mode="review",
+                request="QA 관점 점검",
+                context=Context(),
+                qa_id=None,
+                dry_run=True,
+            )
+        except module.ExecutionFailure as exc:
+            assert exc.stage == "prompt_build"
+            assert exc.role == "reviewer"
+            assert exc.role_results == []
+            assert "prompt template missing" in exc.message
+        else:
+            raise AssertionError("Expected ExecutionFailure for prompt build")
+    finally:
+        sys.path.remove(scripts_dir)
+
+
+
 def test_execute_uses_runner_resolution_layer_and_live_runner_path(tmp_path: Path):
     execute = (ROOT / ".workflow" / "scripts" / "execute.py").read_text(encoding="utf-8")
     execution_runtime = (ROOT / ".workflow" / "scripts" / "execution_runtime.py").read_text(encoding="utf-8")
@@ -521,6 +631,8 @@ def test_execute_uses_runner_resolution_layer_and_live_runner_path(tmp_path: Pat
     assert "from execution_runtime import" in execute
     assert "def run_roles(" in execution_runtime
     assert "def validate_runtime_config(" in execution_runtime
+    assert "runner_resolution" in execution_runtime
+    assert "prompt_build" in execution_runtime
     assert "def build_prompt(" in prompt_builder
     assert "def prepare_mode_context(" in mode_handlers
     assert "def build_payload(" in payloads

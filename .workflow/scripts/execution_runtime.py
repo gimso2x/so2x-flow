@@ -46,29 +46,35 @@ def run_roles(*, config: dict, resolution, runtime_config: dict, prompts_dir, pr
     for role in context.roles:
         requested_role_config = config["roles"][role][resolution.selected_runner]
         shared_role_config = {**config["roles"][role], **requested_role_config}
-        role_resolution = resolve_role_runner(
-            requested_runner=resolution.selected_runner,
-            role=role,
-            role_config=shared_role_config,
-            runtime_config=runtime_config,
-        )
+        try:
+            role_resolution = resolve_role_runner(
+                requested_runner=resolution.selected_runner,
+                role=role,
+                role_config=shared_role_config,
+                runtime_config=runtime_config,
+            )
+        except Exception as exc:
+            raise ExecutionFailure(role=role, stage="runner_resolution", message=str(exc), role_results=role_results) from exc
         active_role_config = config["roles"][role][role_resolution.selected_runner]
         shared_role_config = {**config["roles"][role], **active_role_config}
-        prompt = build_prompt(
-            prompts_dir=prompts_dir,
-            project_root=project_root,
-            role=role,
-            mode=mode,
-            request=request,
-            docs_used=context.docs_used,
-            docs_bundle=context.docs_bundle,
-            task_path=context.task_path,
-            qa_id=qa_id,
-            planner_output=planner_output,
-            design_doc=context.design_doc,
-            approved_plan_path=context.approved_plan_path,
-            approved_plan_match_reason=context.approved_plan_match_reason,
-        )
+        try:
+            prompt = build_prompt(
+                prompts_dir=prompts_dir,
+                project_root=project_root,
+                role=role,
+                mode=mode,
+                request=request,
+                docs_used=context.docs_used,
+                docs_bundle=context.docs_bundle,
+                task_path=context.task_path,
+                qa_id=qa_id,
+                planner_output=planner_output,
+                design_doc=context.design_doc,
+                approved_plan_path=context.approved_plan_path,
+                approved_plan_match_reason=context.approved_plan_match_reason,
+            )
+        except Exception as exc:
+            raise ExecutionFailure(role=role, stage="prompt_build", message=str(exc), role_results=role_results) from exc
         try:
             if dry_run:
                 result = run_role(
