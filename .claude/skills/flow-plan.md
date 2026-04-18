@@ -66,4 +66,5 @@ Use this skill to turn a rough requirement into an approved implementation plan 
 - `flow-feature`는 `.workflow/tasks/plan/*.json` 중 승인된 artifact만 canonical plan으로 참조한다
 - v0 기본은 `--dry-run`
 - live 실행은 `runtime.allow_live_run=true`일 때만 허용
+- role별 `ccs_profile`이 없으면 그 role만 `claude -p`로 fallback하고 이유를 role 결과에 남긴다.
 - 현재 v0 `/flow-plan`은 markdown 계획 문서를 만들지 않는다.
