@@ -83,8 +83,17 @@ rmdir .tmp 2>/dev/null || true
 ## 한 줄 워크플로우
 
 ```text
-요구사항 입력 -> flow-plan -> 승인 -> flow-feature -> flow-review 또는 flow-qa
+구현 완료 -> /simplify 반복 -> convergence 0 -> squash -> 필요하면 flow-review 또는 flow-qa -> GitHub PR 운영은 옵션
 ```
+
+## PR 직전 기본 루프
+
+1. 기능 구현과 테스트를 끝낸다.
+2. `/simplify`를 반복한다.
+3. convergence가 `0`이 될 때까지 다시 `/simplify`를 돈다.
+4. convergence `0`이 되면 squash commit으로 정리한다.
+5. 필요하면 `flow-review`, `flow-qa`를 추가한다.
+6. GitHub PR 생성/본문 반영/checks watch는 필요할 때만 붙인다.
 
 ## 처음 3단계
 
@@ -142,9 +151,9 @@ rmdir .tmp 2>/dev/null || true
 ## 포함된 흐름
 
 - `flow-init` — PRD/ARCHITECTURE/QA/DESIGN 기준 질문지를 만들고 init task JSON을 남김
-- `flow-feature` — 승인된 slice 실행 + 가능하면 TDD + review gate
+- `flow-feature` — 승인된 slice 실행 + 가능하면 TDD
 - `flow-qa` — systematic debugging + test-first bugfix 흐름
-- `flow-review` — 문서와 태스크 기준 리뷰 JSON 생성 후 검토 수행
+- `flow-review` — 문서/태스크 기준 리뷰 흐름
 - `flow-plan` — thinking + planning + approval
 - `/flow-plan` — 구현 없이 계획만 수행
 
@@ -156,8 +165,8 @@ rmdir .tmp 2>/dev/null || true
 - feature와 QA를 같은 급의 workflow로 다룸
 - 새 동작/버그 수정은 가능하면 test-first로 진행
 - bugfix는 root cause 파악 전 추측성 patch 금지
-- 구현 완료는 review gate 통과 전까지 완료가 아님
-- slice가 충분히 독립적이면 task 단위 실행/검토를 분리
+- 구현 완료 뒤 기본 PR 전 루프는 `/simplify` 반복 → convergence `0` → squash다
+- GitHub PR 생성/본문 반영/checks watch는 필요할 때만 추가로 사용한다
 - scaffold 자체를 수정할 때는 `DESIGN.md`보다 구조/실행 원칙을 먼저 본다
 - orchestration은 얇게 유지
 - hooks는 `.claude/settings.json`에서 결정론적으로 강제

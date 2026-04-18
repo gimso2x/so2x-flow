@@ -3,8 +3,8 @@
 ## Core workflow skills
 - `flow-init`: bootstrap only
 - `flow-feature`: execute only after an approved plan exists
-- `flow-qa`: create `.workflow/tasks/qa/<slug>.json` first, then execute
-- `flow-review`: review against workflow docs and task artifacts
+- `flow-qa`: create `.workflow/tasks/qa/<slug>.json` first, then execute when QA work is needed
+- `flow-review`: review against workflow docs and task artifacts when review is needed
 - `flow-plan`: thinking + planning + approval, no implementation
 
 ## Claude Code working style

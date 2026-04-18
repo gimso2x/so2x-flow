@@ -155,7 +155,7 @@ def test_readme_documents_init_install_split_and_artifact_naming():
     assert "- `flow-init` — PRD/ARCHITECTURE/QA/DESIGN 기준 질문지를 만들고 init task JSON을 남김" in readme
     assert "`--skip-plan`에 쓰려면 `approved: true` 또는 `status: approved`로 명시 승인되어 있어야 한다" in readme
     assert "- `/flow-plan` — 구현 없이 계획만 수행" in readme
-    assert "- `flow-review` — 문서와 태스크 기준 리뷰 JSON 생성 후 검토 수행" in readme
+    assert "- `flow-review` — 문서/태스크 기준 리뷰 흐름" in readme
     assert "질문 기반 init task를 만들고 dry-run/live 결과를 남기는 운영 단계" in readme
     assert "현재 v0 `/flow-plan`은 `.workflow/tasks/plan/*.json` 하나를 canonical 계획 산출물로 남기는 docs-first 흐름이다." in readme
     assert '`allow_live_run`은 반드시 YAML boolean `true`/`false` 값이어야 한다' in readme
@@ -181,10 +181,13 @@ def test_install_output_and_readme_show_one_obvious_next_action():
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     install_script = (ROOT / ".workflow" / "scripts" / "install.py").read_text(encoding="utf-8")
     assert "다음 단계: /flow-init으로 프로젝트를 초기화하세요." in readme
-    assert "처음 3단계" in readme
-    assert "1. `/flow-init`으로 PRD/ARCHITECTURE/QA/DESIGN 질문지를 만든다." in readme
-    assert "2. 요구사항이 아직 크거나 애매하면 `/flow-plan`부터 돌린다." in readme
-    assert "3. 승인된 plan이 생긴 뒤에만 `/flow-feature`로 들어간다." in readme
+    assert "## PR 직전 기본 루프" in readme
+    assert "1. 기능 구현과 테스트를 끝낸다." in readme
+    assert "2. `/simplify`를 반복한다." in readme
+    assert "3. convergence가 `0`이 될 때까지 다시 `/simplify`를 돈다." in readme
+    assert "4. convergence `0`이 되면 squash commit으로 정리한다." in readme
+    assert "5. 필요하면 `flow-review`, `flow-qa`를 추가한다." in readme
+    assert "6. GitHub PR 생성/본문 반영/checks watch는 필요할 때만 붙인다." in readme
     assert "next_step: flow-init으로 이 프로젝트를 초기화해줘." in install_script
     assert "next_step_cli: /flow-init" in install_script
     assert "next_step_human: 다음 단계: /flow-init으로 프로젝트를 초기화하세요." in install_script
@@ -231,6 +234,10 @@ def test_core_workflow_contracts_are_consistent_across_readme_claude_and_flow_do
         assert contract in readme
         assert contract in claude
 
+    assert "구현 완료 -> /simplify 반복 -> convergence 0 -> squash -> 필요하면 flow-review 또는 flow-qa -> GitHub PR 운영은 옵션" in readme
+    assert "GitHub PR 생성/본문 반영/checks watch는 필요할 때만 추가로 사용한다" in readme
+    assert "create `.workflow/tasks/qa/<slug>.json` first, then execute when QA work is needed" in claude
+    assert "review against workflow docs and task artifacts when review is needed" in claude
     assert "승인된 plan이 없으면 여기서 멈추고 `flow-plan`으로 먼저 범위를 확정할지 묻는다" in feature_command
     assert "승인된 plan이 없으면 여기서 멈추고 `flow-plan` 선행 여부를 먼저 묻는다" in feature_skill
     assert "승인 전에는 `/flow-feature`로 자동 전환" in plan_skill
