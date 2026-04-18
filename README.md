@@ -130,6 +130,15 @@ rmdir .tmp 2>/dev/null || true
 - init은 planner를 돌리지 않고 `.workflow/tasks/init/<slug>.json` 질문지만 유지/갱신한다.
 - 즉, 설치와 운영 초기화는 일부러 분리돼 있다. 파일 배포는 install, 워크플로우 실행은 init 질문지 작성이다.
 
+## 처음 3단계
+
+1. `/flow-init`으로 PRD/ARCHITECTURE/QA/DESIGN 질문지를 만든다.
+2. 요구사항이 아직 크거나 애매하면 `/flow-plan`부터 돌린다.
+3. 승인된 plan이 생긴 뒤에만 `/flow-feature`로 들어간다.
+
+마지막 한 줄 안내는 항상 이걸 기준으로 보면 된다.
+- 다음 단계: /flow-init으로 프로젝트를 초기화하세요.
+
 ## 언제 무엇부터 시작하나
 
 ### `flow-plan`으로 시작

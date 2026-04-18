@@ -177,6 +177,19 @@ def test_readme_install_prompt_forces_single_turn_completion_without_recap_only(
     assert '문구는 정확히 `다음 단계: /flow-init으로 프로젝트를 초기화하세요.` 로 써' in readme
 
 
+def test_install_output_and_readme_show_one_obvious_next_action():
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    install_script = (ROOT / ".workflow" / "scripts" / "install.py").read_text(encoding="utf-8")
+    assert "다음 단계: /flow-init으로 프로젝트를 초기화하세요." in readme
+    assert "처음 3단계" in readme
+    assert "1. `/flow-init`으로 PRD/ARCHITECTURE/QA/DESIGN 질문지를 만든다." in readme
+    assert "2. 요구사항이 아직 크거나 애매하면 `/flow-plan`부터 돌린다." in readme
+    assert "3. 승인된 plan이 생긴 뒤에만 `/flow-feature`로 들어간다." in readme
+    assert "next_step: flow-init으로 이 프로젝트를 초기화해줘." in install_script
+    assert "next_step_cli: /flow-init" in install_script
+    assert "first_run_path: /flow-init -> /flow-plan -> /flow-feature" in install_script
+
+
 def test_core_workflow_contracts_are_consistent_across_readme_claude_and_flow_docs():
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     claude = (ROOT / "CLAUDE.md").read_text(encoding="utf-8")
