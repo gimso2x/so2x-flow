@@ -140,6 +140,10 @@ def test_command_and_skill_docs_use_workflow_paths_consistently():
     assert "## Forbidden" in feature_skill
     assert "role별 `ccs_profile`이 없으면 그 role만 `claude -p`로 fallback" in feature_skill
     assert "구현/테스트가 끝난 뒤 기본 마감 루프는 `/simplify` 반복 → convergence `0` → squash다" in feature_skill
+    assert "`/simplify`는 가능하면 현재 diff / 현재 slice 범위로만 돌린다" in feature_skill
+    assert "매회 `/simplify`는 최대 2~3개 개선만 처리하고, convergence 요약은 짧게 남긴다" in feature_skill
+    assert "convergence가 `0`이면 바로 종료하고 squash한다" in feature_skill
+    assert "convergence가 작더라도 반복은 보통 2~3회를 넘기지 않는다" in feature_skill
     assert "`flow-review`, `flow-qa`는 필요할 때만 추가하고, GitHub PR 운영은 선택 사항이다" in feature_skill
     assert "## Input" in qa_skill
     assert "## Outputs" in qa_skill

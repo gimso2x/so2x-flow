@@ -72,6 +72,10 @@ feature task와 응답에는 최소한 아래 항목이 있어야 한다.
 - 최신 plan이 있어도 요청과 안 맞으면 연결하지 않는다
 - implementer는 planner 결과와 승인된 plan 문맥이 있을 때만 그 최소 범위로 실행한다
 - 구현/테스트가 끝난 뒤 기본 마감 루프는 `/simplify` 반복 → convergence `0` → squash다
+- `/simplify`는 가능하면 현재 diff / 현재 slice 범위로만 돌린다
+- 매회 `/simplify`는 최대 2~3개 개선만 처리하고, convergence 요약은 짧게 남긴다
+- convergence가 `0`이면 바로 종료하고 squash한다
+- convergence가 작더라도 반복은 보통 2~3회를 넘기지 않는다
 - `flow-review`, `flow-qa`는 필요할 때만 추가하고, GitHub PR 운영은 선택 사항이다
 - v0 기본은 `--dry-run`
 - live 실행은 `runtime.allow_live_run=true`일 때만 허용
