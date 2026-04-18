@@ -1,6 +1,7 @@
 # flow commands
 
 이 디렉토리의 command 문서는 so2x-flow skill을 호출하는 얇은 wrapper다.
+skill만 있어도 workflow 정의는 성립하고, command는 `/flow-*` 슬래시 UX가 필요할 때만 붙이면 된다.
 
 명령 목록
 - `flow-init`

@@ -2,6 +2,11 @@
 
 Use this skill when an approved product or engineering slice is ready to execute.
 
+## Position in real workflow
+- `flow-feature`는 구현 단계 본체다.
+- 실사용 기본 루프는 보통 `flow-plan` → `flow-feature` → `/simplify` 반복 → convergence `0` → squash 순서다.
+- `flow-review`, `flow-qa`는 필요할 때 추가하고, GitHub PR 운영은 선택 사항이다.
+
 ## Input
 - feature 요청 한 줄
 - 필요하면 범위, 관련 문서, 제약
@@ -30,9 +35,10 @@ Use this skill when an approved product or engineering slice is ready to execute
 5. `Proposed Steps`를 planner가 구체화한다
 6. implementer는 planner 결과만 따라 최소 범위로 실행한다
 7. 새 동작/버그 수정은 가능하면 failing test를 먼저 만들고 구현한다
-8. slice 구현 후 spec/quality review gate를 통과시킨다
-9. 검증 결과와 남은 범위를 분리해서 적는다
-10. 마지막은 자동 다음 단계 제안이 아니라, 현재 slice 진행 여부 또는 plan 선행 여부를 묻는 닫힌 질문으로 끝낸다
+8. 구현/테스트가 끝나면 `/simplify` 반복 대상으로 넘길 수 있게 변경 범위와 검증 결과를 정리한다
+9. 실사용 기본 마감 루프는 `/simplify` 반복 → convergence `0` → squash다
+10. `flow-review`, `flow-qa`, GitHub PR 운영은 필요할 때만 뒤에 붙인다
+11. 마지막은 자동 다음 단계 제안이 아니라, 현재 slice 진행 여부 또는 plan 선행 여부를 묻는 닫힌 질문으로 끝낸다
 
 ## Output contract
 feature task와 응답에는 최소한 아래 항목이 있어야 한다.
@@ -65,7 +71,8 @@ feature task와 응답에는 최소한 아래 항목이 있어야 한다.
 - canonical plan 후보는 `.workflow/tasks/plan/*.json`만 본다
 - 최신 plan이 있어도 요청과 안 맞으면 연결하지 않는다
 - implementer는 planner 결과와 승인된 plan 문맥이 있을 때만 그 최소 범위로 실행한다
-- slice 완료 후에는 최소한 spec compliance와 code quality/review 관점을 다시 확인한다
+- 구현/테스트가 끝난 뒤 기본 마감 루프는 `/simplify` 반복 → convergence `0` → squash다
+- `flow-review`, `flow-qa`는 필요할 때만 추가하고, GitHub PR 운영은 선택 사항이다
 - v0 기본은 `--dry-run`
 - live 실행은 `runtime.allow_live_run=true`일 때만 허용
 - role별 `ccs_profile`이 없으면 그 role만 `claude -p`로 fallback하고 이유를 role 결과에 남긴다.

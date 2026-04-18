@@ -107,6 +107,8 @@ def test_readme_uses_exit_trap_cleanup_and_hook_examples():
 
 def test_command_and_skill_docs_use_workflow_paths_consistently():
     init_command = (ROOT / ".claude" / "commands" / "flow-init.md").read_text(encoding="utf-8")
+    commands_readme = (ROOT / ".claude" / "commands" / "README.md").read_text(encoding="utf-8")
+    skills_readme = (ROOT / ".claude" / "skills" / "README.md").read_text(encoding="utf-8")
     feature_command = (ROOT / ".claude" / "commands" / "flow-feature.md").read_text(encoding="utf-8")
     qa_command = (ROOT / ".claude" / "commands" / "flow-qa.md").read_text(encoding="utf-8")
     init_skill = (ROOT / ".claude" / "skills" / "flow-init.md").read_text(encoding="utf-8")
@@ -116,6 +118,10 @@ def test_command_and_skill_docs_use_workflow_paths_consistently():
     plan_command = (ROOT / ".claude" / "commands" / "flow-plan.md").read_text(encoding="utf-8")
     review_command = (ROOT / ".claude" / "commands" / "flow-review.md").read_text(encoding="utf-8")
     assert "`.workflow/tasks/init/<slug>.json`" in init_command
+    assert "skill만 있어도 workflow 정의는 성립하고" in commands_readme
+    assert "Optional slash commands, if added later, should only be thin wrappers" in skills_readme
+    assert "핵심 실사용 루프도 skill 기준으로 본다." in skills_readme
+    assert "- `/simplify` 반복" in skills_readme
     assert "PRD/ARCHITECTURE/QA/DESIGN에 매핑된 질문 목록" in init_command
     assert "`.workflow/tasks/init/<slug>.json` canonical init artifact" in init_skill
     assert "질문 없이 PRD/ARCHITECTURE/DESIGN 내용을 지어내기 금지" in init_skill
@@ -127,10 +133,14 @@ def test_command_and_skill_docs_use_workflow_paths_consistently():
     assert "role별 `ccs_profile`이 없으면 그 role만 `claude -p`로 fallback" in review_command
     assert "role별 `ccs_profile`이 없으면 그 role만 `claude -p`로 fallback" in plan_command
     assert "승인된 방향이 없으면 바로 구현으로 밀지 않는다" in feature_skill
+    assert "## Position in real workflow" in feature_skill
+    assert "실사용 기본 루프는 보통 `flow-plan` → `flow-feature` → `/simplify` 반복 → convergence `0` → squash 순서다." in feature_skill
     assert "## Input" in feature_skill
     assert "## Output contract" in feature_skill
     assert "## Forbidden" in feature_skill
     assert "role별 `ccs_profile`이 없으면 그 role만 `claude -p`로 fallback" in feature_skill
+    assert "구현/테스트가 끝난 뒤 기본 마감 루프는 `/simplify` 반복 → convergence `0` → squash다" in feature_skill
+    assert "`flow-review`, `flow-qa`는 필요할 때만 추가하고, GitHub PR 운영은 선택 사항이다" in feature_skill
     assert "## Input" in qa_skill
     assert "## Outputs" in qa_skill
     assert "## Forbidden" in qa_skill
