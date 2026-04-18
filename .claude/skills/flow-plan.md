@@ -2,6 +2,11 @@
 
 Use this skill to turn a rough requirement into an approved implementation plan without implementation.
 
+## Position in real workflow
+- `flow-plan`은 구현 전에 방향과 slice를 고정하는 단계다.
+- 실사용 기본 루프는 보통 `flow-plan` → `flow-feature` → `/simplify` 반복 → convergence `0` → squash 순서다.
+- `flow-plan`의 역할은 `/simplify` 이전까지의 구현 방향을 흔들리지 않게 고정하는 데 있다.
+
 ## Input
 - 요구사항/문제/아이디어 한 줄
 - 필요하면 범위, 제약, 우선순위, 관련 문서
@@ -64,6 +69,8 @@ Use this skill to turn a rough requirement into an approved implementation plan 
 - canonical 계획 산출물은 `.workflow/tasks/plan/` 아래 JSON으로 남긴다
 - plan은 중복 출력 경로를 만들지 않고 `.workflow/tasks/plan/` JSON 하나만 남긴다
 - `flow-feature`는 `.workflow/tasks/plan/*.json` 중 승인된 artifact만 canonical plan으로 참조한다
+- 이 단계는 구현을 직접 하지 않고, 이후 `/simplify` 반복 루프로 갈 수 있게 slice와 검증 기준을 고정한다
+- 기본 downstream 마감 루프는 `flow-feature` 이후 `/simplify` 반복 → convergence `0` → squash다
 - v0 기본은 `--dry-run`
 - live 실행은 `runtime.allow_live_run=true`일 때만 허용
 - role별 `ccs_profile`이 없으면 그 role만 `claude -p`로 fallback하고 이유를 role 결과에 남긴다.

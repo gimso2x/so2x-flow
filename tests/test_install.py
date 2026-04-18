@@ -148,6 +148,8 @@ def test_command_and_skill_docs_use_workflow_paths_consistently():
     review_skill = (ROOT / ".claude" / "skills" / "flow-review.md").read_text(encoding="utf-8")
     assert "role별 `ccs_profile`이 없으면 그 role만 `claude -p`로 fallback" in review_skill
     assert "role별 `ccs_profile`이 없으면 그 role만 `claude -p`로 fallback" in plan_skill
+    assert "## Position in real workflow" in plan_skill
+    assert "실사용 기본 루프는 보통 `flow-plan` → `flow-feature` → `/simplify` 반복 → convergence `0` → squash 순서다." in plan_skill
     assert "`.workflow/tasks/plan/<slug>.json`" in plan_skill
     assert "중복 산출물을 만들지 않고 `.workflow/tasks/plan/<slug>.json` 하나만 남긴다" in plan_command
     assert "현재 v0 `/flow-plan`은 markdown 계획 문서를 만들지 않는다." in plan_skill
@@ -256,6 +258,8 @@ def test_core_workflow_contracts_are_consistent_across_readme_claude_and_flow_do
     assert "승인된 plan이 없으면 여기서 멈추고 `flow-plan`으로 먼저 범위를 확정할지 묻는다" in feature_command
     assert "승인된 plan이 없으면 여기서 멈추고 `flow-plan` 선행 여부를 먼저 묻는다" in feature_skill
     assert "승인 전에는 `/flow-feature`로 자동 전환" in plan_skill
+    assert "이 단계는 구현을 직접 하지 않고, 이후 `/simplify` 반복 루프로 갈 수 있게 slice와 검증 기준을 고정한다" in plan_skill
+    assert "기본 downstream 마감 루프는 `flow-feature` 이후 `/simplify` 반복 → convergence `0` → squash다" in plan_skill
     assert "승인 전에는 `/flow-feature`로 자동 전환" in plan_command
     assert "설치와 운영 초기화는 일부러 분리돼 있다" in readme
     assert "Use `.claude/settings.json` hooks as deterministic guardrails" in claude
