@@ -86,14 +86,17 @@ rmdir .tmp 2>/dev/null || true
 구현 완료 -> /simplify 반복 -> convergence 0 -> squash -> 필요하면 flow-review 또는 flow-qa -> GitHub PR 운영은 옵션
 ```
 
-## PR 직전 기본 루프
+## 실사용 기본 경로
 
-1. 기능 구현과 테스트를 끝낸다.
-2. `/simplify`를 반복한다.
-3. convergence가 `0`이 될 때까지 다시 `/simplify`를 돈다.
-4. convergence `0`이 되면 squash commit으로 정리한다.
-5. 필요하면 `flow-review`, `flow-qa`를 추가한다.
-6. GitHub PR 생성/본문 반영/checks watch는 필요할 때만 붙인다.
+so2x-flow를 실사용할 때 기본 경로는 plan/feature로 구현까지 밀고, PR 직전에는 `/simplify` 반복 루프로 마무리하는 방식이다.
+
+1. 필요하면 `/flow-plan`으로 방향과 slice를 먼저 고정한다.
+2. `/flow-feature`로 구현과 테스트를 끝낸다.
+3. `/simplify`를 반복한다.
+4. convergence가 `0`이 될 때까지 다시 `/simplify`를 돈다.
+5. convergence `0`이 되면 squash commit으로 정리한다.
+6. 필요하면 `flow-review`, `flow-qa`를 추가한다.
+7. GitHub PR 생성/본문 반영/checks watch는 필요할 때만 붙인다.
 
 ## 처음 3단계
 
@@ -223,6 +226,9 @@ ccs <profile> "prompt"
 flow-plan으로 "결제 기능 작업 분해" 계획 문서를 만들어줘.
 이 flow-plan 방향을 승인한다. 다음 slice 진행 준비해줘.
 flow-feature로 "결제 기능 1차 slice"를 승인된 방향 기준으로 진행해줘.
+이 변경 기준으로 /simplify를 한 번 돌려줘.
+convergence가 0이 아니면 /simplify를 다시 반복해줘.
+convergence 0이 되면 squash commit 기준으로 정리해줘.
 flow-qa로 "QA-001 홈 버튼 클릭 안됨" 이슈 문서를 만들고 dry-run 기준으로 수정 흐름을 준비해줘.
 flow-review로 "이번 변경 QA 관점 점검" 리뷰 JSON을 만들어줘.
 /flow-plan으로 "결제 기능 작업 분해" 계획 산출물을 만들어줘.

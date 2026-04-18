@@ -181,13 +181,15 @@ def test_install_output_and_readme_show_one_obvious_next_action():
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     install_script = (ROOT / ".workflow" / "scripts" / "install.py").read_text(encoding="utf-8")
     assert "다음 단계: /flow-init으로 프로젝트를 초기화하세요." in readme
-    assert "## PR 직전 기본 루프" in readme
-    assert "1. 기능 구현과 테스트를 끝낸다." in readme
-    assert "2. `/simplify`를 반복한다." in readme
-    assert "3. convergence가 `0`이 될 때까지 다시 `/simplify`를 돈다." in readme
-    assert "4. convergence `0`이 되면 squash commit으로 정리한다." in readme
-    assert "5. 필요하면 `flow-review`, `flow-qa`를 추가한다." in readme
-    assert "6. GitHub PR 생성/본문 반영/checks watch는 필요할 때만 붙인다." in readme
+    assert "## 실사용 기본 경로" in readme
+    assert "so2x-flow를 실사용할 때 기본 경로는 plan/feature로 구현까지 밀고, PR 직전에는 `/simplify` 반복 루프로 마무리하는 방식이다." in readme
+    assert "1. 필요하면 `/flow-plan`으로 방향과 slice를 먼저 고정한다." in readme
+    assert "2. `/flow-feature`로 구현과 테스트를 끝낸다." in readme
+    assert "3. `/simplify`를 반복한다." in readme
+    assert "4. convergence가 `0`이 될 때까지 다시 `/simplify`를 돈다." in readme
+    assert "5. convergence `0`이 되면 squash commit으로 정리한다." in readme
+    assert "6. 필요하면 `flow-review`, `flow-qa`를 추가한다." in readme
+    assert "7. GitHub PR 생성/본문 반영/checks watch는 필요할 때만 붙인다." in readme
     assert "next_step: flow-init으로 이 프로젝트를 초기화해줘." in install_script
     assert "next_step_cli: /flow-init" in install_script
     assert "next_step_human: 다음 단계: /flow-init으로 프로젝트를 초기화하세요." in install_script
@@ -236,6 +238,9 @@ def test_core_workflow_contracts_are_consistent_across_readme_claude_and_flow_do
 
     assert "구현 완료 -> /simplify 반복 -> convergence 0 -> squash -> 필요하면 flow-review 또는 flow-qa -> GitHub PR 운영은 옵션" in readme
     assert "GitHub PR 생성/본문 반영/checks watch는 필요할 때만 추가로 사용한다" in readme
+    assert "이 변경 기준으로 /simplify를 한 번 돌려줘." in readme
+    assert "convergence가 0이 아니면 /simplify를 다시 반복해줘." in readme
+    assert "convergence 0이 되면 squash commit 기준으로 정리해줘." in readme
     assert "create `.workflow/tasks/qa/<slug>.json` first, then execute when QA work is needed" in claude
     assert "review against workflow docs and task artifacts when review is needed" in claude
     assert "승인된 plan이 없으면 여기서 멈추고 `flow-plan`으로 먼저 범위를 확정할지 묻는다" in feature_command
