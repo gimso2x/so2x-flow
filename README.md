@@ -247,6 +247,14 @@ flow-review로 "이번 변경 QA 관점 점검" 리뷰 JSON을 만들어줘.
 
 ## 검증
 
+빠르게 전체 흐름을 확인하려면 아래 두 가지를 기준으로 보면 된다.
+
 ```bash
 python3 -m pytest tests/test_ccs_runner.py tests/test_execute.py -q
+```
+
+docs-first canonical 흐름만 빠르게 보려면 smoke test 하나만 찍어도 된다.
+
+```bash
+python3 -m pytest tests/test_execute.py -q -k docs_first_smoke_plan_feature_qa_sequence
 ```

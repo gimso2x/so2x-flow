@@ -191,6 +191,13 @@ def test_install_output_and_readme_show_one_obvious_next_action():
     assert "first_run_path: /flow-init -> /flow-plan -> /flow-feature" in install_script
 
 
+def test_readme_documents_smoke_test_entrypoint():
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    assert "docs-first canonical 흐름만 빠르게 보려면 smoke test 하나만 찍어도 된다." in readme
+    assert "python3 -m pytest tests/test_execute.py -q -k docs_first_smoke_plan_feature_qa_sequence" in readme
+
+
+
 def test_core_workflow_contracts_are_consistent_across_readme_claude_and_flow_docs():
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     claude = (ROOT / "CLAUDE.md").read_text(encoding="utf-8")
