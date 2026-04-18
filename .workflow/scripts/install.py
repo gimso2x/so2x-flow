@@ -106,6 +106,7 @@ def main() -> int:
     print("step 4/4: install complete")
     print("next_step: flow-init으로 이 프로젝트를 초기화해줘.")
     print("next_step_cli: /flow-init")
+    print("next_step_human: 다음 단계: /flow-init으로 프로젝트를 초기화하세요.")
     print("first_run_path: /flow-init -> /flow-plan -> /flow-feature")
     print(f"target: {target_root}")
     print(f"copied_count: {len(copied)}")
