@@ -126,9 +126,13 @@ def test_command_and_skill_docs_use_workflow_paths_consistently():
     assert "## Input" in feature_skill
     assert "## Output contract" in feature_skill
     assert "## Forbidden" in feature_skill
+    assert "role별 `ccs_profile`이 없으면 그 role만 `claude -p`로 fallback" in feature_skill
     assert "## Input" in qa_skill
     assert "## Outputs" in qa_skill
     assert "## Forbidden" in qa_skill
+    assert "role별 `ccs_profile`이 없으면 그 role만 `claude -p`로 fallback" in qa_skill
+    review_skill = (ROOT / ".claude" / "skills" / "flow-review.md").read_text(encoding="utf-8")
+    assert "role별 `ccs_profile`이 없으면 그 role만 `claude -p`로 fallback" in review_skill
     assert "`.workflow/tasks/plan/<slug>.json`" in plan_skill
     assert "중복 산출물을 만들지 않고 `.workflow/tasks/plan/<slug>.json` 하나만 남긴다" in plan_command
     assert "현재 v0 `/flow-plan`은 markdown 계획 문서를 만들지 않는다." in plan_skill

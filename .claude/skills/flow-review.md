@@ -39,3 +39,4 @@ Use this skill to review planned or implemented work against project documents.
 - reviewer는 구현을 스스로 정당화하지 말고 fail-closed에 가깝게 본다
 - v0 기본은 `--dry-run`
 - live 실행은 `runtime.allow_live_run=true`일 때만 허용
+- role별 `ccs_profile`이 없으면 그 role만 `claude -p`로 fallback하고 이유를 role 결과에 남긴다.

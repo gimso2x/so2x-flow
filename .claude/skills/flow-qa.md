@@ -63,3 +63,4 @@ Use this skill when a QA issue or bug report needs a document-first fix flow.
 - fix 후에는 재현 케이스와 관련 테스트를 다시 돌린다
 - v0 기본은 `--dry-run`
 - live 실행은 `runtime.allow_live_run=true`일 때만 허용
+- role별 `ccs_profile`이 없으면 그 role만 `claude -p`로 fallback하고 이유를 role 결과에 남긴다.

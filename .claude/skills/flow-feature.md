@@ -68,3 +68,4 @@ feature task와 응답에는 최소한 아래 항목이 있어야 한다.
 - slice 완료 후에는 최소한 spec compliance와 code quality/review 관점을 다시 확인한다
 - v0 기본은 `--dry-run`
 - live 실행은 `runtime.allow_live_run=true`일 때만 허용
+- role별 `ccs_profile`이 없으면 그 role만 `claude -p`로 fallback하고 이유를 role 결과에 남긴다.
