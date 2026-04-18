@@ -111,7 +111,7 @@ def test_readme_uses_exit_trap_cleanup_and_hook_examples():
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     assert "trap 'rm -rf .tmp/so2x-flow; rmdir .tmp 2>/dev/null || true' EXIT" in readme
     assert "예: `rm -rf`, 무차별 삭제/이동 같은 명령 차단" in readme
-    assert "예: 필수 섹션, verification, 승인 게이트 질문 누락 방지" in readme
+    assert "예: 필수 섹션, verification, 승인 게이트 질문, `Proposed Steps` 개수(3~7), 닫힌 next-step 질문 누락 방지" in readme
     assert "예: 긴 dry-run/grep/bash 출력은 요약본을 추가하고 error/traceback 라인은 유지" in readme
     assert "예: old_string mismatch, ambiguous match, permission 문제 재시도 가이드" in readme
     assert "예: 같은 patch/edit 실패 3회 이상이면 파일 재읽기나 다른 접근 유도" in readme

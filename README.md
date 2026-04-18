@@ -206,8 +206,8 @@ ccs <profile> "prompt"
 
 - `PreToolUse` + `dangerous-cmd-guard.sh` — 위험한 Bash 명령을 치기 전에 가드
   - 예: `rm -rf`, 무차별 삭제/이동 같은 명령 차단
-- `PostToolUse` + `validate-output.sh` — `flow-*` skill에 validation contract가 있으면 완료 직후 검증 리마인더를 다시 붙인다
-  - 예: 필수 섹션, verification, 승인 게이트 질문 누락 방지
+- `PostToolUse` + `validate-output.sh` — `flow-*` skill contract를 읽어 완료 직후 필수 섹션/구조를 다시 검사한다
+  - 예: 필수 섹션, verification, 승인 게이트 질문, `Proposed Steps` 개수(3~7), 닫힌 next-step 질문 누락 방지
 - `PostToolUse` + `tool-output-truncator.sh` — 큰 도구 출력이 나오면 후속 컨텍스트용 요약을 붙이고 에러 라인은 보존한다
   - 예: 긴 dry-run/grep/bash 출력은 요약본을 추가하고 error/traceback 라인은 유지
 - `PostToolUseFailure` + `edit-error-recovery.sh` — Edit/Write 실패 패턴별 복구 가이드를 바로 준다
@@ -256,7 +256,11 @@ flow-review로 "이번 변경 QA 관점 점검" 리뷰 JSON을 만들어줘.
 - `.workflow/scripts/execute.py` — orchestrator
 - `.workflow/scripts/install.py` — 설치 + 단계 로그 출력
 - `.workflow/scripts/patch_claude_md.py` — CLAUDE.md 섹션 패치 스크립트
-- `.workflow/scripts/ccs_runner.py` — runner 결정과 command 구성
+- `.workflow/scripts/ccs_runner.py` — runner 호환 facade
+- `.workflow/scripts/runner_resolution.py` — runner/role fallback 결정
+- `.workflow/scripts/runner_commands.py` — ccs/claude command build
+- `.workflow/scripts/runner_execution.py` — dry-run/live 실행과 subprocess 오류 처리
+- `.workflow/scripts/workflow_contracts.py` — mode별 artifact/roles/output contract 단일 소스
 - `tests/` — dry-run 테스트
 
 ## artifact naming

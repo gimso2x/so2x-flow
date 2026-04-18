@@ -108,6 +108,18 @@ issues.extend(bullet_issues)
 if closed_question_issue:
     issues.append(closed_question_issue)
 
+if response and skill_name == "flow-feature":
+    no_plan_signals = [
+        "approved_plan_path: (none)",
+        "source_plan_artifact\": \"(none)",
+        "승인된 방향이 없",
+        "no plan artifacts found",
+    ]
+    if any(signal in response for signal in no_plan_signals):
+        lowered = response.lower()
+        if "flow-plan" not in lowered:
+            issues.append("No approved plan is present, but the response does not explicitly ask whether to run flow-plan first")
+
 if response and issues:
     context = (
         f"VALIDATION WARNING [{skill_name}]\n"

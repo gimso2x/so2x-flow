@@ -64,6 +64,39 @@ def test_validate_output_hook_checks_skill_response_when_present() -> None:
 
 
 
+def test_validate_output_hook_warns_when_feature_without_plan_does_not_ask_flow_plan() -> None:
+    response = "\n".join(
+        [
+            "Approved Direction",
+            "Implementation Slice",
+            "Out of Scope",
+            "Proposed Steps",
+            "- first",
+            "- second",
+            "- third",
+            "Verification",
+            "Review Gate",
+            "Follow-up Slice",
+            "approved_plan_path: (none)",
+            "Next Step Prompt?",
+        ]
+    )
+    result = run_hook(
+        "validate-output.sh",
+        {
+            "tool_name": "Skill",
+            "tool_input": {"skill": "flow-feature"},
+            "tool_response": response,
+            "cwd": str(ROOT),
+        },
+        cwd=ROOT,
+    )
+    context = hook_context(result)
+    assert "VALIDATION WARNING [flow-feature]" in context
+    assert "flow-plan first" in context
+
+
+
 def test_validate_output_hook_reports_checked_when_required_markers_exist() -> None:
     response = "\n".join(
         [

@@ -54,4 +54,4 @@
 - If a configured `ccs_profile` is missing, execute-level preflight falls back that role to `claude -p` when Claude is available; the reason is printed in `fallback_reason`.
 - role별 `ccs_profile`이 없으면 그 role만 `claude -p`로 fallback하고 이유를 role 결과에 남긴다.
 - Use `.claude/settings.json` hooks as deterministic guardrails; do not rely on CLAUDE.md text alone for enforcement.
-- Validation hooks in this scaffold are lightweight reminders/recovery helpers first, not heavy autonomous control flow.
+- Validation hooks in this scaffold now read shared workflow contracts and perform lightweight structural checks first; they are still guardrails, not heavy autonomous control flow.

@@ -20,3 +20,4 @@ Skills:
 `/simplify`는 별도 `flow-*` skill이 아니라, 보통 `flow-feature` 완료 뒤 또는 승인된 plan 기준 구현이 끝난 뒤에 도는 마감 루프다.
 
 These skills define behavior. Optional slash commands, if added later, should only be thin wrappers around these skill docs.
+Validation/section contracts are centralized in `.workflow/scripts/workflow_contracts.py`, and hooks/artifacts should follow that single source before docs drift.
