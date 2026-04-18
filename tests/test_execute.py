@@ -1,3 +1,4 @@
+import importlib.util
 import json
 import subprocess
 import sys
@@ -618,3 +619,41 @@ def test_live_feature_role_can_fallback_to_claude_when_ccs_profile_missing(tmp_p
     assert "role=implementer profile 'missing-profile' is not available via ccs" in payload["role_results"][1]["fallback_reason"]
     assert "role=implementer profile 'missing-profile' is not available via ccs" in result.stdout
     assert payload["role_results"][1]["output"] == "claude-live-ok\n"
+
+
+def test_artifact_validation_rejects_missing_required_plan_field(tmp_path: Path):
+    workspace = make_workspace(tmp_path)
+    task_artifacts = workspace / ".workflow" / "scripts" / "task_artifacts.py"
+    spec = importlib.util.spec_from_file_location("so2x_flow_task_artifacts", task_artifacts)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+
+    invalid_plan = module.render_plan_doc("결제 기능 작업 분해", [".workflow/docs/PRD.md"])
+    invalid_plan.pop("next_step_prompt")
+
+    try:
+        module.validate_artifact("plan", invalid_plan)
+    except ValueError as exc:
+        assert "plan missing required field: next_step_prompt" in str(exc)
+    else:
+        raise AssertionError("Expected ValueError for invalid plan artifact")
+
+
+def test_artifact_validation_rejects_wrong_feature_field_type(tmp_path: Path):
+    workspace = make_workspace(tmp_path)
+    task_artifacts = workspace / ".workflow" / "scripts" / "task_artifacts.py"
+    spec = importlib.util.spec_from_file_location("so2x_flow_task_artifacts", task_artifacts)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+
+    invalid_feature = module.render_feature_task("로그인 기능 구현")
+    invalid_feature["verification"] = "not-a-list"
+
+    try:
+        module.validate_artifact("feature", invalid_feature)
+    except ValueError as exc:
+        assert "feature field 'verification' must be of type list" in str(exc)
+    else:
+        raise AssertionError("Expected ValueError for invalid feature artifact")
