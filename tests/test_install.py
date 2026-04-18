@@ -195,6 +195,11 @@ def test_readme_documents_smoke_test_entrypoint():
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     assert "docs-first canonical 흐름만 빠르게 보려면 smoke test 하나만 찍어도 된다." in readme
     assert "python3 -m pytest tests/test_execute.py -q -k docs_first_smoke_plan_feature_qa_sequence" in readme
+    assert "설치 관점까지 포함한 real-world smoke는 빈 프로젝트 하나 만들어 실제 install 결과를 보는 게 제일 빠르다." in readme
+    assert 'tmpdir="$(mktemp -d)"' in readme
+    assert 'python3 .workflow/scripts/install.py --target "$tmpdir/app" --patch-claude-md' in readme
+    assert 'python3 "$tmpdir/app/.workflow/scripts/execute.py" init "샘플 앱 초기 설정" --dry-run' in readme
+    assert 'python3 "$tmpdir/app/.workflow/scripts/execute.py" plan "로그인 기능 작업 분해" --dry-run' in readme
 
 
 
