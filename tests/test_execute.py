@@ -657,3 +657,48 @@ def test_artifact_validation_rejects_wrong_feature_field_type(tmp_path: Path):
         assert "feature field 'verification' must be of type list" in str(exc)
     else:
         raise AssertionError("Expected ValueError for invalid feature artifact")
+
+
+def test_init_rerun_rejects_malformed_persisted_artifact_missing_questions(tmp_path: Path):
+    workspace = make_workspace(tmp_path)
+    first = run_execute(workspace, "init", "개인용 운동 코칭 앱 MVP", "--dry-run")
+    payload = read_json(output_path(workspace, first.stdout, "output_json"))
+    init_path = workspace / payload["artifacts"][0]
+
+    broken = read_json(init_path)
+    broken.pop("questions")
+    init_path.write_text(json.dumps(broken, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    execute = workspace / ".workflow" / "scripts" / "execute.py"
+    result = subprocess.run(
+        [sys.executable, str(execute), "init", "개인용 운동 코칭 앱 MVP", "--dry-run"],
+        cwd=workspace,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode != 0
+    assert "init missing required field: questions" in result.stderr
+
+
+
+def test_plan_rerun_rejects_malformed_persisted_artifact_wrong_approved_type(tmp_path: Path):
+    workspace = make_workspace(tmp_path)
+    first = run_execute(workspace, "plan", "결제 기능 작업 분해", "--dry-run")
+    payload = read_json(output_path(workspace, first.stdout, "output_json"))
+    plan_path = workspace / payload["artifacts"][0]
+
+    broken = read_json(plan_path)
+    broken["approved"] = "yes"
+    plan_path.write_text(json.dumps(broken, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    execute = workspace / ".workflow" / "scripts" / "execute.py"
+    result = subprocess.run(
+        [sys.executable, str(execute), "plan", "결제 기능 작업 분해", "--dry-run"],
+        cwd=workspace,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode != 0
+    assert "plan field 'approved' must be of type bool" in result.stderr

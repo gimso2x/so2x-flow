@@ -226,6 +226,7 @@ def write_initial_task(path: Path, content: dict, preserve_existing: bool = Fals
     validate_artifact("init", content)
     if preserve_existing and path.exists():
         existing = json.loads(path.read_text(encoding="utf-8"))
+        validate_artifact("init", existing)
         merged = {**existing}
         merged.setdefault("title", content["title"])
         answers = existing.get("answers")
@@ -243,6 +244,7 @@ def write_plan_task(path: Path, content: dict) -> None:
     validate_artifact("plan", content)
     if path.exists():
         existing = json.loads(path.read_text(encoding="utf-8"))
+        validate_artifact("plan", existing)
         if existing.get("approved") is True:
             content["approved"] = True
         if existing.get("status") == "approved":
