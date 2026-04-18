@@ -15,6 +15,7 @@
 - `.workflow/tasks/qa/<slug>.json`
 - qa-planner -> implementer 흐름 결과 또는 dry-run 요약
 - 가능하면 root cause hypothesis / minimal fix / verification이 함께 보여야 한다
+- role별 `ccs_profile`이 없으면 그 role만 `claude -p`로 fallback하고 이유를 role 결과에 남긴다.
 
 ## 응답 마감 규칙
 - 재현 없이 바로 고쳤다고 하지 않는다.

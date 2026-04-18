@@ -122,6 +122,10 @@ def test_command_and_skill_docs_use_workflow_paths_consistently():
     assert "`.workflow/tasks/feature/<slug>.json`" in feature_command
     assert "`.workflow/tasks/qa/<slug>.json`" in qa_command
     assert "`.workflow/tasks/review/<slug>.json`" in review_command
+    assert "role별 `ccs_profile`이 없으면 그 role만 `claude -p`로 fallback" in feature_command
+    assert "role별 `ccs_profile`이 없으면 그 role만 `claude -p`로 fallback" in qa_command
+    assert "role별 `ccs_profile`이 없으면 그 role만 `claude -p`로 fallback" in review_command
+    assert "role별 `ccs_profile`이 없으면 그 role만 `claude -p`로 fallback" in plan_command
     assert "승인된 방향이 없으면 바로 구현으로 밀지 않는다" in feature_skill
     assert "## Input" in feature_skill
     assert "## Output contract" in feature_skill

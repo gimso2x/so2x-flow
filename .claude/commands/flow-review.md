@@ -15,6 +15,7 @@
 - `.workflow/tasks/review/<slug>.json`
 - review 결과 또는 dry-run 요약
 - 가능하면 Spec Gap / Test Gap / Security or Regression Risk / Verdict가 함께 보여야 한다
+- role별 `ccs_profile`이 없으면 그 role만 `claude -p`로 fallback하고 이유를 role 결과에 남긴다.
 
 ## 응답 마감 규칙
 - 막연한 칭찬보다 blocking issue를 먼저 적는다.

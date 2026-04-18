@@ -15,6 +15,7 @@
 
 ## 출력
 - 계획 문서 또는 dry-run 요약
+- role별 `ccs_profile`이 없으면 그 role만 `claude -p`로 fallback하고 이유를 role 결과에 남긴다.
 - 응답에는 가능하면 아래가 보여야 한다.
   - 옵션 2~3개 비교
   - 추천안 1개

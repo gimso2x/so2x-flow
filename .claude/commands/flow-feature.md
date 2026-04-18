@@ -17,6 +17,7 @@
 - planner -> implementer 흐름 결과 또는 dry-run 요약
 - 매칭된 최신 승인 plan이 있으면 그 경로와 매칭 사유, 없으면 미연결 사유
 - 승인된 plan이 없으면 여기서 멈추고 `flow-plan`으로 먼저 범위를 확정할지 묻는다
+- role별 `ccs_profile`이 없으면 그 role만 `claude -p`로 fallback하고 이유를 role 결과에 남긴다.
 - 응답에는 가능하면 아래가 보여야 한다.
   - 승인된 방향
   - 이번 구현 slice
