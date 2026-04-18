@@ -244,6 +244,35 @@ def test_feature_dry_run_rejects_plan_when_only_generic_tokens_overlap(tmp_path:
     assert feature_payload["approved_plan_match_reason"].startswith("no sufficiently similar plan")
 
 
+
+def test_feature_dry_run_prefers_more_specific_plan_match_over_broader_overlap(tmp_path: Path):
+    workspace = make_workspace(tmp_path)
+    run_execute(workspace, "plan", "로그인 보안 강화 설계 확정", "--dry-run")
+    run_execute(workspace, "plan", "로그인 비밀번호 재설정 설계 확정", "--dry-run")
+
+    feature_result = run_execute(workspace, "feature", "로그인 비밀번호 재설정 구현", "--dry-run")
+    feature_payload = read_json(output_path(workspace, feature_result.stdout, "output_json"))
+
+    assert feature_payload["approved_plan_path"] == ".workflow/tasks/plan/로그인-비밀번호-재설정-설계-확정.json"
+    assert "shared_tokens=로그인, 비밀번호, 재설정" in feature_payload["approved_plan_match_reason"]
+    assert "candidate=로그인-비밀번호-재설정-설계-확정" in feature_payload["approved_plan_match_reason"]
+
+
+
+def test_feature_dry_run_reports_best_below_threshold_candidate_when_no_match(tmp_path: Path):
+    workspace = make_workspace(tmp_path)
+    run_execute(workspace, "plan", "알림 이메일 설정 설계 확정", "--dry-run")
+
+    feature_result = run_execute(workspace, "feature", "알림 설정 구현", "--dry-run")
+    feature_payload = read_json(output_path(workspace, feature_result.stdout, "output_json"))
+
+    assert feature_payload["approved_plan_path"] is None
+    assert "best_candidate=알림-이메일-설정-설계-확정" in feature_payload["approved_plan_match_reason"]
+    assert "shared_tokens=설정, 알림" in feature_payload["approved_plan_match_reason"]
+    assert "threshold=" in feature_payload["approved_plan_match_reason"]
+
+
+
 def test_feature_dry_run_marks_missing_ui_guide_as_optional_when_design_missing(tmp_path: Path):
     workspace = make_workspace(tmp_path)
     design = workspace / "DESIGN.md"
@@ -452,13 +481,14 @@ def test_requested_ccs_falls_back_to_claude_when_ccs_missing(tmp_path: Path):
 
 def test_execute_uses_runner_resolution_layer_and_live_runner_path(tmp_path: Path):
     execute = (ROOT / ".workflow" / "scripts" / "execute.py").read_text(encoding="utf-8")
+    execution_runtime = (ROOT / ".workflow" / "scripts" / "execution_runtime.py").read_text(encoding="utf-8")
     prompt_builder = (ROOT / ".workflow" / "scripts" / "prompt_builder.py").read_text(encoding="utf-8")
     mode_handlers = (ROOT / ".workflow" / "scripts" / "mode_handlers.py").read_text(encoding="utf-8")
     payloads = (ROOT / ".workflow" / "scripts" / "payloads.py").read_text(encoding="utf-8")
-    assert "from ccs_runner import resolve_role_runner, resolve_runner, run_role, run_role_subprocess" in execute
-    assert "from mode_handlers import prepare_mode_context" in execute
-    assert "from payloads import build_payload, print_summary" in execute
-    assert "from prompt_builder import build_prompt" in execute
+    assert "from ccs_runner import resolve_runner" in execute
+    assert "from execution_runtime import" in execute
+    assert "def run_roles(" in execution_runtime
+    assert "def validate_runtime_config(" in execution_runtime
     assert "def build_prompt(" in prompt_builder
     assert "def prepare_mode_context(" in mode_handlers
     assert "def build_payload(" in payloads
@@ -483,6 +513,7 @@ def test_execute_uses_runner_resolution_layer_and_live_runner_path(tmp_path: Pat
     assert payload["role_results"][0]["output"] == "live-ok\n"
 
 
+
 def test_live_execution_requires_explicit_runtime_opt_in(tmp_path: Path):
     workspace = make_workspace(tmp_path)
     execute = workspace / ".workflow" / "scripts" / "execute.py"
@@ -494,6 +525,104 @@ def test_live_execution_requires_explicit_runtime_opt_in(tmp_path: Path):
     )
     assert result.returncode != 0
     assert "allow_live_run" in result.stderr
+
+
+
+def test_live_execution_uses_role_specific_timeout_and_persists_failure_payload(tmp_path: Path):
+    workspace = make_workspace(tmp_path)
+    fake_runner = workspace / "fake-timeout.sh"
+    fake_runner.write_text("#!/usr/bin/env bash\nsleep 2\n", encoding="utf-8")
+    fake_runner.chmod(0o755)
+
+    config_path = workspace / ".workflow" / "config" / "ccs-map.yaml"
+    config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+    config["runtime"]["runner"] = "claude"
+    config["runtime"]["allow_live_run"] = True
+    config["runtime"]["claude_command"] = str(fake_runner)
+    config["runtime"]["claude_headless_flag"] = "--prompt"
+    config["runtime"]["role_timeouts"] = {"reviewer": 1}
+    config["roles"]["reviewer"]["claude"]["command"] = str(fake_runner)
+    config_path.write_text(yaml.safe_dump(config, allow_unicode=True, sort_keys=False), encoding="utf-8")
+
+    execute = workspace / ".workflow" / "scripts" / "execute.py"
+    result = subprocess.run(
+        [sys.executable, str(execute), "review", "타임아웃 테스트"],
+        cwd=workspace,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode != 0
+    assert "failed_role: reviewer" in result.stdout
+    assert "timed out after 1s" in result.stderr
+    payload = read_json(output_path(workspace, result.stdout, "output_json"))
+    assert payload["failed_role"] == "reviewer"
+    assert payload["failed_stage"] == "role_execution"
+    assert payload["role_results"] == []
+    assert "timed out after 1s" in payload["failure_message"]
+
+
+
+def test_live_execution_persists_partial_results_when_later_role_fails(tmp_path: Path):
+    workspace = make_workspace(tmp_path)
+    fake_claude = workspace / "fake-claude.sh"
+    fake_claude.write_text("#!/usr/bin/env bash\nprintf 'planner-live-ok\\n'\n", encoding="utf-8")
+    fake_claude.chmod(0o755)
+
+    execute = workspace / ".workflow" / "scripts" / "execute.py"
+    probe_dir = workspace / "probe-bin"
+    probe_dir.mkdir()
+    probe = probe_dir / "ccs"
+    probe.write_text(
+        "#!/usr/bin/env bash\n"
+        "if [ \"$1\" = \"missing-profile\" ] && [ \"$2\" = \"--help\" ]; then\n"
+        "  echo \"Profile 'missing-profile' not found\" >&2\n"
+        "  exit 1\n"
+        "fi\n"
+        "if [ \"$1\" = \"codex\" ] && [ \"$2\" = \"--help\" ]; then\n"
+        "  exit 0\n"
+        "fi\n"
+        "printf 'planner-live-ok\\n'\n",
+        encoding="utf-8",
+    )
+    probe.chmod(0o755)
+
+    failing_claude = workspace / "fake-failing-claude.sh"
+    failing_claude.write_text("#!/usr/bin/env bash\necho 'implementer failed' >&2\nexit 9\n", encoding="utf-8")
+    failing_claude.chmod(0o755)
+
+    config_path = workspace / ".workflow" / "config" / "ccs-map.yaml"
+    config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+    config["runtime"]["runner"] = "ccs"
+    config["runtime"]["allow_live_run"] = True
+    config["runtime"]["claude_command"] = str(fake_claude)
+    config["runtime"]["claude_headless_flag"] = "--prompt"
+    config["roles"]["planner"]["ccs_profile"] = "codex"
+    config["roles"]["planner"]["ccs"]["command"] = str(probe)
+    config["roles"]["implementer"]["ccs_profile"] = "missing-profile"
+    config["roles"]["implementer"]["claude"]["command"] = str(failing_claude)
+    config_path.write_text(yaml.safe_dump(config, allow_unicode=True, sort_keys=False), encoding="utf-8")
+
+    env = dict(**__import__("os").environ)
+    env["PATH"] = f"{probe_dir}:{env.get('PATH', '')}"
+    result = subprocess.run(
+        [sys.executable, str(execute), "feature", "로그인 기능 구현"],
+        cwd=workspace,
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+
+    assert result.returncode != 0
+    assert "failed_role: implementer" in result.stdout
+    payload = read_json(output_path(workspace, result.stdout, "output_json"))
+    assert payload["failed_role"] == "implementer"
+    assert payload["failed_stage"] == "role_execution"
+    assert len(payload["role_results"]) == 1
+    assert payload["role_results"][0]["role"] == "planner"
+    assert payload["role_results"][0]["output"] == "planner-live-ok\n"
+    assert "fallback_reason" in payload["failure_message"]
+    assert "implementer failed" in payload["failure_message"]
 
 
 
@@ -659,6 +788,86 @@ def test_artifact_validation_rejects_wrong_feature_field_type(tmp_path: Path):
         raise AssertionError("Expected ValueError for invalid feature artifact")
 
 
+def test_artifact_validation_rejects_invalid_init_question_shape(tmp_path: Path):
+    workspace = make_workspace(tmp_path)
+    task_artifacts = workspace / ".workflow" / "scripts" / "task_artifacts.py"
+    spec = importlib.util.spec_from_file_location("so2x_flow_task_artifacts", task_artifacts)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+
+    invalid_init = module.render_init_task("개인용 운동 코칭 앱 MVP")
+    invalid_init["questions"] = [{"id": "project_name", "question": "이름?"}]
+
+    try:
+        module.validate_artifact("init", invalid_init)
+    except ValueError as exc:
+        assert "init questions[0] missing required field: target_doc" in str(exc)
+    else:
+        raise AssertionError("Expected ValueError for invalid init artifact question shape")
+
+
+
+def test_artifact_validation_rejects_invalid_init_status_value(tmp_path: Path):
+    workspace = make_workspace(tmp_path)
+    task_artifacts = workspace / ".workflow" / "scripts" / "task_artifacts.py"
+    spec = importlib.util.spec_from_file_location("so2x_flow_task_artifacts", task_artifacts)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+
+    invalid_init = module.render_init_task("개인용 운동 코칭 앱 MVP")
+    invalid_init["status"] = "done"
+
+    try:
+        module.validate_artifact("init", invalid_init)
+    except ValueError as exc:
+        assert "init field 'status' must be one of" in str(exc)
+    else:
+        raise AssertionError("Expected ValueError for invalid init status")
+
+
+
+def test_artifact_validation_rejects_invalid_plan_options_shape(tmp_path: Path):
+    workspace = make_workspace(tmp_path)
+    task_artifacts = workspace / ".workflow" / "scripts" / "task_artifacts.py"
+    spec = importlib.util.spec_from_file_location("so2x_flow_task_artifacts", task_artifacts)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+
+    invalid_plan = module.render_plan_doc("결제 기능 작업 분해", [".workflow/docs/PRD.md"])
+    invalid_plan["options"] = {"Option A": "가장 작은 MVP 접근"}
+
+    try:
+        module.validate_artifact("plan", invalid_plan)
+    except ValueError as exc:
+        assert "plan options['Option A'] must be a list[str]" in str(exc)
+    else:
+        raise AssertionError("Expected ValueError for invalid plan options shape")
+
+
+
+def test_artifact_validation_rejects_invalid_feature_approved_direction_shape(tmp_path: Path):
+    workspace = make_workspace(tmp_path)
+    task_artifacts = workspace / ".workflow" / "scripts" / "task_artifacts.py"
+    spec = importlib.util.spec_from_file_location("so2x_flow_task_artifacts", task_artifacts)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+
+    invalid_feature = module.render_feature_task("로그인 기능 구현")
+    invalid_feature["approved_direction"] = {"summary": "요약만 있음"}
+
+    try:
+        module.validate_artifact("feature", invalid_feature)
+    except ValueError as exc:
+        assert "feature approved_direction missing required field: source_plan_artifact" in str(exc)
+    else:
+        raise AssertionError("Expected ValueError for invalid feature approved_direction shape")
+
+
+
 def test_init_rerun_rejects_malformed_persisted_artifact_missing_questions(tmp_path: Path):
     workspace = make_workspace(tmp_path)
     first = run_execute(workspace, "init", "개인용 운동 코칭 앱 MVP", "--dry-run")
@@ -682,6 +891,29 @@ def test_init_rerun_rejects_malformed_persisted_artifact_missing_questions(tmp_p
 
 
 
+def test_init_rerun_rejects_malformed_persisted_artifact_invalid_question_shape(tmp_path: Path):
+    workspace = make_workspace(tmp_path)
+    first = run_execute(workspace, "init", "개인용 운동 코칭 앱 MVP", "--dry-run")
+    payload = read_json(output_path(workspace, first.stdout, "output_json"))
+    init_path = workspace / payload["artifacts"][0]
+
+    broken = read_json(init_path)
+    broken["questions"] = [{"id": "project_name", "question": "이름?"}]
+    init_path.write_text(json.dumps(broken, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    execute = workspace / ".workflow" / "scripts" / "execute.py"
+    result = subprocess.run(
+        [sys.executable, str(execute), "init", "개인용 운동 코칭 앱 MVP", "--dry-run"],
+        cwd=workspace,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode != 0
+    assert "init questions[0] missing required field: target_doc" in result.stderr
+
+
+
 def test_plan_rerun_rejects_malformed_persisted_artifact_wrong_approved_type(tmp_path: Path):
     workspace = make_workspace(tmp_path)
     first = run_execute(workspace, "plan", "결제 기능 작업 분해", "--dry-run")
@@ -702,3 +934,26 @@ def test_plan_rerun_rejects_malformed_persisted_artifact_wrong_approved_type(tmp
 
     assert result.returncode != 0
     assert "plan field 'approved' must be of type bool" in result.stderr
+
+
+
+def test_plan_rerun_rejects_malformed_persisted_artifact_invalid_options_shape(tmp_path: Path):
+    workspace = make_workspace(tmp_path)
+    first = run_execute(workspace, "plan", "결제 기능 작업 분해", "--dry-run")
+    payload = read_json(output_path(workspace, first.stdout, "output_json"))
+    plan_path = workspace / payload["artifacts"][0]
+
+    broken = read_json(plan_path)
+    broken["options"] = {"Option A": "가장 작은 MVP 접근"}
+    plan_path.write_text(json.dumps(broken, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    execute = workspace / ".workflow" / "scripts" / "execute.py"
+    result = subprocess.run(
+        [sys.executable, str(execute), "plan", "결제 기능 작업 분해", "--dry-run"],
+        cwd=workspace,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode != 0
+    assert "plan options['Option A'] must be a list[str]" in result.stderr

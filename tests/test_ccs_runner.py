@@ -111,6 +111,55 @@ def test_run_role_subprocess_timeout_raises_runner_error_with_command_preview(mo
         raise AssertionError("Expected RunnerError for timeout path")
 
 
+
+def test_timeout_for_role_uses_role_specific_config_when_present():
+    assert runner.timeout_for_role("reviewer", {"role_timeouts": {"reviewer": 12}}) == 12
+    assert runner.timeout_for_role("reviewer", {"role_timeouts": {"planner": 5}}) == 300
+
+
+
+def test_timeout_for_role_rejects_non_positive_or_non_integer_values():
+    for bad in (0, -1, "5"):
+        try:
+            runner.timeout_for_role("reviewer", {"role_timeouts": {"reviewer": bad}})
+        except runner.RunnerError as exc:
+            assert "role_timeouts.reviewer" in str(exc)
+        else:
+            raise AssertionError("Expected RunnerError for invalid role timeout")
+
+
+
+def test_runner_error_summary_truncates_large_output_and_keeps_fallback_reason(monkeypatch):
+    def fake_run(*args, **kwargs):
+        raise runner.subprocess.CalledProcessError(
+            returncode=9,
+            cmd=args[0],
+            output="x" * 900,
+            stderr="y" * 900,
+        )
+
+    monkeypatch.setattr(runner.subprocess, "run", fake_run)
+
+    try:
+        runner.run_role_subprocess(
+            runner="claude",
+            role="implementer",
+            prompt="hello",
+            role_config={"command": "claude", "claude_role": "implementer"},
+            runtime_config={"claude_headless_flag": "-p"},
+            timeout=11,
+            fallback_reason="role=implementer profile 'glm' is not available via ccs",
+        )
+    except runner.RunnerError as exc:
+        message = str(exc)
+        assert "stdout: " in message and "...(truncated" in message
+        assert "stderr: " in message and "...(truncated" in message
+        assert "fallback_reason: role=implementer profile 'glm' is not available via ccs" in message
+    else:
+        raise AssertionError("Expected RunnerError for subprocess failure path")
+
+
+
 def test_run_role_subprocess_command_failure_raises_runner_error_with_stderr(monkeypatch):
     def fake_run(*args, **kwargs):
         raise runner.subprocess.CalledProcessError(

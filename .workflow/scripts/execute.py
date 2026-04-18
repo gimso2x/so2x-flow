@@ -13,10 +13,11 @@ PROJECT_ROOT = WORKFLOW_ROOT.parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
-from ccs_runner import resolve_role_runner, resolve_runner, run_role, run_role_subprocess
+from ccs_runner import resolve_runner
+from execution_runtime import ExecutionFailure, run_roles, validate_runtime_config
 from mode_handlers import prepare_mode_context
 from payloads import build_payload, print_summary
-from prompt_builder import build_prompt, load_text
+from prompt_builder import load_text
 from task_artifacts import save_task_payload
 
 CONFIG_PATH = WORKFLOW_ROOT / "config" / "ccs-map.yaml"
@@ -104,6 +105,21 @@ def ensure_bootstrap_files() -> list[str]:
     return artifacts
 
 
+def collect_artifacts_for_mode(mode: str, bootstrap_artifacts: list[str], context) -> list[str]:
+    if mode == "init":
+        return list(context.artifacts)
+    artifacts = list(bootstrap_artifacts)
+    artifacts.extend(context.artifacts)
+    return artifacts
+
+
+def persist_and_print(payload: dict) -> None:
+    json_path = save_task_payload(PROJECT_ROOT, payload)
+    if json_path is not None:
+        payload["output_json"] = str(json_path.relative_to(PROJECT_ROOT))
+    print_summary(payload)
+
+
 def main() -> int:
     args = parse_args()
     mode = canonical_mode(args.mode)
@@ -123,101 +139,58 @@ def main() -> int:
         with_design=args.with_design,
         load_text=load_text,
     )
-    artifacts = list(bootstrap_artifacts) if mode == "init" else []
-    if mode == "init":
-        artifacts = list(context.artifacts)
-    else:
-        artifacts.extend(context.artifacts)
-
+    artifacts = collect_artifacts_for_mode(mode, bootstrap_artifacts, context)
     runtime_config = config.get("runtime", {})
-    allow_live_run_raw = runtime_config.get("allow_live_run", False)
-    if not isinstance(allow_live_run_raw, bool):
-        raise SystemExit("live execution blocked: runtime.allow_live_run must be a boolean true/false value")
-    allow_live_run = allow_live_run_raw
-    if not args.dry_run and not allow_live_run:
-        raise SystemExit("live execution blocked: set runtime.allow_live_run=true or use --dry-run")
+    validate_runtime_config(runtime_config, dry_run=args.dry_run)
     resolution = resolve_runner(runtime_config.get("runner", "auto"))
-    role_results = []
-    planner_output = context.planner_output
-    for role in context.roles:
-        requested_role_config = config["roles"][role][resolution.selected_runner]
-        shared_role_config = {**config["roles"][role], **requested_role_config}
-        role_resolution = resolve_role_runner(
-            requested_runner=resolution.selected_runner,
-            role=role,
-            role_config=shared_role_config,
+
+    try:
+        role_results = run_roles(
+            config=config,
+            resolution=resolution,
             runtime_config=runtime_config,
-        )
-        active_role_config = config["roles"][role][role_resolution.selected_runner]
-        shared_role_config = {**config["roles"][role], **active_role_config}
-        prompt = build_prompt(
             prompts_dir=PROMPTS_DIR,
             project_root=PROJECT_ROOT,
-            role=role,
             mode=mode,
             request=args.request,
-            docs_used=context.docs_used,
-            docs_bundle=context.docs_bundle,
-            task_path=context.task_path,
+            context=context,
             qa_id=args.qa_id,
-            planner_output=planner_output,
+            dry_run=args.dry_run,
+        )
+        payload = build_payload(
+            mode=mode,
+            request=args.request,
+            dry_run=args.dry_run,
+            resolution=resolution,
             design_doc=context.design_doc,
             approved_plan_path=context.approved_plan_path,
             approved_plan_match_reason=context.approved_plan_match_reason,
+            docs_used=context.docs_used,
+            roles=context.roles,
+            role_results=role_results,
+            artifacts=artifacts,
         )
-        if args.dry_run:
-            result = run_role(
-                runner=role_resolution.selected_runner,
-                role=role,
-                prompt=prompt,
-                role_config=shared_role_config,
-                runtime_config=runtime_config,
-                dry_run=True,
-                fallback_reason=role_resolution.fallback_reason,
-            )
-        else:
-            result = run_role_subprocess(
-                runner=role_resolution.selected_runner,
-                role=role,
-                prompt=prompt,
-                role_config=shared_role_config,
-                runtime_config=runtime_config,
-                fallback_reason=role_resolution.fallback_reason,
-            )
-        role_results.append(
-            {
-                "role": result.role,
-                "runner": result.runner,
-                "engine": result.engine,
-                "model": result.model,
-                "status": result.status,
-                "output": result.output,
-                "command": result.command,
-                "command_preview": result.command_preview,
-                "fallback_reason": result.fallback_reason,
-            }
+        persist_and_print(payload)
+        return 0
+    except ExecutionFailure as exc:
+        payload = build_payload(
+            mode=mode,
+            request=args.request,
+            dry_run=args.dry_run,
+            resolution=resolution,
+            design_doc=context.design_doc,
+            approved_plan_path=context.approved_plan_path,
+            approved_plan_match_reason=context.approved_plan_match_reason,
+            docs_used=context.docs_used,
+            roles=context.roles,
+            role_results=exc.role_results,
+            artifacts=artifacts,
+            failed_role=exc.role,
+            failed_stage=exc.stage,
+            failure_message=exc.message,
         )
-        if role in {"planner", "qa_planner"}:
-            planner_output = result.output
-
-    payload = build_payload(
-        mode=mode,
-        request=args.request,
-        dry_run=args.dry_run,
-        resolution=resolution,
-        design_doc=context.design_doc,
-        approved_plan_path=context.approved_plan_path,
-        approved_plan_match_reason=context.approved_plan_match_reason,
-        docs_used=context.docs_used,
-        roles=context.roles,
-        role_results=role_results,
-        artifacts=artifacts,
-    )
-    json_path = save_task_payload(PROJECT_ROOT, payload)
-    if json_path is not None:
-        payload["output_json"] = str(json_path.relative_to(PROJECT_ROOT))
-    print_summary(payload)
-    return 0
+        persist_and_print(payload)
+        raise SystemExit(exc.message)
 
 
 if __name__ == "__main__":

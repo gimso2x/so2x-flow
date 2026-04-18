@@ -14,6 +14,9 @@ def build_payload(
     roles: list[str],
     role_results: list[dict],
     artifacts: list[str],
+    failed_role: str | None = None,
+    failed_stage: str | None = None,
+    failure_message: str | None = None,
 ) -> dict:
     return {
         "mode": mode,
@@ -30,6 +33,9 @@ def build_payload(
         "roles": roles,
         "role_results": role_results,
         "artifacts": artifacts,
+        "failed_role": failed_role,
+        "failed_stage": failed_stage,
+        "failure_message": failure_message,
         "output_json": artifacts[0] if artifacts and artifacts[0].endswith('.json') else '',
     }
 
@@ -69,4 +75,10 @@ def print_summary(payload: dict) -> None:
     print("artifacts:")
     for artifact in payload["artifacts"]:
         print(f"  - {artifact}")
+    if payload.get("failed_role"):
+        print(f"failed_role: {payload['failed_role']}")
+    if payload.get("failed_stage"):
+        print(f"failed_stage: {payload['failed_stage']}")
+    if payload.get("failure_message"):
+        print(f"failure_message: {payload['failure_message']}")
     print(f"output_json: {payload['output_json']}")

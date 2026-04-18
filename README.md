@@ -62,73 +62,29 @@ rm -rf .tmp/so2x-flow
 rmdir .tmp 2>/dev/null || true
 ```
 
-## 기본 프로세스
+## 핵심 개념
 
-### 1. 요구사항 입력
-애매한 요구사항, 큰 기능, 방향이 아직 안 정해진 요청은 **무조건 `flow-plan`부터** 시작한다.
+### init vs install
 
-`flow-plan`이 하는 일:
-- 옵션 2~3개 비교
-- trade-off 정리
-- 추천안 1개 선택
-- 구현 slice 분해
-- 검증 기준 작성
-- canonical plan artifact 저장
-- 승인 질문
+- `install.py` — scaffold 파일을 프로젝트에 복사하고 설치 로그를 남기는 진짜 설치 단계
+- `execute.py init` / `flow-init` — 이미 설치된 scaffold를 기준으로 질문 기반 init task를 만들고 dry-run/live 결과를 남기는 운영 단계
+- init은 planner를 돌리지 않고 `.workflow/tasks/init/<slug>.json` 질문지만 유지/갱신한다.
+- 즉, 설치와 운영 초기화는 일부러 분리돼 있다. 파일 배포는 install, 워크플로우 실행은 init 질문지 작성이다.
 
-즉 지금 구조에서 `flow-plan`은 아래를 내부적으로 흡수한다.
-- brainstorming
-- writing-plans
+### plan vs feature
 
-### 2. 승인
-`flow-plan` 결과가 승인되면 canonical plan artifact가 기준 문서가 된다.
-
-### 3. 실행
-그 다음에만 `flow-feature`로 들어간다.
-
-`flow-feature`가 하는 일:
-- 승인된 방향 확인
-- 이번 최소 구현 slice 선택
-- planner -> implementer 실행
-- verification 정리
-
-중요:
+- `flow-plan` — thinking + planning + approval
+- `/flow-plan` — 구현 없이 계획만 수행
+- 현재 v0 `/flow-plan`은 `.workflow/tasks/plan/*.json` 하나를 canonical 계획 산출물로 남기는 docs-first 흐름이다.
 - `flow-feature`는 생각/비교/재기획 단계가 아니다.
 - 승인된 plan이 없으면 구현으로 밀지 않고 멈춘다.
-
-### 4. 이후 보조 흐름
-- 버그/QA 수정: `flow-qa`
-  - root cause 먼저
-  - 가능하면 failing reproduction/test 먼저
-  - minimal fix 후 회귀 검증
-- 계획/구현 검토: `flow-review`
-  - spec gap
-  - quality/regression risk
-  - independent verification
+- `--skip-plan`에 쓰려면 `approved: true` 또는 `status: approved`로 명시 승인되어 있어야 한다
 
 ## 한 줄 워크플로우
 
 ```text
 요구사항 입력 -> flow-plan -> 승인 -> flow-feature -> flow-review 또는 flow-qa
 ```
-
-## 포함된 흐름
-
-- `flow-init` — PRD/ARCHITECTURE/QA/DESIGN 기준 질문지를 만들고 init task JSON을 남김
-- `flow-feature` — 승인된 slice 실행 + 가능하면 TDD + review gate
-- `flow-qa` — systematic debugging + test-first bugfix 흐름
-- `flow-review` — independent verification / code review 성격의 검토
-- `flow-review` — 문서와 태스크 기준 리뷰 JSON 생성 후 검토 수행
-- `flow-plan` — thinking + planning + approval
-- `/flow-plan` — 구현 없이 계획만 수행
-- 현재 v0 `/flow-plan`은 `.workflow/tasks/plan/*.json` 하나를 canonical 계획 산출물로 남기는 docs-first 흐름이다.
-
-## init vs install
-
-- `install.py` — scaffold 파일을 프로젝트에 복사하고 설치 로그를 남기는 진짜 설치 단계
-- `execute.py init` / `flow-init` — 이미 설치된 scaffold를 기준으로 질문 기반 init task를 만들고 dry-run/live 결과를 남기는 운영 단계
-- init은 planner를 돌리지 않고 `.workflow/tasks/init/<slug>.json` 질문지만 유지/갱신한다.
-- 즉, 설치와 운영 초기화는 일부러 분리돼 있다. 파일 배포는 install, 워크플로우 실행은 init 질문지 작성이다.
 
 ## 처음 3단계
 
@@ -148,12 +104,30 @@ rmdir .tmp 2>/dev/null || true
 - 어디까지 만들지 범위를 먼저 정해야 함
 - 구현 전에 slice와 검증 기준을 먼저 고정하고 싶음
 
+`flow-plan`이 하는 일:
+- 옵션 2~3개 비교
+- trade-off 정리
+- 추천안 1개 선택
+- 구현 slice 분해
+- 검증 기준 작성
+- canonical plan artifact 저장
+- 승인 질문
+
+즉 지금 구조에서 `flow-plan`은 아래를 내부적으로 흡수한다.
+- brainstorming
+- writing-plans
+
 ### `flow-feature`로 시작
 이런 경우만:
 - 이미 승인된 plan이 있음
 - 이번에 구현할 slice가 명확함
 - planner/implementer가 새 방향을 발명하면 안 됨
-- `--skip-plan`에 쓰려면 `approved: true` 또는 `status: approved`로 명시 승인되어 있어야 한다
+
+`flow-feature`가 하는 일:
+- 승인된 방향 확인
+- 이번 최소 구현 slice 선택
+- planner -> implementer 실행
+- verification 정리
 
 ### `flow-qa`로 시작
 이런 경우:
@@ -164,6 +138,15 @@ rmdir .tmp 2>/dev/null || true
 이런 경우:
 - 구현 또는 계획을 문서 기준으로 점검하고 싶음
 - Spec Gap / Test Gap / QA Watchpoints를 보고 싶음
+
+## 포함된 흐름
+
+- `flow-init` — PRD/ARCHITECTURE/QA/DESIGN 기준 질문지를 만들고 init task JSON을 남김
+- `flow-feature` — 승인된 slice 실행 + 가능하면 TDD + review gate
+- `flow-qa` — systematic debugging + test-first bugfix 흐름
+- `flow-review` — 문서와 태스크 기준 리뷰 JSON 생성 후 검토 수행
+- `flow-plan` — thinking + planning + approval
+- `/flow-plan` — 구현 없이 계획만 수행
 
 ## 핵심 규칙
 

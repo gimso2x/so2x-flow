@@ -24,13 +24,14 @@ GENERIC_PLAN_TOKENS = {
     "v1",
     "v2",
 }
-PLAN_SIMILARITY_THRESHOLD = 0.34
+PLAN_SIMILARITY_THRESHOLD = 0.75
 
 
 def slugify(text: str) -> str:
     text = text.lower().strip()
     text = re.sub(r"[^a-z0-9가-힣]+", "-", text)
     return text.strip("-") or "run"
+
 
 
 def canonical_plan_artifacts(plan_tasks: Path) -> list[Path]:
@@ -66,10 +67,19 @@ def plan_similarity_score(request: str, plan_path: Path) -> tuple[float, list[st
     if not request_tokens or not plan_tokens or not shared_tokens:
         return 0.0, shared_tokens
 
-    union_size = len(request_tokens | plan_tokens)
-    if union_size == 0:
-        return 0.0, shared_tokens
-    return len(shared_tokens) / union_size, shared_tokens
+    request_overlap = len(shared_tokens) / len(request_tokens)
+    plan_overlap = len(shared_tokens) / len(plan_tokens)
+    return request_overlap * plan_overlap, shared_tokens
+
+
+
+def _match_reason(prefix: str, request_slug: str, plan_slug: str, score: float, shared_tokens: list[str]) -> str:
+    shared = ", ".join(shared_tokens) if shared_tokens else "(none)"
+    return (
+        f"{prefix}: request={request_slug}, candidate={plan_slug}, "
+        f"shared_tokens={shared}, score={score:.2f}, threshold={PLAN_SIMILARITY_THRESHOLD:.2f}"
+    )
+
 
 
 def match_plan_to_request(request: str, plan_path: Path) -> tuple[bool, float, str]:
@@ -78,15 +88,11 @@ def match_plan_to_request(request: str, plan_path: Path) -> tuple[bool, float, s
     score, shared_tokens = plan_similarity_score(request, plan_path)
     if score >= PLAN_SIMILARITY_THRESHOLD:
         if score == 1.0:
-            return True, score, f"matched plan similarity exact slug: {plan_slug} (score={score:.2f})"
+            return True, score, _match_reason("matched plan similarity exact slug", request_slug, plan_slug, score, shared_tokens)
         if score >= 0.95:
-            return True, score, f"matched plan similarity by containment: {plan_slug} (score={score:.2f})"
-        return True, score, f"matched plan similarity via topics: {', '.join(shared_tokens)} (score={score:.2f})"
-    return False, score, (
-        "no sufficiently similar plan: "
-        f"request={request_slug}, candidate={plan_slug}, score={score:.2f}, threshold={PLAN_SIMILARITY_THRESHOLD:.2f}"
-    )
-
+            return True, score, _match_reason("matched plan similarity by containment", request_slug, plan_slug, score, shared_tokens)
+        return True, score, _match_reason("matched plan similarity via topics", request_slug, plan_slug, score, shared_tokens)
+    return False, score, _match_reason("no sufficiently similar plan", request_slug, plan_slug, score, shared_tokens)
 
 def is_plan_explicitly_approved(plan_path: Path) -> bool:
     try:
@@ -107,21 +113,28 @@ def select_approved_plan(project_root: Path, plan_tasks: Path, request: str, req
             return None, "no explicitly approved plan artifacts found"
 
     best_match: Path | None = None
-    best_score = -1.0
-    best_reason = "no sufficiently similar plan"
+    best_match_score = -1.0
+    best_match_reason = "no sufficiently similar plan"
+    best_candidate: Path | None = None
+    best_candidate_score = -1.0
+    best_candidate_reason = "no sufficiently similar plan"
 
     for artifact in artifacts:
         matched, score, reason = match_plan_to_request(request, artifact)
-        if matched and score > best_score:
+        if score > best_candidate_score:
+            best_candidate = artifact
+            best_candidate_score = score
+            best_candidate_reason = reason
+        if matched and score > best_match_score:
             best_match = artifact
-            best_score = score
-            best_reason = reason
+            best_match_score = score
+            best_match_reason = reason
 
     if best_match is None:
-        latest = artifacts[0]
-        _, _, latest_reason = match_plan_to_request(request, latest)
-        return None, latest_reason
-    return str(best_match.relative_to(project_root)), best_reason
+        if best_candidate is None:
+            return None, "no plan artifacts found"
+        return None, f"{best_candidate_reason}; best_candidate={slugify(best_candidate.stem)}"
+    return str(best_match.relative_to(project_root)), best_match_reason
 
 
 def collect_design_doc(project_root: Path, workflow_root: Path, mode: str, with_design: bool) -> str | None:
