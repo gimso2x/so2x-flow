@@ -451,9 +451,16 @@ def test_requested_ccs_falls_back_to_claude_when_ccs_missing(tmp_path: Path):
 
 def test_execute_uses_runner_resolution_layer_and_live_runner_path(tmp_path: Path):
     execute = (ROOT / ".workflow" / "scripts" / "execute.py").read_text(encoding="utf-8")
+    prompt_builder = (ROOT / ".workflow" / "scripts" / "prompt_builder.py").read_text(encoding="utf-8")
+    mode_handlers = (ROOT / ".workflow" / "scripts" / "mode_handlers.py").read_text(encoding="utf-8")
+    payloads = (ROOT / ".workflow" / "scripts" / "payloads.py").read_text(encoding="utf-8")
     assert "from ccs_runner import resolve_role_runner, resolve_runner, run_role, run_role_subprocess" in execute
-    assert "from task_artifacts import (" in execute
-    assert "from workflow_context import (" in execute
+    assert "from mode_handlers import prepare_mode_context" in execute
+    assert "from payloads import build_payload, print_summary" in execute
+    assert "from prompt_builder import build_prompt" in execute
+    assert "def build_prompt(" in prompt_builder
+    assert "def prepare_mode_context(" in mode_handlers
+    assert "def build_payload(" in payloads
 
     workspace = make_workspace(tmp_path)
     fake_runner = workspace / "fake-claude.sh"
