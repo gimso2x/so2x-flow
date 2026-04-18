@@ -37,6 +37,7 @@
 - Start ambiguous or new requirements with `flow-plan` first.
 - `flow-plan` absorbs brainstorming + writing-plans and leaves an approved canonical plan artifact.
 - For feature work, only execute `flow-feature` after an approved plan exists, then create the feature task document first.
+- 승인된 plan이 없으면 여기서 멈추고 `flow-plan`으로 먼저 범위를 확정할지 묻는다.
 - For QA work, create `.workflow/tasks/qa/<slug>.json` first.
 - `Proposed Steps` must exist before implementation.
 - New behavior or bugfix work should prefer TDD: failing reproduction/test first, then minimal code.
@@ -44,8 +45,10 @@
 - Slice completion should pass a review gate (spec compliance / quality / regression risk) before being treated as done.
 - If work splits cleanly, prefer subagent-style task isolation per slice rather than one giant mixed execution context.
 - Use `.workflow/config/ccs-map.yaml` to select `auto`, `ccs`, or `claude` runner.
+- Canonical plan artifacts live at `.workflow/tasks/plan/<slug>.json`.
 - In v0, `.workflow/scripts/execute.py` is validated primarily in `--dry-run` mode.
 - `runtime.allow_live_run` must be a real YAML boolean (`true` or `false`), not a string.
 - `ccs` shortcut roles run as `ccs <profile> "prompt"`; do not assume `-p` or `--model` for shortcut execution.
 - If a configured `ccs_profile` is missing, execute-level preflight falls back that role to `claude -p` when Claude is available; the reason is printed in `fallback_reason`.
+- role별 `ccs_profile`이 없으면 그 role만 `claude -p`로 fallback하고 이유를 role 결과에 남긴다.
 - Use `.claude/settings.json` hooks as deterministic guardrails; do not rely on CLAUDE.md text alone for enforcement.

@@ -133,7 +133,39 @@ def test_run_role_subprocess_command_failure_raises_runner_error_with_stderr(mon
         message = str(exc)
         assert "runner=ccs role=planner exited 17" in message
         assert "stderr: boom" in message
+        assert "stdout: (none)" in message
         assert "ccs codex hello" in message
+    else:
+        raise AssertionError("Expected RunnerError for subprocess failure path")
+
+
+def test_run_role_subprocess_command_failure_includes_stdout_and_fallback_reason(monkeypatch):
+    def fake_run(*args, **kwargs):
+        raise runner.subprocess.CalledProcessError(
+            returncode=9,
+            cmd=args[0],
+            output="partial-output",
+            stderr="bad things happened",
+        )
+
+    monkeypatch.setattr(runner.subprocess, "run", fake_run)
+
+    try:
+        runner.run_role_subprocess(
+            runner="claude",
+            role="implementer",
+            prompt="hello",
+            role_config={"command": "claude", "claude_role": "implementer"},
+            runtime_config={"claude_headless_flag": "-p"},
+            timeout=11,
+            fallback_reason="role=implementer profile 'glm' is not available via ccs",
+        )
+    except runner.RunnerError as exc:
+        message = str(exc)
+        assert "runner=claude role=implementer exited 9" in message
+        assert "stdout: partial-output" in message
+        assert "stderr: bad things happened" in message
+        assert "fallback_reason: role=implementer profile 'glm' is not available via ccs" in message
     else:
         raise AssertionError("Expected RunnerError for subprocess failure path")
 

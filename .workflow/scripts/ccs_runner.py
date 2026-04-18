@@ -210,10 +210,17 @@ def run_role_subprocess(
     try:
         completed = subprocess.run(command, capture_output=True, text=True, timeout=timeout, check=True)
     except subprocess.TimeoutExpired:
-        raise RunnerError(f"runner={runner} role={role} timed out after {timeout}s: {preview}")
+        detail = f"runner={runner} role={role} timed out after {timeout}s: {preview}"
+        if fallback_reason:
+            detail = f"{detail}\nfallback_reason: {fallback_reason}"
+        raise RunnerError(detail)
     except subprocess.CalledProcessError as exc:
         hint = authentication_hint(runner, exc.stderr)
-        detail = f"runner={runner} role={role} exited {exc.returncode}: {preview}\nstderr: {exc.stderr}"
+        stdout = (getattr(exc, "output", None) or "").strip() or "(none)"
+        stderr = (exc.stderr or "").strip() or "(none)"
+        detail = f"runner={runner} role={role} exited {exc.returncode}: {preview}\nstdout: {stdout}\nstderr: {stderr}"
+        if fallback_reason:
+            detail = f"{detail}\nfallback_reason: {fallback_reason}"
         if hint:
             detail = f"{detail}\nhint: {hint}"
         raise RunnerError(detail) from exc

@@ -3,6 +3,82 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+ARTIFACT_SCHEMAS = {
+    "feature": {
+        "title": str,
+        "summary": str,
+        "context": list,
+        "related_docs": list,
+        "latest_approved_flow_plan_output": str,
+        "approved_direction": dict,
+        "approval_gate": list,
+        "implementation_slice": list,
+        "relevant_files": list,
+        "out_of_scope": list,
+        "proposed_steps": list,
+        "acceptance": list,
+        "verification": list,
+        "follow_up_slice": list,
+        "next_step_prompt": str,
+    },
+    "qa": {
+        "title": str,
+        "issue_summary": str,
+        "qa_id": str,
+        "references": list,
+        "reproduction": list,
+        "expected": list,
+        "actual": list,
+        "suspected_scope": list,
+        "minimal_fix": list,
+        "regression_checklist": list,
+    },
+    "review": {
+        "title": str,
+        "related_docs": list,
+        "review_focus": list,
+        "findings": list,
+        "next_step_prompt": str,
+    },
+    "init": {
+        "title": str,
+        "status": str,
+        "questions": list,
+        "next_step_prompt": str,
+    },
+    "plan": {
+        "request": str,
+        "status": str,
+        "approved": bool,
+        "related_docs": list,
+        "context_snapshot": str,
+        "open_questions": list,
+        "options": dict,
+        "recommendation": str,
+        "draft_plan": list,
+        "approval_gate": list,
+        "next_step_prompt": str,
+    },
+}
+
+
+def validate_artifact(kind: str, payload: dict) -> dict:
+    schema = ARTIFACT_SCHEMAS.get(kind)
+    if schema is None:
+        raise ValueError(f"unsupported artifact kind: {kind}")
+    if not isinstance(payload, dict):
+        raise ValueError(f"{kind} artifact must be a dict")
+    for field, expected_type in schema.items():
+        if field not in payload:
+            raise ValueError(f"{kind} missing required field: {field}")
+        if not isinstance(payload[field], expected_type):
+            raise ValueError(f"{kind} field '{field}' must be of type {expected_type.__name__}")
+    return payload
+
+
+def write_json(path: Path, payload: dict) -> None:
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
 
 def render_feature_task(request: str, approved_plan_path: str | None = None) -> dict:
     plan_ref = approved_plan_path or "(none matched request)"
@@ -12,7 +88,7 @@ def render_feature_task(request: str, approved_plan_path: str | None = None) -> 
     else:
         next_step_prompt = "이 요청은 아직 승인된 방향이 없으니, /flow-plan으로 먼저 범위를 확정할까요? (y/n)"
         approval_hint = "승인된 plan이 없으면 여기서 멈추고 /flow-plan으로 먼저 범위를 확정할지 묻는다."
-    return {
+    return validate_artifact("feature", {
         "title": request,
         "summary": f"Requested feature: {request}",
         "context": ["Capture user-facing context and constraints here."],
@@ -40,12 +116,12 @@ def render_feature_task(request: str, approved_plan_path: str | None = None) -> 
         "verification": ["List the checks required before considering this slice done."],
         "follow_up_slice": ["Describe the next smallest slice after this one."],
         "next_step_prompt": next_step_prompt,
-    }
+    })
 
 
 def render_qa_task(request: str, qa_id: str | None) -> dict:
     qa_label = qa_id or "QA-TBD"
-    return {
+    return validate_artifact("qa", {
         "title": request,
         "issue_summary": "Summarize the bug and affected user flow.",
         "qa_id": qa_label,
@@ -63,11 +139,11 @@ def render_qa_task(request: str, qa_id: str | None) -> dict:
             "Adjacent flow still works",
             "No broader scope added without approval",
         ],
-    }
+    })
 
 
 def render_review_task(request: str, docs_used: list[str], task: str | None = None) -> dict:
-    return {
+    payload = {
         "title": request,
         "related_docs": docs_used,
         "related_task": task,
@@ -80,10 +156,12 @@ def render_review_task(request: str, docs_used: list[str], task: str | None = No
         "findings": [],
         "next_step_prompt": "이 리뷰 결과를 기준으로 후속 수정이 필요할까요? (y/n)",
     }
+    validate_artifact("review", payload)
+    return payload
 
 
 def render_init_task(request: str) -> dict:
-    return {
+    return validate_artifact("init", {
         "title": request,
         "status": "needs_user_input",
         "questions": [
@@ -97,11 +175,11 @@ def render_init_task(request: str) -> dict:
             {"id": "design", "question": "디자인/UX 기준이 있나요? 없으면 원하는 분위기를 알려주세요.", "target_doc": "DESIGN.md"},
         ],
         "next_step_prompt": "위 질문들에 답해주면 flow-init이 문서를 하나씩 채워갈게요.",
-    }
+    })
 
 
 def render_plan_doc(request: str, docs_used: list[str]) -> dict:
-    return {
+    return validate_artifact("plan", {
         "request": request,
         "status": "draft",
         "approved": False,
@@ -125,7 +203,7 @@ def render_plan_doc(request: str, docs_used: list[str]) -> dict:
             "승인 전에는 /flow-feature로 자동 전환하거나 다음 실행을 기정사실화하지 않는다.",
         ],
         "next_step_prompt": "이 설계 방향으로 확정할까요? (y/n)",
-    }
+    })
 
 
 def save_task_payload(project_root: Path, payload: dict) -> Path | None:
@@ -145,6 +223,7 @@ def save_task_payload(project_root: Path, payload: dict) -> Path | None:
 
 
 def write_initial_task(path: Path, content: dict, preserve_existing: bool = False) -> None:
+    validate_artifact("init", content)
     if preserve_existing and path.exists():
         existing = json.loads(path.read_text(encoding="utf-8"))
         merged = {**existing}
@@ -154,16 +233,19 @@ def write_initial_task(path: Path, content: dict, preserve_existing: bool = Fals
         merged["status"] = existing.get("status", "needs_user_input") if has_answers else "needs_user_input"
         merged["questions"] = content["questions"]
         merged["next_step_prompt"] = content["next_step_prompt"]
-        path.write_text(json.dumps(merged, ensure_ascii=False, indent=2), encoding="utf-8")
+        validate_artifact("init", merged)
+        write_json(path, merged)
         return
-    path.write_text(json.dumps(content, ensure_ascii=False, indent=2), encoding="utf-8")
+    write_json(path, content)
 
 
 def write_plan_task(path: Path, content: dict) -> None:
+    validate_artifact("plan", content)
     if path.exists():
         existing = json.loads(path.read_text(encoding="utf-8"))
         if existing.get("approved") is True:
             content["approved"] = True
         if existing.get("status") == "approved":
             content["status"] = "approved"
-    path.write_text(json.dumps(content, ensure_ascii=False, indent=2), encoding="utf-8")
+    validate_artifact("plan", content)
+    write_json(path, content)
