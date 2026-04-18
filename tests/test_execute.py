@@ -451,7 +451,7 @@ def test_requested_ccs_falls_back_to_claude_when_ccs_missing(tmp_path: Path):
 
 def test_execute_uses_runner_resolution_layer_and_live_runner_path(tmp_path: Path):
     execute = (ROOT / ".workflow" / "scripts" / "execute.py").read_text(encoding="utf-8")
-    assert "from ccs_runner import resolve_runner, run_role, run_role_subprocess" in execute
+    assert "from ccs_runner import resolve_role_runner, resolve_runner, run_role, run_role_subprocess" in execute
     assert "from task_artifacts import (" in execute
     assert "from workflow_context import (" in execute
 
@@ -521,7 +521,6 @@ def test_live_ccs_execution_surfaces_codex_auth_guidance(tmp_path: Path):
     assert "run `ccs setup` or `ccs codex --auth`" in result.stderr
 
 
-
 def test_docs_first_smoke_plan_feature_qa_sequence(tmp_path: Path):
     workspace = make_workspace(tmp_path)
 
@@ -554,3 +553,61 @@ def test_docs_first_smoke_plan_feature_qa_sequence(tmp_path: Path):
     assert qa_json["qa_id"] == "QA-101"
     assert qa_json["reproduction"] == ["Describe how to reproduce the issue."]
     assert qa_json["minimal_fix"] == ["Describe the smallest safe repair."]
+
+
+def test_live_feature_role_can_fallback_to_claude_when_ccs_profile_missing(tmp_path: Path):
+    workspace = make_workspace(tmp_path)
+    fake_claude = workspace / "fake-claude.sh"
+    fake_claude.write_text("#!/usr/bin/env bash\nprintf 'claude-live-ok\\n'\n", encoding="utf-8")
+    fake_claude.chmod(0o755)
+
+    execute = workspace / ".workflow" / "scripts" / "execute.py"
+    probe_dir = workspace / "probe-bin"
+    probe_dir.mkdir()
+    probe = probe_dir / "ccs"
+    probe.write_text(
+        "#!/usr/bin/env bash\n"
+        "if [ \"$1\" = \"missing-profile\" ] && [ \"$2\" = \"--help\" ]; then\n"
+        "  echo \"Profile 'missing-profile' not found\" >&2\n"
+        "  exit 1\n"
+        "fi\n"
+        "printf 'ccs-live-ok\\n'\n"
+        "exit 0\n",
+        encoding="utf-8",
+    )
+    probe.chmod(0o755)
+
+    config_path = workspace / ".workflow" / "config" / "ccs-map.yaml"
+    config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+    config["runtime"]["runner"] = "ccs"
+    config["runtime"]["allow_live_run"] = True
+    config["runtime"]["claude_command"] = str(fake_claude)
+    config["runtime"]["claude_headless_flag"] = "--prompt"
+    config["roles"]["planner"]["ccs_profile"] = "codex"
+    config["roles"]["implementer"]["ccs_profile"] = "missing-profile"
+    config["roles"]["planner"]["claude"]["command"] = str(fake_claude)
+    config["roles"]["implementer"]["claude"]["command"] = str(fake_claude)
+    config_path.write_text(yaml.safe_dump(config, allow_unicode=True, sort_keys=False), encoding="utf-8")
+
+    env = dict(**__import__("os").environ)
+    env["PATH"] = f"{probe_dir}:{env.get('PATH', '')}"
+    result = subprocess.run(
+        [sys.executable, str(execute), "feature", "로그인 기능 구현"],
+        cwd=workspace,
+        capture_output=True,
+        text=True,
+        env=env,
+        check=True,
+    )
+
+    payload = read_json(output_path(workspace, result.stdout, "output_json"))
+    assert payload["selected_runner"] == "ccs"
+    assert "role_fallbacks:" in result.stdout
+    assert "  - planner: (none)" in result.stdout
+    assert payload["role_results"][0]["runner"] == "ccs"
+    assert payload["role_results"][0]["fallback_reason"] is None
+    assert payload["role_results"][0]["output"] == "ccs-live-ok\n"
+    assert payload["role_results"][1]["runner"] == "claude"
+    assert "role=implementer profile 'missing-profile' is not available via ccs" in payload["role_results"][1]["fallback_reason"]
+    assert "role=implementer profile 'missing-profile' is not available via ccs" in result.stdout
+    assert payload["role_results"][1]["output"] == "claude-live-ok\n"

@@ -150,6 +150,7 @@ def test_readme_documents_init_install_split_and_artifact_naming():
     assert "질문 기반 init task를 만들고 dry-run/live 결과를 남기는 운영 단계" in readme
     assert "현재 v0 `/flow-plan`은 `.workflow/tasks/plan/*.json` 하나를 canonical 계획 산출물로 남기는 docs-first 흐름이다." in readme
     assert '`allow_live_run`은 반드시 YAML boolean `true`/`false` 값이어야 한다' in readme
+    assert "role별 `ccs_profile`이 없으면 그 role만 `claude -p`로 fallback" in readme
     assert '/flow-plan으로 "결제 기능 작업 분해" 계획 산출물을 만들어줘.' in readme
 
 
@@ -157,6 +158,7 @@ def test_flow_init_skill_documents_strict_boolean_live_run_policy():
     init_skill = (ROOT / ".claude" / "skills" / "flow-init.md").read_text(encoding="utf-8")
     assert "live 실행은 `runtime.allow_live_run=true`일 때만 허용" in init_skill
     assert "문자열 `\"true\"` 같은 값은 허용하지 않는다" in init_skill
+    assert "role별 `ccs_profile`이 없으면 그 role만 `claude -p`로 fallback" in init_skill
 
 
 def test_readme_install_prompt_forces_single_turn_completion_without_recap_only():

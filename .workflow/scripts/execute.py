@@ -15,7 +15,7 @@ PROJECT_ROOT = WORKFLOW_ROOT.parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
-from ccs_runner import resolve_runner, run_role, run_role_subprocess
+from ccs_runner import resolve_role_runner, resolve_runner, run_role, run_role_subprocess
 from task_artifacts import (
     render_feature_task,
     render_init_task,
@@ -197,6 +197,9 @@ def print_summary(payload: dict) -> None:
     print("commands:")
     for item in payload["role_results"]:
         print(f"  - {item['role']}: {item['command_preview']}")
+    print("role_fallbacks:")
+    for item in payload["role_results"]:
+        print(f"  - {item['role']}: {item.get('fallback_reason') or '(none)'}")
     print("role_outputs:")
     for item in payload["role_results"]:
         print(f"  - {item['role']} output:")
@@ -277,28 +280,41 @@ def main() -> int:
     resolution = resolve_runner(runtime_config.get("runner", "auto"))
     role_results = []
     for role in roles:
-        role_config = config["roles"][role][resolution.selected_runner]
+        requested_role_config = config["roles"][role][resolution.selected_runner]
         shared_role_config = {
             **config["roles"][role],
-            **role_config,
+            **requested_role_config,
+        }
+        role_resolution = resolve_role_runner(
+            requested_runner=resolution.selected_runner,
+            role=role,
+            role_config=shared_role_config,
+            runtime_config=runtime_config,
+        )
+        active_role_config = config["roles"][role][role_resolution.selected_runner]
+        shared_role_config = {
+            **config["roles"][role],
+            **active_role_config,
         }
         prompt = build_prompt(role, mode, args.request, docs_used, docs_bundle, task_path, args.qa_id, planner_output, design_doc, approved_plan_path, approved_plan_match_reason)
         if args.dry_run:
             result = run_role(
-                runner=resolution.selected_runner,
+                runner=role_resolution.selected_runner,
                 role=role,
                 prompt=prompt,
                 role_config=shared_role_config,
                 runtime_config=runtime_config,
                 dry_run=True,
+                fallback_reason=role_resolution.fallback_reason,
             )
         else:
             result = run_role_subprocess(
-                runner=resolution.selected_runner,
+                runner=role_resolution.selected_runner,
                 role=role,
                 prompt=prompt,
                 role_config=shared_role_config,
                 runtime_config=runtime_config,
+                fallback_reason=role_resolution.fallback_reason,
             )
         role_results.append(
             {
@@ -310,6 +326,7 @@ def main() -> int:
                 "output": result.output,
                 "command": result.command,
                 "command_preview": result.command_preview,
+                "fallback_reason": result.fallback_reason,
             }
         )
         if role in {"planner", "qa_planner"}:

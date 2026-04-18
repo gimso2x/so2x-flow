@@ -27,7 +27,7 @@ def test_resolve_runner_falls_back_to_claude_when_ccs_missing():
     assert "ccs not found" in result.fallback_reason
 
 
-def test_build_ccs_command_uses_role_config_fields():
+def test_build_ccs_command_uses_ccs_profile_as_invocation_target_without_profile_flag():
     command = runner.build_ccs_command(
         role="implementer",
         prompt="hello",
@@ -35,12 +35,15 @@ def test_build_ccs_command_uses_role_config_fields():
             "engine": "glm",
             "model": "glm-4.5",
             "profile": "impl",
+            "ccs_profile": "codex",
             "command": "ccs",
             "extra_args": ["--json"],
         },
     )
-    assert command[:2] == ["ccs", "glm"]
-    assert command[-2:] == ["-p", "hello"]
+    assert command[:2] == ["ccs", "codex"]
+    assert "--profile" not in command
+    assert "-p" not in command
+    assert command[-1] == "hello"
 
 
 def test_build_claude_command_uses_headless_flag_and_role_hint():
@@ -130,7 +133,7 @@ def test_run_role_subprocess_command_failure_raises_runner_error_with_stderr(mon
         message = str(exc)
         assert "runner=ccs role=planner exited 17" in message
         assert "stderr: boom" in message
-        assert "ccs codex --model codex -p hello" in message
+        assert "ccs codex hello" in message
     else:
         raise AssertionError("Expected RunnerError for subprocess failure path")
 
@@ -160,3 +163,109 @@ def test_run_role_subprocess_surfaces_ccs_codex_auth_hint(monkeypatch):
         assert "run `ccs setup` or `ccs codex --auth`" in message
     else:
         raise AssertionError("Expected RunnerError for ccs auth failure path")
+
+
+def test_resolve_role_runner_keeps_builtin_ccs_profile_without_role_fallback():
+    result = runner.resolve_role_runner(
+        requested_runner="ccs",
+        role="planner",
+        role_config={
+            "ccs_profile": "codex",
+            "ccs": {"command": "ccs", "engine": "codex", "model": "codex"},
+            "claude": {"command": "claude"},
+        },
+        runtime_config={"claude_command": "claude", "claude_headless_flag": "-p"},
+        has_ccs=True,
+        has_claude=True,
+    )
+    assert result.selected_runner == "ccs"
+    assert result.fallback_used is False
+    assert result.fallback_reason is None
+
+
+def test_resolve_role_runner_falls_back_to_claude_when_ccs_profile_missing(monkeypatch):
+    monkeypatch.setattr(runner, "probe_ccs_profile", lambda profile, command="ccs": (False, "Profile 'glm' not found"))
+
+    result = runner.resolve_role_runner(
+        requested_runner="ccs",
+        role="implementer",
+        role_config={
+            "ccs_profile": "glm",
+            "ccs": {"command": "ccs", "engine": "glm", "model": "glm"},
+            "claude": {"command": "claude"},
+        },
+        runtime_config={"claude_command": "claude", "claude_headless_flag": "-p"},
+        has_ccs=True,
+        has_claude=True,
+    )
+    assert result.selected_runner == "claude"
+    assert result.fallback_used is True
+    assert "profile 'glm' is not available via ccs" in result.fallback_reason
+
+
+def test_resolve_role_runner_raises_when_ccs_profile_missing_and_no_claude_available(monkeypatch):
+    monkeypatch.setattr(runner, "probe_ccs_profile", lambda profile, command="ccs": (False, "Profile 'glm' not found"))
+
+    try:
+        runner.resolve_role_runner(
+            requested_runner="ccs",
+            role="implementer",
+            role_config={
+                "ccs_profile": "glm",
+                "ccs": {"command": "ccs", "engine": "glm", "model": "glm"},
+                "claude": {"command": "claude"},
+            },
+            runtime_config={"claude_command": "claude", "claude_headless_flag": "-p"},
+            has_ccs=True,
+            has_claude=False,
+        )
+    except runner.RunnerError as exc:
+        assert "profile 'glm' is not available via ccs" in str(exc)
+        assert "claude fallback is unavailable" in str(exc)
+    else:
+        raise AssertionError("Expected RunnerError when ccs profile is missing and claude fallback is unavailable")
+
+
+def test_resolve_role_runner_uses_role_specific_claude_command_for_fallback(monkeypatch):
+    monkeypatch.setattr(runner, "probe_ccs_profile", lambda profile, command="ccs": (False, "Profile 'glm' not found"))
+    monkeypatch.setattr(runner, "has_command", lambda command: command == "/tmp/fake-claude")
+
+    result = runner.resolve_role_runner(
+        requested_runner="ccs",
+        role="implementer",
+        role_config={
+            "ccs_profile": "glm",
+            "command": "ccs",
+            "ccs": {"command": "ccs", "engine": "glm", "model": "glm"},
+            "claude": {"command": "/tmp/fake-claude"},
+        },
+        runtime_config={"claude_command": "/tmp/runtime-claude", "claude_headless_flag": "-p"},
+        has_ccs=True,
+    )
+    assert result.selected_runner == "claude"
+    assert result.fallback_used is True
+    assert "profile 'glm' is not available via ccs" in result.fallback_reason
+
+
+def test_resolve_role_runner_does_not_fallback_on_non_profile_probe_failure(monkeypatch):
+    monkeypatch.setattr(runner, "probe_ccs_profile", lambda profile, command="ccs": (False, "timed out while probing ccs profile"))
+
+    try:
+        runner.resolve_role_runner(
+            requested_runner="ccs",
+            role="implementer",
+            role_config={
+                "ccs_profile": "glm",
+                "command": "ccs",
+                "ccs": {"command": "ccs", "engine": "glm", "model": "glm"},
+                "claude": {"command": "claude"},
+            },
+            runtime_config={"claude_command": "claude", "claude_headless_flag": "-p"},
+            has_ccs=True,
+            has_claude=True,
+        )
+    except runner.RunnerError as exc:
+        assert "timed out while probing ccs profile" in str(exc)
+        assert "claude fallback is unavailable" not in str(exc)
+    else:
+        raise AssertionError("Expected RunnerError for non-profile probe failures")

@@ -179,6 +179,7 @@ rmdir .tmp 2>/dev/null || true
 - role별 `ccs_profile` preflight 실패 시 해당 role만 `claude -p`로 fallback
 - fallback 이유는 `fallback_reason`에 기록
 - `claude` — 항상 `claude -p`
+- role별 `ccs_profile`이 없으면 그 role만 `claude -p`로 fallback하고 이유를 role 결과에 남긴다.
 - `allow_live_run: false` 가 기본값이다. 실실행은 명시적으로 켜기 전까지 막는다.
 - `allow_live_run`은 반드시 YAML boolean `true`/`false` 값이어야 한다. 문자열 `"true"`, `"false"` 같은 값은 허용하지 않는다.
 
