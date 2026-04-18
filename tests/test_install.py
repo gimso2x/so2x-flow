@@ -199,6 +199,10 @@ def test_readme_documents_smoke_test_entrypoint():
     assert "python3 .workflow/scripts/release_handoff.py --base-ref origin/main --head-ref HEAD --pr-number 7 --output-dir ." in readme
     assert "생성한 PR 본문을 현재 PR에 바로 반영하려면 `gh`를 붙이면 된다." in readme
     assert "python3 .workflow/scripts/release_handoff.py --base-ref origin/main --head-ref HEAD --output-dir . --publish-pr-body" in readme
+    assert "PR 생성부터 본문 반영, checks watch까지 한 번에 돌리려면 아래처럼 쓰면 된다." in readme
+    assert "--create-pr" in readme
+    assert "--watch-checks" in readme
+    assert "`gh pr create`, `gh pr edit`(필요 시), `gh pr checks --watch`에 대응한다." in readme
     assert "RELEASE_NOTES_PR7.md" in readme
     assert "RELEASE_BODY_PR7.md" in readme
     assert "설치 관점까지 포함한 real-world smoke는 빈 프로젝트 하나 만들어 실제 install 결과를 보는 게 제일 빠르다." in readme

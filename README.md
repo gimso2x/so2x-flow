@@ -271,6 +271,21 @@ python3 .workflow/scripts/release_handoff.py --base-ref origin/main --head-ref H
 python3 .workflow/scripts/release_handoff.py --base-ref origin/main --head-ref HEAD --output-dir . --publish-pr-body
 ```
 
+PR 생성부터 본문 반영, checks watch까지 한 번에 돌리려면 아래처럼 쓰면 된다.
+
+```bash
+python3 .workflow/scripts/release_handoff.py \
+  --base-ref origin/main \
+  --head-ref HEAD \
+  --output-dir . \
+  --create-pr \
+  --draft \
+  --base-branch main \
+  --watch-checks
+```
+
+위 흐름은 내부적으로 `gh pr create`, `gh pr edit`(필요 시), `gh pr checks --watch`에 대응한다.
+
 위 명령은 아래 파일을 만든다.
 - `RELEASE_NOTES_PR7.md`
 - `RELEASE_BODY_PR7.md`

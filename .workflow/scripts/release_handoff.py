@@ -18,6 +18,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--repo", default=".", help="Repository root (default: current directory)")
     parser.add_argument("--publish-pr-body", action="store_true", help="Publish generated PR body to GitHub via gh pr edit")
     parser.add_argument("--publish-pr-number", type=int, help="Explicit PR number to publish with gh pr edit")
+    parser.add_argument("--create-pr", action="store_true", help="Create a PR with gh pr create using the generated body")
+    parser.add_argument("--draft", action="store_true", help="Create PR as draft when used with --create-pr")
+    parser.add_argument("--base-branch", help="Base branch for gh pr create")
+    parser.add_argument("--head-branch", help="Head branch for gh pr create")
+    parser.add_argument("--watch-checks", action="store_true", help="Watch PR checks with gh pr checks --watch")
     return parser.parse_args()
 
 
@@ -145,6 +150,41 @@ def output_paths(output_dir: Path, pr_number: int | None) -> tuple[Path, Path, s
     return output_dir / f"RELEASE_NOTES{suffix}.md", output_dir / f"RELEASE_BODY{suffix}.md", title
 
 
+def current_branch(repo: Path) -> str:
+    return git(repo, "branch", "--show-current")
+
+
+def resolve_create_pr_title(args: argparse.Namespace, commits: list[str], head_ref: str) -> str:
+    if args.title:
+        return args.title
+    if commits:
+        first = commits[0]
+        if " " in first:
+            return first.split(" ", 1)[1]
+        return first
+    return f"handoff: {head_ref}"
+
+
+def create_pr(repo: Path, args: argparse.Namespace, title: str, body_path: Path) -> int:
+    command = ["gh", "pr", "create", "--title", title, "--body-file", str(body_path)]
+    if args.draft:
+        command.append("--draft")
+    if args.base_branch:
+        command.extend(["--base", args.base_branch])
+    if args.head_branch:
+        command.extend(["--head", args.head_branch])
+    result = run_command(repo, *command)
+    data = gh_json(repo, "pr", "view", "--json", "number")
+    number = data.get("number")
+    if not isinstance(number, int):
+        raise SystemExit(f"Created PR but could not resolve number. Output: {result.stdout.strip()}")
+    return number
+
+
+def watch_pr_checks(repo: Path, pr_number: int) -> None:
+    run_command(repo, "gh", "pr", "checks", str(pr_number), "--watch")
+
+
 def resolve_publish_pr_number(repo: Path, args: argparse.Namespace) -> int:
     if args.publish_pr_number is not None:
         return args.publish_pr_number
@@ -191,17 +231,35 @@ def main() -> int:
     notes_path.write_text(notes, encoding="utf-8")
     body_path.write_text(body, encoding="utf-8")
 
+    publish_pr_number: int | None = None
+    if args.create_pr:
+        create_title = resolve_create_pr_title(args, commits, args.head_ref)
+        publish_pr_number = create_pr(repo, args, create_title, body_path)
+    elif args.publish_pr_body:
+        publish_pr_number = resolve_publish_pr_number(repo, args)
+        publish_pr_body(repo, publish_pr_number, body_path)
+
+    if args.watch_checks:
+        if publish_pr_number is None:
+            publish_pr_number = resolve_publish_pr_number(repo, args)
+        watch_pr_checks(repo, publish_pr_number)
+
     print(f"notes_path: {notes_path}")
     print(f"body_path: {body_path}")
     print(f"commit_count: {len(commits)}")
     print(f"changed_file_count: {len(changed_files)}")
+    print(f"current_branch: {current_branch(repo)}")
+    if args.create_pr:
+        print("created_pr: true")
+        print(f"created_pr_number: {publish_pr_number}")
+    else:
+        print("created_pr: false")
     if args.publish_pr_body:
-        publish_pr_number = resolve_publish_pr_number(repo, args)
-        publish_pr_body(repo, publish_pr_number, body_path)
         print(f"published_pr_body: true")
         print(f"published_pr_number: {publish_pr_number}")
     else:
         print("published_pr_body: false")
+    print(f"watched_checks: {args.watch_checks}")
     return 0
 
 

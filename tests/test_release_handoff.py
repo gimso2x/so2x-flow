@@ -126,3 +126,42 @@ def test_release_handoff_resolves_current_pr_number_when_publishing(tmp_path: Pa
     assert resolved == 34
     gh_json.assert_called_once_with(tmp_path, "pr", "view", "--json", "number")
     run_command.assert_called_once_with(tmp_path, "gh", "pr", "edit", "34", "--body-file", str(body_path))
+
+
+def test_release_handoff_create_pr_uses_generated_body_and_options(tmp_path: Path):
+    body_path = tmp_path / "RELEASE_BODY.md"
+    body_path.write_text("body\n", encoding="utf-8")
+    args = release_handoff.parse_args.__globals__["argparse"].Namespace(
+        title=None,
+        draft=True,
+        base_branch="main",
+        head_branch="feat/demo",
+    )
+
+    with patch.object(release_handoff, "run_command", return_value=subprocess.CompletedProcess(["gh"], 0, "https://github.com/x/y/pull/12\n", "")) as run_command, patch.object(release_handoff, "gh_json", return_value={"number": 12}) as gh_json:
+        number = release_handoff.create_pr(tmp_path, args, "feat: demo", body_path)
+
+    assert number == 12
+    run_command.assert_called_once_with(
+        tmp_path,
+        "gh",
+        "pr",
+        "create",
+        "--title",
+        "feat: demo",
+        "--body-file",
+        str(body_path),
+        "--draft",
+        "--base",
+        "main",
+        "--head",
+        "feat/demo",
+    )
+    gh_json.assert_called_once_with(tmp_path, "pr", "view", "--json", "number")
+
+
+def test_release_handoff_can_watch_checks_for_pr_number(tmp_path: Path):
+    with patch.object(release_handoff, "run_command") as run_command:
+        release_handoff.watch_pr_checks(tmp_path, 55)
+
+    run_command.assert_called_once_with(tmp_path, "gh", "pr", "checks", "55", "--watch")
