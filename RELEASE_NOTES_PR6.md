@@ -1,80 +1,87 @@
 # Release Notes — PR #6
 
 ## Summary
-`so2x-flow` thin harness contracts were tightened across execution, validation, docs, and onboarding.
+`so2x-flow` runtime orchestration was hardened across execution flow, runtime error handling, plan matching, artifact validation, and README contract sync.
 
-Merged PR:
-- `#6 refactor: harden so2x-flow thin harness contracts`
-
-Included issues:
-- #1 execute.py 분해
-- #2 live execution failure diagnostics 강화
-- #3 workflow task artifact schema validation 추가
-- #4 README / CLAUDE / flow docs 공통 계약 drift 테스트 강화
-- #5 install / first-run UX 개선
+Latest follow-up commit:
+- `48e2796 refactor: harden flow runtime orchestration`
 
 ## What changed
 
 ### 1. Thinner execution orchestration
-- Split `.workflow/scripts/execute.py` responsibilities into helper modules:
-  - `.workflow/scripts/mode_handlers.py`
-  - `.workflow/scripts/payloads.py`
-  - `.workflow/scripts/prompt_builder.py`
-- Kept `execute.py` as a thinner entrypoint/orchestrator.
+- Kept `.workflow/scripts/execute.py` focused on orchestration.
+- Moved runtime/live execution concerns into a new helper module:
+  - `.workflow/scripts/execution_runtime.py`
+- `execute.py` now mainly does:
+  - args/config loading
+  - mode context preparation
+  - runtime validation
+  - role execution dispatch
+  - payload persistence/summary
 
-### 2. Better live-run diagnostics
-- Improved live runner subprocess failures in `.workflow/scripts/ccs_runner.py`.
-- Failure messages now include:
-  - stdout
-  - stderr
-  - fallback reason when relevant
-- Timeout paths can now surface fallback context too.
+### 2. Better live-run failure handling
+- Added role-level runtime validation and execution flow in `execution_runtime.py`.
+- Live failures now persist partial success state instead of dropping all prior role results.
+- Payloads now record:
+  - `failed_role`
+  - `failed_stage`
+  - `failure_message`
+- Summary output also surfaces failure metadata directly.
 
-### 3. Stronger artifact contracts
-- Added explicit workflow task artifact validation in `.workflow/scripts/task_artifacts.py`.
-- Validation now covers generated artifacts for:
-  - init
-  - plan
-  - feature
-  - qa
-  - review
-- Required fields and basic types are now enforced before write/finalization.
+### 3. Role-specific timeout and clearer subprocess diagnostics
+- Added `runtime.role_timeouts.<role>` handling in `.workflow/scripts/ccs_runner.py`.
+- Invalid timeout config is rejected early.
+- Long subprocess stdout/stderr is truncated into readable snippets.
+- Existing fallback reasons are preserved in surfaced failure messages.
 
-### 4. Doc contract locking
-- Added tests to keep shared workflow rules aligned across:
-  - `README.md`
-  - `CLAUDE.md`
-  - `.claude/commands/*`
-  - `.claude/skills/*`
-- Locked contracts include:
-  - role-level `ccs_profile` fallback behavior
-  - approved-plan gating before feature execution
-  - canonical plan artifact path expectations
-  - install/init separation
+### 4. More conservative approved-plan matching
+- Tightened plan similarity threshold from a loose match to `0.75`.
+- Switched similarity scoring to directional overlap:
+  - `request_overlap * plan_overlap`
+- Match reasoning now records:
+  - request slug
+  - candidate slug
+  - shared tokens
+  - score
+  - threshold
+- When no plan qualifies, the best below-threshold candidate is still reported for debugging.
 
-### 5. Clearer install and first-run path
-- Improved install output with explicit next-step guidance:
-  - `next_step_cli: /flow-init`
-  - `first_run_path: /flow-init -> /flow-plan -> /flow-feature`
-- Added a `README` section documenting the first 3 steps after install.
+### 5. Stronger artifact schema validation
+- Expanded `.workflow/scripts/task_artifacts.py` validation beyond top-level field presence.
+- Added nested validation for:
+  - init question shape
+  - init/plan allowed statuses
+  - plan option payload shape
+  - feature `approved_direction` shape
+  - qa/review list contracts
+- Persisted malformed rerun artifacts now fail fast instead of being silently healed.
+
+### 6. README contract sync
+- Reordered and tightened README sections around:
+  - `init` vs `install`
+  - `plan` vs `feature`
+  - one-line workflow
+  - included flows
+- Current README now better matches actual runner/artifact/runtime behavior.
 
 ## Verification
-Test suite run:
+Full suite run:
 
 ```bash
-pytest tests/test_execute.py tests/test_ccs_runner.py tests/test_install.py -q
+pytest -q
 ```
 
 Result:
 
 ```text
-57 passed
+72 passed
 ```
 
 ## Result
-This release makes the harness more reliable as a docs-first thin-core workflow scaffold by improving:
+This update makes `so2x-flow` a sturdier docs-first thin harness by improving:
 - orchestration clarity
+- role runtime isolation
 - live failure debuggability
+- approved-plan gating accuracy
 - artifact safety
-- cross-doc consistency
-- first-run usability
+- README/implementation alignment
