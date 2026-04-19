@@ -72,20 +72,39 @@ def test_run_role_dry_run_includes_runner_and_command_preview():
     assert "command=ccs codex" in result.output
 
 
-def test_run_role_live_path_requires_real_runner():
-    try:
-        runner.run_role(
-            runner="claude",
-            role="planner",
-            prompt="hello",
-            role_config={"command": "claude", "claude_role": "planner"},
-            runtime_config={"claude_headless_flag": "-p"},
-            dry_run=False,
+def test_run_role_live_path_delegates_to_subprocess_runner(monkeypatch):
+    captured = {}
+
+    def fake_subprocess(**kwargs):
+        captured.update(kwargs)
+        return runner.RoleResult(
+            role=kwargs["role"],
+            runner=kwargs["runner"],
+            engine="planner",
+            model="claude",
+            status="success",
+            output="live-ok\n",
+            command=["claude", "-p", "hello"],
+            command_preview="claude -p hello",
+            fallback_reason=kwargs.get("fallback_reason"),
         )
-    except NotImplementedError as exc:
-        assert "live claude execution" in str(exc).lower()
-    else:
-        raise AssertionError("Expected NotImplementedError for live path")
+
+    monkeypatch.setattr(runner._execution, "run_role_subprocess", fake_subprocess)
+
+    result = runner.run_role(
+        runner="claude",
+        role="planner",
+        prompt="hello",
+        role_config={"command": "claude", "claude_role": "planner"},
+        runtime_config={"claude_headless_flag": "-p"},
+        dry_run=False,
+    )
+
+    assert result.status == "success"
+    assert result.output == "live-ok\n"
+    assert captured["runner"] == "claude"
+    assert captured["role"] == "planner"
+    assert captured["prompt"] == "hello"
 
 
 def test_run_role_subprocess_timeout_raises_runner_error_with_command_preview(monkeypatch):

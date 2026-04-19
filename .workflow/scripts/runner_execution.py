@@ -77,7 +77,14 @@ def run_role(
         output = f"[dry-run] runner={runner} role={role} engine={engine} model={model} command={preview}\n\n{prompt}"
         return RoleResult(role=role, runner=runner, engine=engine, model=model, status="dry-run", output=output, command=command, command_preview=preview, fallback_reason=fallback_reason)
 
-    raise NotImplementedError(f"Live {runner} execution is not implemented yet for role={role}")
+    return run_role_subprocess(
+        runner=runner,
+        role=role,
+        prompt=prompt,
+        role_config=role_config,
+        runtime_config=runtime_config,
+        fallback_reason=fallback_reason,
+    )
 
 
 def run_role_subprocess(
