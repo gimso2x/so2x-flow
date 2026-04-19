@@ -1,15 +1,15 @@
 ## Summary
-This handoff summarizes 2 commit(s) across workflow scripts, tests, README/release docs between `origin/main~2` and `HEAD`.
+This PR adds release handoff documents for the workflow-contracts validation refactor that is already merged on `main`.
 
-## Latest commits
-- 67379c0 Tighten workflow docs and feature validation
-- d71ef59 Refactor workflow contracts and validation hooks
+## Commit in this branch
+- 8636e87 Add release handoff docs for workflow refactor
 
-## Highlights
-- workflow scripts: `.workflow/scripts/artifact_renderers.py`, `.workflow/scripts/artifact_schema.py`, `.workflow/scripts/artifact_store.py` 외 15개
-- claude workflow assets: `.claude/settings.json`, `.claude/skills/README.md`, `.claude/skills/flow-feature.md` 외 5개
-- tests: `tests/test_execute.py`, `tests/test_hooks.py`, `tests/test_install.py`
-- repo docs: `README.md`
+## Added files
+- `RELEASE_NOTES.md`
+- `RELEASE_BODY.md`
+
+## Context covered by the handoff
+The handoff documents summarize the already-landed workflow refactor work on `main`, including workflow contract extraction, validation hook tightening, related workflow docs updates, and regression coverage.
 
 ## Verification
 ```bash
