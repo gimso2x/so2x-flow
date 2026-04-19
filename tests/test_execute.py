@@ -578,6 +578,133 @@ def test_build_payload_leaves_output_json_empty_until_persisted(tmp_path: Path):
 
 
 
+def test_build_payload_keeps_failure_and_fallback_contract_fields(tmp_path: Path):
+    workspace = make_workspace(tmp_path)
+    payloads_path = workspace / ".workflow" / "scripts" / "payloads.py"
+    spec = importlib.util.spec_from_file_location("so2x_flow_payloads", payloads_path)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+
+    class Resolution:
+        requested_runner = "ccs"
+        selected_runner = "claude"
+        fallback_used = True
+        fallback_reason = "ccs not found; falling back to claude -p"
+
+    role_results = [
+        {
+            "role": "planner",
+            "runner": "claude",
+            "engine": "claude",
+            "model": "claude-sonnet",
+            "status": "success",
+            "output": "planner ok\n",
+            "command": ["claude", "-p", "hello"],
+            "command_preview": "claude -p hello",
+            "fallback_reason": "role=planner profile 'codex' is not available via ccs",
+        }
+    ]
+
+    payload = module.build_payload(
+        mode="feature",
+        request="로그인 기능 구현",
+        dry_run=False,
+        resolution=Resolution(),
+        design_doc="DESIGN.md",
+        approved_plan_path=".workflow/tasks/plan/로그인-기능-설계-확정.json",
+        approved_plan_match_reason="explicit approval metadata matched latest request",
+        docs_used=[".workflow/docs/PRD.md", ".workflow/docs/ARCHITECTURE.md"],
+        roles=["planner", "implementer"],
+        role_results=role_results,
+        artifacts=[".workflow/tasks/feature/로그인-기능-구현.json"],
+        failed_role="implementer",
+        failed_stage="role_execution",
+        failure_message="implementer failed after planner success",
+    )
+
+    assert payload["requested_runner"] == "ccs"
+    assert payload["selected_runner"] == "claude"
+    assert payload["fallback_used"] is True
+    assert payload["fallback_reason"] == "ccs not found; falling back to claude -p"
+    assert payload["approved_plan_path"] == ".workflow/tasks/plan/로그인-기능-설계-확정.json"
+    assert payload["failed_role"] == "implementer"
+    assert payload["failed_stage"] == "role_execution"
+    assert payload["failure_message"] == "implementer failed after planner success"
+    assert payload["role_results"][0]["fallback_reason"] == "role=planner profile 'codex' is not available via ccs"
+    assert payload["output_json"] == ""
+
+
+
+def test_print_summary_emits_fallbacks_failures_and_output_json_lines(tmp_path: Path, capsys):
+    workspace = make_workspace(tmp_path)
+    payloads_path = workspace / ".workflow" / "scripts" / "payloads.py"
+    spec = importlib.util.spec_from_file_location("so2x_flow_payloads", payloads_path)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+
+    payload = {
+        "mode": "feature",
+        "artifact_kind": "feature",
+        "request": "로그인 기능 구현",
+        "dry_run": False,
+        "requested_runner": "ccs",
+        "selected_runner": "ccs",
+        "fallback_used": False,
+        "fallback_reason": None,
+        "design_doc": "DESIGN.md",
+        "approved_plan_path": ".workflow/tasks/plan/로그인-기능-설계-확정.json",
+        "approved_plan_match_reason": "token overlap matched approved artifact",
+        "docs_used": [".workflow/docs/PRD.md", ".workflow/docs/ARCHITECTURE.md"],
+        "roles": ["planner", "implementer"],
+        "role_results": [
+            {
+                "role": "planner",
+                "runner": "ccs",
+                "engine": "codex",
+                "model": "codex",
+                "status": "success",
+                "output": "planner ok\n",
+                "command": ["ccs", "codex", "prompt"],
+                "command_preview": "ccs codex prompt",
+                "fallback_reason": None,
+            },
+            {
+                "role": "implementer",
+                "runner": "claude",
+                "engine": "claude",
+                "model": "claude-sonnet",
+                "status": "failed",
+                "output": "",
+                "command": ["claude", "-p", "prompt"],
+                "command_preview": "claude -p prompt",
+                "fallback_reason": "role=implementer profile 'missing-profile' is not available via ccs",
+            },
+        ],
+        "artifacts": [".workflow/tasks/feature/로그인-기능-구현.json"],
+        "failed_role": "implementer",
+        "failed_stage": "role_execution",
+        "failure_message": "implementer failed after planner success",
+        "output_json": ".workflow/outputs/feature/로그인-기능-구현.json",
+    }
+
+    module.print_summary(payload)
+    stdout = capsys.readouterr().out
+    assert "fallback_used: False" in stdout
+    assert "fallback_reason: (none)" in stdout
+    assert "approved_plan_path: .workflow/tasks/plan/로그인-기능-설계-확정.json" in stdout
+    assert "approved_plan_match_reason: token overlap matched approved artifact" in stdout
+    assert "role_fallbacks:" in stdout
+    assert "  - planner: (none)" in stdout
+    assert "  - implementer: role=implementer profile 'missing-profile' is not available via ccs" in stdout
+    assert "failed_role: implementer" in stdout
+    assert "failed_stage: role_execution" in stdout
+    assert "failure_message: implementer failed after planner success" in stdout
+    assert "output_json: .workflow/outputs/feature/로그인-기능-구현.json" in stdout
+
+
+
 def test_run_roles_reports_runner_resolution_stage_separately(tmp_path: Path):
     workspace = make_workspace(tmp_path)
     runtime_path = workspace / ".workflow" / "scripts" / "execution_runtime.py"

@@ -75,17 +75,37 @@ for token in markers:
     if response and token not in response:
         missing.append(token)
 
+section_issues = []
+def extract_section(text: str, section: str, markers: list[str]) -> str:
+    start_match = re.search(rf"(?m)^{re.escape(section)}\s*:?(?:\n|\s*)", text)
+    if not start_match:
+        return ""
+    start = start_match.end()
+    end = len(text)
+    for candidate in markers:
+        if candidate == section:
+            continue
+        next_match = re.search(rf"(?m)^{re.escape(candidate)}\s*:?(?:\n|\s*)", text[start:])
+        if next_match:
+            end = min(end, start + next_match.start())
+    return text[start:end].strip()
+
+section_blocks = {
+    section: extract_section(response, section, markers)
+    for section in contract.output_contract.required_sections
+} if response else {}
+for section in contract.output_contract.required_sections:
+    body = section_blocks.get(section, "")
+    if not body:
+        section_issues.append(f"{section} section is empty")
+
 bullet_issues = []
 for section, bounds in (contract.output_contract.required_bullets or {}).items():
-    if not response or section not in response:
+    body = section_blocks.get(section, "")
+    if not body:
         continue
     min_items, max_items = bounds
-    pattern = re.compile(rf"{re.escape(section)}\s*:?(.*?)(?:\n[A-Z][^\n]*:|\Z)", re.S)
-    match = pattern.search(response)
-    if not match:
-        continue
-    block = match.group(1)
-    count = len(re.findall(r"(?m)^\s*(?:[-*]|\d+[.)])\s+", block))
+    count = len(re.findall(r"(?m)^\s*(?:[-*]|\d+[.)])\s+", body))
     if min_items is not None and count < min_items:
         bullet_issues.append(f"{section} has {count} items (< {min_items})")
     if max_items is not None and count > max_items:
@@ -101,9 +121,16 @@ if response and contract.output_contract.closed_question:
     else:
         closed_question_issue = "Next Step Prompt section missing or not parseable"
 
+pattern_issues = []
+for pattern, label in contract.output_contract.required_patterns:
+    if response and not re.search(pattern, response):
+        pattern_issues.append(f"Missing {label}")
+
 issues = []
 if missing:
     issues.append(f"Missing expected output markers: {', '.join(missing)}")
+issues.extend(pattern_issues)
+issues.extend(section_issues)
 issues.extend(bullet_issues)
 if closed_question_issue:
     issues.append(closed_question_issue)

@@ -285,8 +285,12 @@ def test_core_workflow_contracts_are_consistent_across_readme_claude_and_flow_do
     claude = (ROOT / "CLAUDE.md").read_text(encoding="utf-8")
     feature_command = (ROOT / ".claude" / "commands" / "flow-feature.md").read_text(encoding="utf-8")
     plan_command = (ROOT / ".claude" / "commands" / "flow-plan.md").read_text(encoding="utf-8")
+    qa_command = (ROOT / ".claude" / "commands" / "flow-qa.md").read_text(encoding="utf-8")
+    review_command = (ROOT / ".claude" / "commands" / "flow-review.md").read_text(encoding="utf-8")
     feature_skill = (ROOT / ".claude" / "skills" / "flow-feature.md").read_text(encoding="utf-8")
     plan_skill = (ROOT / ".claude" / "skills" / "flow-plan.md").read_text(encoding="utf-8")
+    qa_skill = (ROOT / ".claude" / "skills" / "flow-qa.md").read_text(encoding="utf-8")
+    review_skill = (ROOT / ".claude" / "skills" / "flow-review.md").read_text(encoding="utf-8")
 
     shared_contracts = [
         "role별 `ccs_profile`이 없으면 그 role만 `claude -p`로 fallback",
@@ -315,3 +319,34 @@ def test_core_workflow_contracts_are_consistent_across_readme_claude_and_flow_do
     assert "승인 전에는 `/flow-feature`로 자동 전환" in plan_command
     assert "설치와 운영 초기화는 일부러 분리돼 있다" in readme
     assert "Use `.claude/settings.json` hooks as deterministic guardrails" in claude
+
+    assert "`.workflow/tasks/feature/<slug>.json`" in feature_command
+    assert "planner -> implementer 흐름 결과 또는 dry-run 요약" in feature_command
+    assert "마지막은 즉답 가능한 닫힌 질문으로 끝낸다." in feature_command
+    assert "`.workflow/tasks/qa/<slug>.json`" in qa_command
+    assert "qa-planner -> implementer 흐름 결과 또는 dry-run 요약" in qa_command
+    assert "가능하면 root cause hypothesis / minimal fix / verification이 함께 보여야 한다" in qa_command
+    assert "가능하면 `test-driven-development`를 따라 failing reproduction/test를 먼저 만들고 fix 후 회귀 검증까지 끝낸다." in qa_skill
+    assert "`.workflow/tasks/review/<slug>.json`" in review_command
+    assert "review 결과 또는 dry-run 요약" in review_command
+    assert "막연한 칭찬보다 blocking issue를 먼저 적는다." in review_command
+    assert "`flow-review`는 칭찬문이 아니라 independent verification 단계다." in review_skill
+    assert "plan은 중복 산출물을 만들지 않고 `.workflow/tasks/plan/<slug>.json` 하나만 남긴다." in plan_command
+    assert "`/flow-plan` dry-run도 canonical 계획 산출물 `.workflow/tasks/plan/<slug>.json`을 만든다." in plan_command
+
+
+def test_command_docs_lock_runtime_and_artifact_wrapper_contracts():
+    feature_command = (ROOT / ".claude" / "commands" / "flow-feature.md").read_text(encoding="utf-8")
+    plan_command = (ROOT / ".claude" / "commands" / "flow-plan.md").read_text(encoding="utf-8")
+    qa_command = (ROOT / ".claude" / "commands" / "flow-qa.md").read_text(encoding="utf-8")
+    review_command = (ROOT / ".claude" / "commands" / "flow-review.md").read_text(encoding="utf-8")
+
+    assert "role별 `ccs_profile`이 없으면 그 role만 `claude -p`로 fallback하고 이유를 role 결과에 남긴다." in feature_command
+    assert "role별 `ccs_profile`이 없으면 그 role만 `claude -p`로 fallback하고 이유를 role 결과에 남긴다." in plan_command
+    assert "role별 `ccs_profile`이 없으면 그 role만 `claude -p`로 fallback하고 이유를 role 결과에 남긴다." in qa_command
+    assert "role별 `ccs_profile`이 없으면 그 role만 `claude -p`로 fallback하고 이유를 role 결과에 남긴다." in review_command
+
+    assert "`.workflow/tasks/feature/<slug>.json`" in feature_command
+    assert "`.workflow/tasks/plan/<slug>.json`" in plan_command
+    assert "`.workflow/tasks/qa/<slug>.json`" in qa_command
+    assert "`.workflow/tasks/review/<slug>.json`" in review_command

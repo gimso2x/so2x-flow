@@ -8,6 +8,8 @@ class OutputContract:
     markers: tuple[str, ...]
     closed_question: bool = False
     required_bullets: dict[str, tuple[int | None, int | None]] | None = None
+    required_patterns: tuple[tuple[str, str], ...] = ()
+    required_sections: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -40,6 +42,9 @@ MODE_CONTRACTS: dict[str, ModeContract] = {
                 ".workflow/docs/QA.md",
                 "DESIGN",
             ),
+            required_patterns=(
+                (r"\.workflow/tasks/init/[^\s]+\.json", "canonical init artifact path"),
+            ),
         ),
     ),
     "feature": ModeContract(
@@ -64,6 +69,18 @@ MODE_CONTRACTS: dict[str, ModeContract] = {
             ),
             closed_question=True,
             required_bullets={"Proposed Steps": (3, 7)},
+            required_patterns=(
+                (r"\.workflow/tasks/feature/[^\s]+\.json", "canonical feature task artifact path"),
+            ),
+            required_sections=(
+                "Approved Direction",
+                "Implementation Slice",
+                "Out of Scope",
+                "Proposed Steps",
+                "Verification",
+                "Review Gate",
+                "Follow-up Slice",
+            ),
         ),
     ),
     "qa": ModeContract(
@@ -86,6 +103,18 @@ MODE_CONTRACTS: dict[str, ModeContract] = {
                 "Verification",
                 "Residual Risk",
             ),
+            required_patterns=(
+                (r"\.workflow/tasks/qa/[^\s]+\.json", "canonical QA task artifact path"),
+            ),
+            required_sections=(
+                "Reproduction",
+                "Expected",
+                "Actual",
+                "Root Cause Hypothesis",
+                "Minimal Fix",
+                "Verification",
+                "Residual Risk",
+            ),
         ),
     ),
     "review": ModeContract(
@@ -100,6 +129,17 @@ MODE_CONTRACTS: dict[str, ModeContract] = {
         ),
         output_contract=OutputContract(
             markers=(
+                "Spec Gap",
+                "Architecture Concern",
+                "Test Gap",
+                "QA Watchpoints",
+                "Security / Regression Risk",
+                "Verdict",
+            ),
+            required_patterns=(
+                (r"\.workflow/tasks/review/[^\s]+\.json", "canonical review task artifact path"),
+            ),
+            required_sections=(
                 "Spec Gap",
                 "Architecture Concern",
                 "Test Gap",
@@ -131,6 +171,22 @@ MODE_CONTRACTS: dict[str, ModeContract] = {
                 "Next Step Prompt",
             ),
             closed_question=True,
+            required_patterns=(
+                (r"\.workflow/tasks/plan/[^\s]+\.json", "canonical plan artifact path"),
+            ),
+            required_sections=(
+                "Context Snapshot",
+                "Options",
+                "Recommendation",
+                "Implementation Slices",
+                "Verification Gates",
+                "Draft Plan",
+                "Approval Gate",
+            ),
+            required_bullets={
+                "Options": (2, 3),
+                "Implementation Slices": (1, None),
+            },
         ),
     ),
 }
