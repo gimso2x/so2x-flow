@@ -171,3 +171,21 @@ def test_doctor_artifact_schema_rejects_invalid_overall_status(tmp_path: Path):
         assert "doctor field 'overall_status' must be one of" in str(exc)
     else:
         raise AssertionError("Expected ValueError for invalid doctor overall_status")
+
+
+def test_cleanup_fixture_removes_generated_outputs_and_non_template_tasks(tmp_path: Path):
+    generated_output = ROOT / ".workflow" / "outputs" / "doctor" / "status.json"
+    generated_output.parent.mkdir(parents=True, exist_ok=True)
+    generated_output.write_text("{}", encoding="utf-8")
+
+    generated_review = ROOT / ".workflow" / "tasks" / "review" / "generated-review.json"
+    generated_review.parent.mkdir(parents=True, exist_ok=True)
+    generated_review.write_text("{}", encoding="utf-8")
+
+    from conftest import _cleanup_generated_files
+
+    _cleanup_generated_files()
+
+    assert not generated_output.exists()
+    assert not generated_review.exists()
+    assert (ROOT / ".workflow" / "tasks" / "feature" / "_template.json").exists()
