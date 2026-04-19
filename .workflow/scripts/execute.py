@@ -154,7 +154,6 @@ def main() -> int:
             resolution=resolution,
             runtime_config=runtime_config,
             prompts_dir=PROMPTS_DIR,
-            project_root=PROJECT_ROOT,
             mode=mode,
             request=args.request,
             context=context,

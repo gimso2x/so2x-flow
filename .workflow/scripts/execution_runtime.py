@@ -40,9 +40,9 @@ def _role_result_payload(result) -> dict:
 
 
 
-def run_roles(*, config: dict, resolution, runtime_config: dict, prompts_dir, project_root, mode: str, request: str, context, qa_id: str | None, dry_run: bool) -> list[dict]:
+def run_roles(*, config: dict, resolution, runtime_config: dict, prompts_dir, mode: str, request: str, context, qa_id: str | None, dry_run: bool) -> list[dict]:
     role_results: list[dict] = []
-    planner_output = context.planner_output
+    planner_output = None
     for role in context.roles:
         requested_role_config = config["roles"][role][resolution.selected_runner]
         shared_role_config = {**config["roles"][role], **requested_role_config}
@@ -60,13 +60,13 @@ def run_roles(*, config: dict, resolution, runtime_config: dict, prompts_dir, pr
         try:
             prompt = build_prompt(
                 prompts_dir=prompts_dir,
-                project_root=project_root,
                 role=role,
                 mode=mode,
                 request=request,
                 docs_used=context.docs_used,
                 docs_bundle=context.docs_bundle,
                 task_path=context.task_path,
+                task_content=context.task_content,
                 qa_id=qa_id,
                 planner_output=planner_output,
                 design_doc=context.design_doc,

@@ -21,8 +21,8 @@ class ModeContext:
     docs_bundle: str
     design_doc: str | None
     roles: list[str]
-    planner_output: str | None
     task_path: str | None
+    task_content: str | None
     artifacts: list[str]
     approved_plan_path: str | None
     approved_plan_match_reason: str | None
@@ -48,8 +48,8 @@ def prepare_mode_context(
     configured_roles = contract_for_mode(mode).roles
     skip_roles = {"planner", "qa_planner"} if skip_plan else set()
     roles = [] if mode == "init" else [role for role in configured_roles if role not in skip_roles]
-    planner_output = None
     task_path = None
+    task_content = None
     approved_plan_path = None
     approved_plan_match_reason = None
     artifacts: list[str] = []
@@ -82,13 +82,16 @@ def prepare_mode_context(
         task_path = write_review_task(project_root, request, docs_used, task)
         artifacts.append(task_path)
 
+    if task_path:
+        task_content = load_text(project_root / task_path)
+
     return ModeContext(
         docs_used=docs_used,
         docs_bundle=docs_bundle,
         design_doc=design_doc,
         roles=roles,
-        planner_output=planner_output,
         task_path=task_path,
+        task_content=task_content,
         artifacts=artifacts,
         approved_plan_path=approved_plan_path,
         approved_plan_match_reason=approved_plan_match_reason,

@@ -28,13 +28,13 @@ def load_prompt_template(prompts_dir: Path, role: str) -> str:
 def build_prompt(
     *,
     prompts_dir: Path,
-    project_root: Path,
     role: str,
     mode: str,
     request: str,
     docs_used: list[str],
     docs_bundle: str,
     task_path: str | None,
+    task_content: str | None,
     qa_id: str | None,
     planner_output: str | None,
     design_doc: str | None,
@@ -62,8 +62,7 @@ def build_prompt(
         docs_bundle,
     ]
     if task_path:
-        task_file = project_root / task_path
-        lines.extend(["", f"task_path: {task_path}", "task_content:", load_text(task_file).strip()])
+        lines.extend(["", f"task_path: {task_path}", "task_content:", (task_content or "").strip()])
     if qa_id:
         lines.append(f"qa_id: {qa_id}")
     if planner_output:

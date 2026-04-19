@@ -177,8 +177,54 @@ def test_init_dry_run_keeps_questionnaire_only_without_planner_execution(tmp_pat
     assert "planner output:" not in result.stdout
 
 
+def test_init_rerun_fails_clearly_when_persisted_artifact_is_missing_required_questions(tmp_path: Path):
+    workspace = make_workspace(tmp_path)
+    first = run_execute(workspace, "init", "개인용 운동 코칭 앱 MVP", "--dry-run")
+    payload = read_json(output_path(workspace, first.stdout, "output_json"))
+    init_path = workspace / payload["artifacts"][0]
+
+    broken = read_json(init_path)
+    broken.pop("questions")
+    init_path.write_text(json.dumps(broken, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    execute = workspace / ".workflow" / "scripts" / "execute.py"
+    result = subprocess.run(
+        [sys.executable, str(execute), "init", "개인용 운동 코칭 앱 MVP", "--dry-run"],
+        cwd=workspace,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode != 0
+    assert "init missing required field: questions" in (result.stderr or result.stdout)
+
+
+
+def test_plan_rerun_fails_clearly_when_persisted_artifact_has_invalid_approved_type(tmp_path: Path):
+    workspace = make_workspace(tmp_path)
+    first = run_execute(workspace, "plan", "로그인 기능 설계 확정", "--dry-run")
+    payload = read_json(output_path(workspace, first.stdout, "output_json"))
+    plan_path = workspace / payload["artifacts"][0]
+
+    broken = read_json(plan_path)
+    broken["approved"] = "yes"
+    plan_path.write_text(json.dumps(broken, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    execute = workspace / ".workflow" / "scripts" / "execute.py"
+    result = subprocess.run(
+        [sys.executable, str(execute), "plan", "로그인 기능 설계 확정", "--dry-run"],
+        cwd=workspace,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode != 0
+    assert "plan field 'approved' must be of type bool" in (result.stderr or result.stdout)
+
+
 
 def test_feature_dry_run_collects_design_doc_creates_task_and_chains_planner_to_implementer(tmp_path: Path):
+
     workspace = make_workspace(tmp_path)
     result = run_execute(workspace, "feature", "로그인 기능 구현", "--dry-run")
     payload = read_json(output_path(workspace, result.stdout, "output_json"))
@@ -547,11 +593,11 @@ def test_run_roles_reports_runner_resolution_stage_separately(tmp_path: Path):
             selected_runner = "ccs"
 
         class Context:
-            planner_output = None
             roles = ["implementer"]
             docs_used = [".workflow/docs/PRD.md"]
             docs_bundle = "bundle"
             task_path = None
+            task_content = None
             design_doc = "DESIGN.md"
             approved_plan_path = None
             approved_plan_match_reason = None
@@ -567,7 +613,6 @@ def test_run_roles_reports_runner_resolution_stage_separately(tmp_path: Path):
                 resolution=Resolution(),
                 runtime_config={},
                 prompts_dir=workspace / ".workflow" / "prompts",
-                project_root=workspace,
                 mode="feature",
                 request="로그인 기능 구현",
                 context=Context(),
@@ -605,11 +650,11 @@ def test_run_roles_reports_prompt_build_stage_separately(tmp_path: Path):
             fallback_reason = None
 
         class Context:
-            planner_output = None
             roles = ["reviewer"]
             docs_used = [".workflow/docs/QA.md"]
             docs_bundle = "bundle"
             task_path = None
+            task_content = None
             design_doc = "DESIGN.md"
             approved_plan_path = None
             approved_plan_match_reason = None
@@ -623,7 +668,6 @@ def test_run_roles_reports_prompt_build_stage_separately(tmp_path: Path):
                 resolution=Resolution(),
                 runtime_config={},
                 prompts_dir=workspace / ".workflow" / "prompts",
-                project_root=workspace,
                 mode="review",
                 request="QA 관점 점검",
                 context=Context(),
@@ -658,6 +702,12 @@ def test_execute_uses_runner_resolution_layer_and_live_runner_path(tmp_path: Pat
     assert "runner_resolution" in execution_runtime
     assert "prompt_build" in execution_runtime
     assert "def build_prompt(" in prompt_builder
+    assert "project_root=project_root" not in execution_runtime
+    assert "project_root=PROJECT_ROOT,\n            mode=mode,\n            request=args.request,\n            context=context,\n            qa_id=args.qa_id,\n            dry_run=args.dry_run" not in execute
+    assert "task_content=context.task_content" in execution_runtime
+    assert "task_content: str | None" in mode_handlers
+    assert "planner_output: str | None" not in mode_handlers
+    assert "load_text(task_file)" not in prompt_builder
     assert "from workflow_docs import collect_docs, load_docs_bundle" in mode_handlers
     assert "from workflow_context import select_approved_plan" in mode_handlers
     assert "from workflow_tasks import (" in mode_handlers

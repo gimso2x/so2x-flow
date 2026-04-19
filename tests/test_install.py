@@ -234,6 +234,29 @@ def test_install_output_and_readme_show_one_obvious_next_action():
     assert "first_run_path: /flow-init -> /flow-plan -> /flow-feature" in install_script
 
 
+def test_install_output_contract_includes_first_run_guidance_lines(tmp_path: Path):
+    target = tmp_path / "app"
+    result = run_install(target, "--patch-claude-md")
+
+    assert "next_step: flow-init으로 이 프로젝트를 초기화해줘." in result.stdout
+    assert "next_step_cli: /flow-init" in result.stdout
+    assert "next_step_human: 다음 단계: /flow-init으로 프로젝트를 초기화하세요." in result.stdout
+    assert "first_run_path: /flow-init -> /flow-plan -> /flow-feature" in result.stdout
+
+
+
+def test_readme_first_run_guidance_stays_project_local_and_scan_friendly():
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+
+    assert "전역 `~/.claude/skills`가 아니라 현재 프로젝트 내부에 설치시키는 용도다." in readme
+    assert "## 처음 3단계" in readme
+    assert "1. `/flow-init`으로 PRD/ARCHITECTURE/QA/DESIGN 질문지를 만든다." in readme
+    assert "2. 요구사항이 아직 크거나 애매하면 `/flow-plan`부터 돌린다." in readme
+    assert "3. 승인된 plan이 생긴 뒤에만 `/flow-feature`로 들어간다." in readme
+    assert "마지막 한 줄 안내는 항상 이걸 기준으로 보면 된다." in readme
+    assert "- 다음 단계: /flow-init으로 프로젝트를 초기화하세요." in readme
+
+
 def test_readme_documents_smoke_test_entrypoint():
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     assert "docs-first canonical 흐름만 빠르게 보려면 smoke test 하나만 찍어도 된다." in readme
