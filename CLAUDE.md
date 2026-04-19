@@ -48,7 +48,7 @@
 - Use `.workflow/config/ccs-map.yaml` to select `auto`, `ccs`, or `claude` runner.
 - Canonical plan artifacts live at `.workflow/tasks/plan/<slug>.json`.
 - Execution payloads live at `.workflow/outputs/<mode>/<slug>.json`.
-- In v0, `.workflow/scripts/execute.py` is validated primarily in `--dry-run` mode.
+- `.workflow/scripts/execute.py` should be validated with both fast `--dry-run` coverage and explicit live-run checks when `runtime.allow_live_run=true`.
 - `runtime.allow_live_run` must be a real YAML boolean (`true` or `false`), not a string.
 - `ccs` shortcut roles run as `ccs <profile> "prompt"`; do not assume `-p` or `--model` for shortcut execution.
 - If a configured `ccs_profile` is missing, execute-level preflight falls back that role to `claude -p` when Claude is available; the reason is printed in `fallback_reason`.

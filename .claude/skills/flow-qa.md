@@ -68,6 +68,6 @@ Use this skill when a QA issue or bug report needs a document-first fix flow.
 - qa_planner를 먼저 실행하고 implementer는 그 결과를 따른다
 - 새 동작 또는 버그 수정은 가능하면 test-first로 진행한다
 - fix 후에는 재현 케이스와 관련 테스트를 다시 돌린다
-- v0 기본은 `--dry-run`
+- 기본은 `--dry-run`으로 빠르게 확인하고, live 실행은 `runtime.allow_live_run=true`일 때 실제 runner로 검증한다
 - live 실행은 `runtime.allow_live_run=true`일 때만 허용
 - role별 `ccs_profile`이 없으면 그 role만 `claude -p`로 fallback하고 이유를 role 결과에 남긴다.

@@ -176,7 +176,7 @@ def test_command_and_skill_docs_use_workflow_paths_consistently():
     assert "실사용 기본 루프는 보통 `flow-plan` → `flow-feature` → `/simplify` 반복 → convergence `0` → squash 순서다." in plan_skill
     assert "`.workflow/tasks/plan/<slug>.json`" in plan_skill
     assert "중복 산출물을 만들지 않고 `.workflow/tasks/plan/<slug>.json` 하나만 남긴다" in plan_command
-    assert "현재 v0 `/flow-plan`은 markdown 계획 문서를 만들지 않는다." in plan_skill
+    assert "`/flow-plan`은 markdown 계획 문서를 만들지 않는다." in plan_skill
     assert "승인 전에는 /flow-feature로 자동 전환하지 않는다" in plan_skill
     assert "이 설계 방향으로 확정할까요? (y/n)" in plan_command
 
@@ -194,7 +194,7 @@ def test_readme_documents_init_install_split_and_artifact_naming():
     assert "- `/flow-plan` — 구현 없이 계획만 수행" in readme
     assert "- `flow-review` — 문서/태스크 기준 리뷰 흐름" in readme
     assert "질문 기반 init task를 만들고 dry-run/live 결과를 남기는 운영 단계" in readme
-    assert "현재 v0 `/flow-plan`은 `.workflow/tasks/plan/*.json` 하나를 canonical 계획 산출물로 남기는 docs-first 흐름이다." in readme
+    assert "`/flow-plan`은 `.workflow/tasks/plan/*.json` 하나를 canonical 계획 산출물로 남기는 docs-first 흐름이다." in readme
     assert '`allow_live_run`은 반드시 YAML boolean `true`/`false` 값이어야 한다' in readme
     assert "role별 `ccs_profile`이 없으면 그 role만 `claude -p`로 fallback" in readme
     assert '/flow-plan으로 "결제 기능 작업 분해" 계획 산출물을 만들어줘.' in readme

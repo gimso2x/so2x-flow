@@ -86,6 +86,6 @@ feature task와 응답에는 최소한 아래 항목이 있어야 한다.
 - convergence가 `0`이면 바로 종료하고 squash한다
 - convergence가 작더라도 반복은 보통 2~3회를 넘기지 않는다
 - `flow-review`, `flow-qa`는 필요할 때만 추가하고, GitHub PR 운영은 선택 사항이다
-- v0 기본은 `--dry-run`
+- 기본은 `--dry-run`으로 빠르게 확인하고, live 실행은 `runtime.allow_live_run=true`일 때 실제 runner로 검증한다
 - live 실행은 `runtime.allow_live_run=true`일 때만 허용
 - role별 `ccs_profile`이 없으면 그 role만 `claude -p`로 fallback하고 이유를 role 결과에 남긴다.

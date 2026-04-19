@@ -81,7 +81,7 @@ Use this skill to turn a rough requirement into an approved implementation plan 
 - `flow-feature`는 `.workflow/tasks/plan/*.json` 중 승인된 artifact만 canonical plan으로 참조한다
 - 이 단계는 구현을 직접 하지 않고, 이후 `/simplify` 반복 루프로 갈 수 있게 slice와 검증 기준을 고정한다
 - 기본 downstream 마감 루프는 `flow-feature` 이후 `/simplify` 반복 → convergence `0` → squash다
-- v0 기본은 `--dry-run`
+- 기본은 `--dry-run`으로 빠르게 확인하고, live 실행은 `runtime.allow_live_run=true`일 때 실제 runner로 검증한다
 - live 실행은 `runtime.allow_live_run=true`일 때만 허용
 - role별 `ccs_profile`이 없으면 그 role만 `claude -p`로 fallback하고 이유를 role 결과에 남긴다.
-- 현재 v0 `/flow-plan`은 markdown 계획 문서를 만들지 않는다.
+- `/flow-plan`은 markdown 계획 문서를 만들지 않는다.

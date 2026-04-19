@@ -42,7 +42,7 @@ Use this skill to bootstrap a new so2x-flow workspace.
 - 질문 없이 PRD/ARCHITECTURE/DESIGN 내용을 지어내기 금지
 
 ## Runtime policy
-- v0 기본은 `--dry-run`
+- 기본은 `--dry-run`으로 빠르게 확인하고, live 실행은 `runtime.allow_live_run=true`일 때 실제 runner로 검증한다
 - live 실행은 `runtime.allow_live_run=true`일 때만 허용
 - 문자열 `"true"` 같은 값은 허용하지 않는다. `ccs-map.yaml`에는 YAML boolean `true`/`false`만 넣는다.
 - role별 `ccs_profile`이 없으면 그 role만 `claude -p`로 fallback하고 이유를 role 결과에 남긴다.
