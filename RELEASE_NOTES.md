@@ -1,21 +1,20 @@
 # Release Notes
 
 ## Summary
-This branch adds release handoff documents for the workflow-contracts validation refactor that is already merged on `main`.
+This handoff summarizes 1 commit(s) across workflow scripts, tests between `0f6cf44` and `HEAD`.
 
-## Commits in this branch
-- 8636e87 Add release handoff docs for workflow refactor
-- 53da8c6 docs: align release handoff with current PR
+## Commits
+- 3f8ff7a test: harden workflow contracts
 
-## Added files
-- `RELEASE_NOTES.md`
-- `RELEASE_BODY.md`
+## Changed files
+### workflow scripts
+- `.workflow/scripts/hooks/validate-output.sh`
+- `.workflow/scripts/workflow_contracts.py`
 
-## Covers
-These handoff docs summarize the already-landed workflow refactor work from `main`, including:
-- workflow contract extraction and validation-hook refactor
-- related README / CLAUDE / skill docs updates
-- execute / hooks / install regression coverage
+### tests
+- `tests/test_execute.py`
+- `tests/test_hooks.py`
+- `tests/test_install.py`
 
 ## Verification
 ```bash

@@ -335,6 +335,13 @@ def test_core_workflow_contracts_are_consistent_across_readme_claude_and_flow_do
     assert "`/flow-plan` dry-run도 canonical 계획 산출물 `.workflow/tasks/plan/<slug>.json`을 만든다." in plan_command
 
 
+def test_readme_positions_current_repo_as_v1_ready():
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    assert "so2x-flow는 Claude Code에서 feature, QA, review, plan 작업을 문서 기준으로 굴리기 위한 docs-first 경량 하네스다." in readme
+    assert "기본 회귀 검증은 `--dry-run`과 자동 테스트로 빠르게 확인하고, live 실행은 명시 opt-in 뒤 실제 runner로 검증한다" in readme
+    assert "구현 완료 -> /simplify 반복 -> convergence 0 -> squash -> 필요하면 flow-review 또는 flow-qa -> GitHub PR 운영은 옵션" in readme
+
+
 def test_command_docs_lock_runtime_and_artifact_wrapper_contracts():
     feature_command = (ROOT / ".claude" / "commands" / "flow-feature.md").read_text(encoding="utf-8")
     plan_command = (ROOT / ".claude" / "commands" / "flow-plan.md").read_text(encoding="utf-8")
