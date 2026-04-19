@@ -10,6 +10,11 @@ def save_task_payload(project_root: Path, payload: dict) -> Path | None:
     artifacts = payload.get("artifacts") or []
     mode = payload.get("mode") or "run"
     stem = "run"
+    if mode == "doctor":
+        target_path = project_root / ".workflow" / "outputs" / "doctor" / "status.json"
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+        write_json(target_path, payload)
+        return target_path
     if artifacts:
         first_artifact = Path(artifacts[0])
         if first_artifact.suffix == ".json":

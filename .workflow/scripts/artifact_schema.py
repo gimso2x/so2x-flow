@@ -3,6 +3,16 @@ from __future__ import annotations
 import json
 
 ARTIFACT_SCHEMAS = {
+    "doctor": {
+        "mode": str,
+        "overall_status": str,
+        "exact_status": str,
+        "blocked_reason": (str, type(None)),
+        "latest_summary": str,
+        "latest_output_json": (str, type(None)),
+        "latest_outputs": dict,
+        "latest_tasks": dict,
+    },
     "feature": {
         "title": str,
         "summary": str,
@@ -62,6 +72,7 @@ ARTIFACT_SCHEMAS = {
 
 INIT_ALLOWED_STATUSES = {"needs_user_input", "in_progress", "approved"}
 PLAN_ALLOWED_STATUSES = {"draft", "approved", "in_progress", "needs_user_input"}
+DOCTOR_ALLOWED_OVERALL_STATUSES = {"idle", "ok", "blocked", "waiting"}
 
 
 def _require_string_list(kind: str, field: str, values: object) -> None:
@@ -147,6 +158,27 @@ def _validate_init_nested(payload: dict) -> None:
     _validate_init_questions(payload)
 
 
+def _validate_doctor_nested(payload: dict) -> None:
+    if payload["mode"] != "doctor":
+        raise ValueError("doctor field 'mode' must equal 'doctor'")
+    if payload["overall_status"] not in DOCTOR_ALLOWED_OVERALL_STATUSES:
+        raise ValueError(f"doctor field 'overall_status' must be one of {sorted(DOCTOR_ALLOWED_OVERALL_STATUSES)}")
+    if not payload["exact_status"]:
+        raise ValueError("doctor field 'exact_status' must be a non-empty str")
+    for field in ("latest_outputs", "latest_tasks"):
+        mapping = payload[field]
+        if not isinstance(mapping, dict):
+            raise ValueError(f"doctor field '{field}' must be of type dict")
+        for key, value in mapping.items():
+            if not isinstance(key, str):
+                raise ValueError(f"doctor {field} keys must be str")
+            if not isinstance(value, str):
+                raise ValueError(f"doctor {field}['{key}'] must be a str")
+    last_event = payload.get("last_event")
+    if last_event is not None and not isinstance(last_event, dict):
+        raise ValueError("doctor field 'last_event' must be of type dict")
+
+
 def validate_artifact(kind: str, payload: dict) -> dict:
     schema = ARTIFACT_SCHEMAS.get(kind)
     if schema is None:
@@ -157,7 +189,12 @@ def validate_artifact(kind: str, payload: dict) -> dict:
         if field not in payload:
             raise ValueError(f"{kind} missing required field: {field}")
         if not isinstance(payload[field], expected_type):
+            if isinstance(expected_type, tuple):
+                names = " | ".join(item.__name__ for item in expected_type)
+                raise ValueError(f"{kind} field '{field}' must be of type {names}")
             raise ValueError(f"{kind} field '{field}' must be of type {expected_type.__name__}")
+    if kind == "doctor":
+        _validate_doctor_nested(payload)
     if kind == "feature":
         _validate_feature_nested(payload)
     elif kind == "qa":

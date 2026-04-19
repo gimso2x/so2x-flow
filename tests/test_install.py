@@ -32,6 +32,7 @@ def test_install_copies_flow_scaffold_into_target_project(tmp_path: Path):
     assert (target / ".workflow" / "prompts" / "planner.md").exists()
     assert (target / ".workflow" / "tasks" / "feature" / "_template.json").exists()
     assert (target / ".workflow" / "scripts" / "execute.py").exists()
+    assert (target / ".workflow" / "scripts" / "doctor.py").exists()
     assert (target / "DESIGN.md").exists()
     settings = json.loads((target / ".claude" / "settings.json").read_text(encoding="utf-8"))
     assert "PreToolUse" in settings["hooks"]
@@ -255,6 +256,18 @@ def test_readme_first_run_guidance_stays_project_local_and_scan_friendly():
     assert "3. 승인된 plan이 생긴 뒤에만 `/flow-feature`로 들어간다." in readme
     assert "마지막 한 줄 안내는 항상 이걸 기준으로 보면 된다." in readme
     assert "- 다음 단계: /flow-init으로 프로젝트를 초기화하세요." in readme
+
+
+def test_readme_and_claude_document_doctor_status_surface():
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    claude = (ROOT / "CLAUDE.md").read_text(encoding="utf-8")
+
+    assert "doctor/status surface" in readme
+    assert "python3 .workflow/scripts/doctor.py --brief" in readme
+    assert "python3 .workflow/scripts/execute.py doctor" in readme
+    assert "`.workflow/outputs/doctor/status.json`" in readme
+    assert "doctor.py --brief" in claude
+    assert "execute.py doctor" in claude
 
 
 def test_readme_documents_smoke_test_entrypoint():

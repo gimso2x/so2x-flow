@@ -48,6 +48,7 @@
 - Use `.workflow/config/ccs-map.yaml` to select `auto`, `ccs`, or `claude` runner.
 - Canonical plan artifacts live at `.workflow/tasks/plan/<slug>.json`.
 - Execution payloads live at `.workflow/outputs/<mode>/<slug>.json`.
+- Read-only latest status lives at `.workflow/outputs/doctor/status.json`; use `python3 .workflow/scripts/doctor.py --brief` or `python3 .workflow/scripts/execute.py doctor` before guessing what is blocked.
 - `.workflow/scripts/execute.py` should be validated with both fast `--dry-run` coverage and explicit live-run checks when `runtime.allow_live_run=true`.
 - `runtime.allow_live_run` must be a real YAML boolean (`true` or `false`), not a string.
 - `ccs` shortcut roles run as `ccs <profile> "prompt"`; do not assume `-p` or `--model` for shortcut execution.

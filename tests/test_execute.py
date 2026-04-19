@@ -256,6 +256,32 @@ def test_feature_dry_run_collects_design_doc_creates_task_and_chains_planner_to_
     assert "approved_plan_match_reason: no plan artifacts found" in implementer_output
 
 
+def test_execute_doctor_mode_persists_status_surface(tmp_path: Path):
+    workspace = make_workspace(tmp_path)
+    run_execute(workspace, "feature", "로그인 기능 구현", "--dry-run")
+
+    result = run_execute(workspace, "doctor")
+    payload = read_json(output_path(workspace, result.stdout, "output_json"))
+
+    assert payload["mode"] == "doctor"
+    assert payload["overall_status"] == "ok"
+    assert payload["exact_status"] == "ok:feature"
+    assert payload["latest_output_json"] == ".workflow/outputs/feature/로그인-기능-구현.json"
+    assert payload["latest_outputs"]["doctor"] == ".workflow/outputs/doctor/status.json"
+
+
+def test_execute_doctor_mode_uses_default_request_and_prints_doctor_summary(tmp_path: Path):
+    workspace = make_workspace(tmp_path)
+
+    result = run_execute(workspace, "doctor")
+    payload = read_json(output_path(workspace, result.stdout, "output_json"))
+
+    assert "overall_status: idle" in result.stdout
+    assert "exact_status: idle" in result.stdout
+    assert payload["mode"] == "doctor"
+    assert payload["overall_status"] == "idle"
+
+
 def test_feature_dry_run_links_matching_latest_plan_artifact(tmp_path: Path):
     workspace = make_workspace(tmp_path)
     plan_result = run_execute(workspace, "plan", "로그인 기능 설계 확정", "--dry-run")

@@ -78,6 +78,7 @@ def verify_install(target_root: Path) -> list[str]:
         ".claude/skills/flow-init.md",
         ".claude/commands/flow-init.md",
         ".workflow/scripts/execute.py",
+        ".workflow/scripts/doctor.py",
         ".workflow/config/ccs-map.yaml",
     ]
     missing = [rel for rel in required if not (target_root / rel).exists()]

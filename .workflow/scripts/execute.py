@@ -14,6 +14,7 @@ if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
 from ccs_runner import resolve_runner
+from doctor import build_status_payload, print_summary as print_doctor_summary
 from execution_runtime import ExecutionFailure, run_roles, validate_runtime_config
 from mode_handlers import prepare_mode_context
 from payloads import build_payload, print_summary
@@ -76,8 +77,8 @@ BOOTSTRAP_DIRS = [
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="so2x-flow execution entrypoint")
-    parser.add_argument("mode", choices=["init", "feature", "qa", "qa-fix", "review", "plan", "plan-only"])
-    parser.add_argument("request")
+    parser.add_argument("mode", choices=["init", "feature", "qa", "qa-fix", "review", "plan", "plan-only", "doctor"])
+    parser.add_argument("request", nargs="?", default="doctor status")
     parser.add_argument("--task")
     parser.add_argument("--qa-id")
     parser.add_argument("--docs", nargs="*")
@@ -124,9 +125,20 @@ def persist_and_print(payload: dict) -> None:
     print_summary(payload)
 
 
+def persist_and_print_doctor(payload: dict) -> None:
+    json_path = save_task_payload(PROJECT_ROOT, payload)
+    if json_path is not None:
+        payload["output_json"] = str(json_path.relative_to(PROJECT_ROOT))
+    print_doctor_summary(payload)
+
+
 def main() -> int:
     args = parse_args()
     mode = canonical_mode(args.mode)
+    if mode == "doctor":
+        payload = build_status_payload()
+        persist_and_print_doctor(payload)
+        return 0
     bootstrap_artifacts = ensure_bootstrap_files() if mode == "init" else []
     config = load_config()
     context = prepare_mode_context(
