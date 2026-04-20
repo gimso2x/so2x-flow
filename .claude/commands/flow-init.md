@@ -14,6 +14,7 @@
 - `.workflow/tasks/init/<slug>.json` 질문지 산출물
 - PRD/ARCHITECTURE/QA/DESIGN에 매핑된 질문 목록
 - dry-run 또는 실행 결과 요약
+- 한 턴에 질문 하나만 던지고, 답변을 받으면 다음 질문으로 이어가는 대화 흐름
 
 ## 참고
 - 본체: `.claude/skills/flow-init.md`
