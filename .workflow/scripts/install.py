@@ -11,7 +11,6 @@ COPY_DIRS = [
     ".workflow",
 ]
 COPY_FILES = [
-    "CLAUDE.md",
     "DESIGN.md",
 ]
 SKIP_NAMES = {"__pycache__", ".git", ".pytest_cache", "outputs", "tests", "README.md"}
@@ -23,6 +22,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--target", default=".", help="Target project root (default: current directory)")
     parser.add_argument("--force", action="store_true", help="Overwrite existing files")
     parser.add_argument("--patch-claude-md", action="store_true", help="Append a so2x-flow section to target CLAUDE.md if missing")
+    parser.add_argument(
+        "--verbose-copied-files",
+        action="store_true",
+        help="Print every copied path after the install summary",
+    )
     return parser.parse_args()
 
 
@@ -36,6 +40,8 @@ def should_skip(path: Path) -> bool:
 
 
 def copy_file(src: Path, dst: Path, force: bool) -> bool:
+    if not src.exists():
+        return False
     if should_skip(src):
         return False
     if dst.exists() and not force:
@@ -76,7 +82,6 @@ def patch_claude_md(target_root: Path) -> bool:
 def verify_install(target_root: Path) -> list[str]:
     required = [
         ".claude/skills/flow-init.md",
-        ".claude/commands/flow-init.md",
         ".workflow/scripts/execute.py",
         ".workflow/scripts/doctor.py",
         ".workflow/config/ccs-map.yaml",
@@ -105,14 +110,18 @@ def main() -> int:
     print(f"claude_md_patched: {patched}")
 
     print("step 4/4: install complete")
-    print("next_step: flow-init으로 이 프로젝트를 초기화해줘.")
+    print("next_step: 다음 단계: /flow-init으로 프로젝트를 초기화하세요.")
     print("next_step_cli: /flow-init")
     print("next_step_human: 다음 단계: /flow-init으로 프로젝트를 초기화하세요.")
     print("first_run_path: /flow-init -> /flow-plan -> /flow-feature")
     print(f"target: {target_root}")
     print(f"copied_count: {len(copied)}")
-    for item in copied:
-        print(item)
+    if args.verbose_copied_files:
+        print("copied_files:")
+        for item in copied:
+            print(item)
+    else:
+        print("copied_files: hidden (rerun with --verbose-copied-files to inspect each path)")
     return 0
 
 

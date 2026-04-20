@@ -24,10 +24,17 @@ recap이나 "다음으로 ~ 하면 됩니다" 같은 안내만 남기지 말고,
 
 1. `mkdir -p .tmp && git clone --single-branch --depth 1 https://github.com/gimso2x/so2x-flow.git .tmp/so2x-flow` 를 실행하고 성공/실패를 바로 보고해.
 2. `python3 .tmp/so2x-flow/.workflow/scripts/install.py --target . --patch-claude-md` 를 실행하고, install.py가 출력하는 `step 1/4`부터 `step 4/4`까지 그대로 보고해.
-3. `.claude/skills/flow-init.md`, `.claude/commands/flow-init.md`, `.workflow/scripts/execute.py`, `.workflow/config/ccs-map.yaml` 존재 여부를 각각 확인해.
-4. `rm -rf .tmp/so2x-flow` 와 `rmdir .tmp 2>/dev/null || true` 를 실행해 정리하고, 마지막에 어떤 단계가 성공했고 실패한 단계가 있는지만 짧게 정리해.
-5. 마지막 한 줄에는 반드시 다음 실행 안내를 넣어. 문구는 정확히 `다음 단계: /flow-init으로 프로젝트를 초기화하세요.` 로 써.
+   이 step 로그 뒤에 같은 install 실행의 출력 tail로 `next_step`, `next_step_cli`, `next_step_human`, `first_run_path`, `target`, `copied_count`, `copied_files` 요약이 이어진다는 점도 같이 보고해.
+  여기서 `copied_files: hidden (rerun with --verbose-copied-files to inspect each path)`는 기본 출력이 요약 모드라는 뜻이지, step 로그나 설치가 중간에 잘렸다는 뜻이 아니다.
+  개별 복사 경로까지 확인이 정말 필요할 때만 같은 명령을 `--verbose-copied-files`와 함께 다시 실행해도 된다.
+  다만 이 verbose 재실행은 선택 확인 단계일 뿐이고, 기본 설치 성공 판단은 step 로그와 아래 4개 필수 파일 존재 확인으로 먼저 닫는다.
+3. `.claude/skills/flow-init.md`, `.workflow/scripts/execute.py`, `.workflow/scripts/doctor.py`, `.workflow/config/ccs-map.yaml` 존재 여부를 각각 확인해.
+이 네 파일 존재 확인이 설치 성공 기준이고, 설치 직후 상태 surface까지 바로 보고 싶으면 선택적으로 `python3 .workflow/scripts/doctor.py --brief` 도 한 번 실행해. 이 선택 확인은 생략해도 step 4 cleanup과 `/flow-init` 진입으로 바로 넘어가면 된다.
+4. 먼저 step 3의 네 파일 존재 확인을 끝내고, 그 다음에만 `rm -rf .tmp/so2x-flow` 와 `rmdir .tmp 2>/dev/null || true` 를 실행해 정리해. step 3 확인 전에 `.tmp`를 지우면 안 된다. 마지막에 어떤 단계가 성공했고 실패한 단계가 있는지만 짧게 정리해.
+5. 마지막 정리에서는 step 1~4의 성공/실패만 먼저 짧게 요약하고, 그 다음 마지막 한 줄에만 다음 실행 안내를 plain 문장으로 넣어. 그 마지막 줄은 bullet이나 코드블록으로 다시 감싸지 말고, 그 마지막 줄 뒤에는 추가 조언 문장을 붙이지 말며, 문구는 정확히 `다음 단계: /flow-init으로 프로젝트를 초기화하세요.` 로 써.
 ```
+
+이 경로에서도 install 출력 tail에 legacy `next_step: 다음 단계: /flow-init으로 프로젝트를 초기화하세요.`, `next_step_cli: /flow-init`, `next_step_human: 다음 단계: /flow-init으로 프로젝트를 초기화하세요.`, `first_run_path: /flow-init -> /flow-plan -> /flow-feature`, `target: <설치 대상 경로>`, `copied_count: <복사된 파일 수>`, `copied_files: hidden (rerun with --verbose-copied-files to inspect each path)`가 함께 보이므로, Claude Code 사용자는 step 로그를 읽은 직후 기계용 바로가기 키와 첫 실행 순서뿐 아니라 지금 어디에 설치됐고 몇 개 파일이 복사됐는지, 기본 출력이 요약 모드이며 상세 경로는 정말 필요할 때만 `--verbose-copied-files` 재실행으로 보면 된다는 점뿐 아니라 사람용 다음 단계 문장까지 같은 응답 tail에서 바로 확인할 수 있다. 즉 기본 설치 성공 판단은 이 출력 tail과 step 3의 네 필수 파일 확인으로 먼저 닫히며, `python3 .workflow/scripts/doctor.py --brief`는 그 네 필수 파일 확인 뒤에만 덧붙이는 선택 상태 확인일 뿐 cleanup 선행 조건은 아니다. `.tmp/so2x-flow` cleanup은 그 네 파일 확인이 끝난 뒤에만 넘어가야 하며, doctor 확인을 생략해도 된다. 그다음 바로 `/flow-init`로 넘어가면 된다. 다만 `next_step_human`은 install 출력 tail에서 사람이 읽는 참고 키이고, step 5의 최종 응답은 그 키 이름을 다시 감싸지 말고 `다음 단계: /flow-init으로 프로젝트를 초기화하세요.` 문장 자체를 plain 마지막 줄에 직접 남겨야 한다. 즉 마지막 줄을 `next_step:` 또는 `next_step_human:` 같은 키 이름으로 다시 시작하지 말고, 사람에게 바로 보이는 한국어 문장만 그대로 두는 것이 계약이다.
 
 ### 방법 B — 셸에서 바로 설치
 
@@ -40,30 +47,72 @@ trap 'rm -rf .tmp/so2x-flow; rmdir .tmp 2>/dev/null || true' EXIT
 mkdir -p .tmp
 git clone --single-branch --depth 1 https://github.com/gimso2x/so2x-flow.git .tmp/so2x-flow
 python3 .tmp/so2x-flow/.workflow/scripts/install.py --target .
+# 개별 복사 경로가 정말 필요할 때만 마지막에 --verbose-copied-files 추가
 test -f .claude/skills/flow-init.md
-test -f .claude/commands/flow-init.md
 test -f .workflow/scripts/execute.py
+test -f .workflow/scripts/doctor.py
 test -f .workflow/config/ccs-map.yaml
 trap - EXIT
 rm -rf .tmp/so2x-flow
 rmdir .tmp 2>/dev/null || true
 ```
 
+설치 직후 상태 surface까지 바로 확인하려면 위 검증 다음 줄에 `python3 .workflow/scripts/doctor.py --brief`를 한 번 더 실행하면 된다.
+일반 셸 설치에서도 `python3 .workflow/scripts/doctor.py --brief`는 설치 직후 상태를 더 보고 싶을 때만 붙이는 선택 확인이고, 생략해도 cleanup과 `/flow-init` 진입으로 바로 넘어가면 된다.
+`--verbose-copied-files` 재실행은 개별 복사 경로를 더 자세히 보고 싶을 때만 쓰는 선택 확인 단계이고, 기본 설치 성공 판단은 위 install 출력과 4개 필수 파일 존재 확인으로 먼저 닫는다.
+일반 셸 경로에서도 `next_step`, `next_step_cli`, `next_step_human`, `first_run_path`, `target`, `copied_count`, `copied_files`는 같은 install 실행의 출력 tail에 함께 이어지는 성공 요약이므로, `copied_files` summary mode 문장도 그 한 묶음 안에서 읽으면 된다.
+일반 셸 경로에서도 install 출력의 `copied_files: hidden (rerun with --verbose-copied-files to inspect each path)`는 기본 출력이 요약 모드라는 뜻이지, 출력이 잘리거나 설치가 덜 끝났다는 뜻이 아니다.
+성공 경로에서는 `trap - EXIT`를 cleanup 직전에 호출해 자동 EXIT cleanup을 해제한 뒤 아래 `rm -rf`/`rmdir` 정리를 한 번만 눈에 보이게 수행하므로, 실패 시에는 trap이 임시 디렉터리를 치우고 성공 시에는 사용자가 수동 cleanup이 실제로 끝났는지 바로 확인할 수 있다.
+
 기존 `CLAUDE.md`에 so2x-flow 섹션까지 같이 붙이고 싶으면 `--patch-claude-md`를 추가하면 된다.
+이 옵션은 이미 로컬 `CLAUDE.md`가 있는 프로젝트에서 기존 사용자 가이드와 so2x-flow 섹션을 한 파일로 합칠 때 특히 의미가 크다.
+`CLAUDE.md`가 아예 없는 새 프로젝트라면 install이 scaffold 기본 파일을 복사하는 대신 patch 단계에서 새 `CLAUDE.md`를 만들어 managed so2x-flow 섹션을 넣는다.
 
 ```bash
 trap 'rm -rf .tmp/so2x-flow; rmdir .tmp 2>/dev/null || true' EXIT
 mkdir -p .tmp
 git clone --single-branch --depth 1 https://github.com/gimso2x/so2x-flow.git .tmp/so2x-flow
 python3 .tmp/so2x-flow/.workflow/scripts/install.py --target . --patch-claude-md
+# 개별 복사 경로가 정말 필요할 때만 마지막에 --verbose-copied-files 추가
 test -f .claude/skills/flow-init.md
-test -f .claude/commands/flow-init.md
 test -f .workflow/scripts/execute.py
+test -f .workflow/scripts/doctor.py
 test -f .workflow/config/ccs-map.yaml
+test -f CLAUDE.md
+grep -n "## so2x-flow" CLAUDE.md
+grep -n "<!-- so2x-flow:managed:start -->" CLAUDE.md
 trap - EXIT
 rm -rf .tmp/so2x-flow
 rmdir .tmp 2>/dev/null || true
 ```
+
+설치 직후 상태 surface까지 바로 확인하려면 위 검증 다음 줄에 `python3 .workflow/scripts/doctor.py --brief`를 한 번 더 실행하면 된다.
+`--verbose-copied-files` 재실행은 patch 경로에서도 개별 복사 경로를 더 자세히 보고 싶을 때만 쓰는 선택 확인 단계이고, 기본 설치 성공 판단은 `--patch-claude-md` install 출력과 위 필수 파일/`CLAUDE.md` 검증으로 먼저 닫는다.
+patch 경로에서도 `next_step`, `next_step_cli`, `next_step_human`, `first_run_path`, `target`, `copied_count`, `copied_files`는 같은 install 실행의 출력 tail에 함께 이어지는 성공 요약이므로, `copied_files` summary mode 문장도 patch 검증과 같은 맥락에서 읽으면 된다.
+patch 경로에서도 install 출력의 `copied_files: hidden (rerun with --verbose-copied-files to inspect each path)`는 기본 출력이 요약 모드라는 뜻이지, patch 적용 검증이 덜 끝났거나 출력이 중간에 잘렸다는 뜻이 아니다.
+여기서도 성공 경로에서는 `trap - EXIT`를 cleanup 직전에 호출해 자동 EXIT cleanup을 해제한 뒤 아래 `rm -rf`/`rmdir` 정리를 한 번만 눈에 보이게 수행하므로, 실패 시에는 trap이 임시 디렉터리를 치우고 성공 시에는 사용자가 patch 검증까지 끝난 뒤 수동 cleanup이 실제로 끝났는지 바로 확인할 수 있다.
+`grep -n "## so2x-flow"`는 managed 섹션 제목이 실제로 삽입된 위치를 보여주고, `grep -n "<!-- so2x-flow:managed:start -->"`는 install이 이후 재실행 때 같은 관리 블록을 다시 찾아 갱신할 수 있게 표시해 두는 시작 마커까지 보여준다.
+즉 heading 확인은 "섹션이 들어갔는가"를, managed start marker 확인은 "다음 `--patch-claude-md` 재실행 때 install이 같은 관리 블록을 안전하게 다시 찾을 수 있는가"를 보는 검증이다.
+plain `grep -n`은 사람이 managed heading이나 marker가 들어간 위치를 눈으로 확인할 때 더 잘 맞고, `>/dev/null`을 붙인 변형은 셸 스크립트나 CI에서 통과/실패만 빠르게 보려는 검증에 더 잘 맞는다.
+앞의 `test -f CLAUDE.md`는 grep 에러를 숨기기 위한 장식이 아니라, `--patch-claude-md` 검증을 시작하기 전에 patch 결과가 실제 파일로 생겼는지 먼저 닫는 존재 확인 단계다.
+즉 사람이 눈으로 위치를 읽는 visible `grep -n` 예시는 `test -f CLAUDE.md`를 별도 줄로 먼저 두는 편이 맞고, quiet `test -f CLAUDE.md && grep ... >/dev/null` 변형은 파일 존재 확인과 pass/fail 검증을 한 줄로 묶고 싶을 때 쓰는 대안이다.
+grep 출력 자체를 보고 싶지 않다면 `test -f CLAUDE.md && grep -n "## so2x-flow" CLAUDE.md >/dev/null`처럼 heading 존재만 조용히 통과/실패로 볼 수도 있고, `test -f CLAUDE.md && grep -n "<!-- so2x-flow:managed:start -->" CLAUDE.md >/dev/null`처럼 같은 관리 블록 재탐색 마커도 같은 방식으로 확인할 수 있다.
+설치가 잘 끝났는지 빠르게 보려면 install 출력 마지막에 legacy 호환 안내 줄인 `next_step: 다음 단계: /flow-init으로 프로젝트를 초기화하세요.`와, 기계용 바로가기 키인 `next_step_cli: /flow-init`, 사람용 안내 문장인 `next_step_human: 다음 단계: /flow-init으로 프로젝트를 초기화하세요.`가 함께 보이는지도 같이 확인하면 된다.
+
+설치가 끝나면 install 출력 마지막에 아래 안내가 보이면 된다.
+
+```text
+next_step: 다음 단계: /flow-init으로 프로젝트를 초기화하세요.
+next_step_cli: /flow-init
+next_step_human: 다음 단계: /flow-init으로 프로젝트를 초기화하세요.
+first_run_path: /flow-init -> /flow-plan -> /flow-feature
+target: <설치 대상 경로>
+copied_count: <복사된 파일 수>
+copied_files: hidden (rerun with --verbose-copied-files to inspect each path)
+```
+
+`target:`은 설치 대상 디렉터리 절대 경로를, `copied_count:`는 복사된 파일 수를 보여주고, `copied_files:`는 기본적으로 요약만 표시하며 개별 경로가 정말 필요할 때만 `--verbose-copied-files`로 다시 확인하면 된다.
+위 예시에서 `first_run_path:`, `target:`, `copied_count:`, `copied_files:` 줄도 실제 install 출력 tail에 `next_step` 안내와 함께 나오므로, shell 사용자는 다음 단계 안내뿐 아니라 첫 실행 경로(`/flow-init -> /flow-plan -> /flow-feature`), 설치 대상 경로, 복사 파일 수, 기본 출력이 summary mode인지 여부까지 한 번에 확인할 수 있다. 즉 기본 성공 판단은 이 예시 블록 그대로 닫고, 개별 복사 경로가 궁금할 때만 `--verbose-copied-files` 재실행으로 넘어가면 된다.
 
 ## 핵심 개념
 
@@ -169,6 +218,7 @@ python3 .workflow/scripts/execute.py doctor
 이럴 때 쓴다.
 - 버그 수정
 - QA 이슈 재현/actual/expected가 이미 정리돼 있다
+- 먼저 `.workflow/tasks/qa/<slug>.json` 이슈 문서를 만든 뒤 실행한다
 
 ### `flow-review`로 시작
 
@@ -210,6 +260,7 @@ python3 .workflow/scripts/execute.py doctor
 - fallback 이유는 `fallback_reason`에 기록
 - `claude` — 항상 `claude -p`
 - role별 `ccs_profile`이 없으면 그 role만 `claude -p`로 fallback하고 이유를 role 결과에 남긴다.
+- role별 `ccs.command` 또는 `command`로 커스텀 ccs 래퍼를 지정했다면, 실제 shortcut 실행뿐 아니라 missing-profile preflight probe에도 같은 실행 파일을 사용한다.
 - `allow_live_run: false` 가 기본값이다. 실실행은 명시적으로 켜기 전까지 막는다.
 - `allow_live_run`은 반드시 YAML boolean `true`/`false` 값이어야 한다. 문자열 `"true"`, `"false"` 같은 값은 허용하지 않는다.
 
@@ -276,7 +327,6 @@ flow-review로 "이번 변경 QA 관점 점검" 리뷰 JSON을 만들어줘.
 ## 구성
 
 - `.claude/skills/` — workflow 본체
-- `.claude/commands/` — slash command 진입점
 - `.claude/settings.json` — Claude hooks / guardrails
 - `.workflow/docs/` — PRD / ARCHITECTURE / ADR / QA 문서
 - `DESIGN.md` — 타깃 프로젝트용 기본 디자인 기준 문서
@@ -359,8 +409,8 @@ trap 'rm -rf "$tmpdir"' EXIT
 mkdir -p "$tmpdir/app"
 python3 .workflow/scripts/install.py --target "$tmpdir/app" --patch-claude-md
 test -f "$tmpdir/app/.claude/skills/flow-init.md"
-test -f "$tmpdir/app/.claude/commands/flow-init.md"
 test -f "$tmpdir/app/.workflow/scripts/execute.py"
+test -f "$tmpdir/app/.workflow/scripts/doctor.py"
 python3 "$tmpdir/app/.workflow/scripts/execute.py" init "샘플 앱 초기 설정" --dry-run
 python3 "$tmpdir/app/.workflow/scripts/execute.py" plan "로그인 기능 작업 분해" --dry-run
 trap - EXIT

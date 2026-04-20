@@ -1132,7 +1132,7 @@ def test_external_sample_repo_install_init_plan_e2e_smoke(tmp_path: Path):
     assert plan_json["status"] == "draft"
     assert plan_json["approved"] is False
     assert (repo / ".workflow" / "scripts" / "execute.py").exists()
-    assert (repo / ".claude" / "commands" / "flow-init.md").exists()
+    assert (repo / ".claude" / "skills" / "flow-init.md").exists()
 
 
 def test_live_feature_role_can_fallback_to_claude_when_ccs_profile_missing(tmp_path: Path):
