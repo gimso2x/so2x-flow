@@ -1,8 +1,8 @@
 ---
 validate_prompt: |
   Confirm the output still keeps the init artifact as .workflow/tasks/init/<slug>.json,
-  includes PRD/ARCHITECTURE/QA/DESIGN question coverage, and stays in needs_user_input
-  until answers exist. Do not fabricate project docs before the user answers.
+  includes PRD/ARCHITECTURE/QA/DESIGN question coverage, auto-fills any values that are already clear from the repo/request,
+  and only asks follow-up questions when information is still missing. Do not fabricate project docs beyond what the repo/request supports.
 ---
 
 # flow-init
@@ -25,17 +25,18 @@ Use this skill to bootstrap a new so2x-flow workspace.
 ## Outputs
 - `.workflow/tasks/init/<slug>.json` canonical init artifact
 - PRD/ARCHITECTURE/QA/DESIGN 기준 질문 세트
-- 사용자 답변 전까지 `needs_user_input` 상태 유지
-- 답변(`answers`)이 없으면 재실행 시 `needs_user_input`로 되돌린다
+- repo/최근 요청만으로 확실한 값은 먼저 `answers`에 자동 반영
+- 남은 질문이 있으면 `draft_auto_filled` 또는 `needs_user_input`, 다 채워지면 `ready_for_review`
 
 ## Question flow
-- 첫 실행에서는 구현으로 넘어가지 않고 질문부터 정리한다.
+- 첫 실행에서는 구현으로 넘어가지 않고 init 초안부터 정리한다.
 - init은 planner/implementer를 호출하지 않고 질문지 산출물만 갱신한다.
 - 질문은 문서 target과 함께 남긴다.
 - 기본 질문 축은 프로젝트명, 목표, 사용자, 범위, 제외 범위, 구조 제약, 초기 QA, 디자인 기준이다.
 - 답을 받기 전에는 문서를 임의로 확정하지 않는다.
+- 가능한 값은 먼저 자동으로 채운다.
 - 질문은 항상 한 번에 하나씩만 한다.
-- 첫 응답에서는 질문표 전체를 채팅에 다시 풀어쓰지 말고, 방금 저장한 init artifact 경로를 짧게 알린 뒤 첫 질문 하나만 묻는다.
+- 첫 응답에서는 질문표 전체를 채팅에 다시 풀어쓰지 말고, 방금 저장한 init artifact 경로와 자동 반영한 핵심 값만 짧게 알린 뒤 첫 미해결 질문 하나만 묻는다.
 - 사용자가 답하면 init artifact의 `answers`에 반영한 뒤 다음 질문으로 넘어간다.
 - 여러 답을 한 번에 주면 받은 범위만 반영하고, 남은 질문도 한 번에 하나씩 이어간다.
 

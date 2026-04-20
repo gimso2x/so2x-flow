@@ -32,10 +32,25 @@ def write_initial_task(path: Path, content: dict, preserve_existing: bool = Fals
         validate_artifact("init", existing)
         merged = {**existing}
         merged.setdefault("title", content["title"])
-        answers = existing.get("answers")
-        has_answers = bool(answers)
-        merged["status"] = existing.get("status", "needs_user_input") if has_answers else "needs_user_input"
+        merged_answers = {**content.get("answers", {}), **existing.get("answers", {})}
+        pending_questions = [item["id"] for item in content["questions"] if item["id"] not in merged_answers]
+        if pending_questions:
+            merged_status = existing.get("status", content["status"])
+            if merged_status == "approved":
+                status = "approved"
+            elif merged_status == "in_progress" and existing.get("answers"):
+                status = "in_progress"
+            elif merged_answers:
+                status = "draft_auto_filled"
+            else:
+                status = "needs_user_input"
+        else:
+            status = "ready_for_review"
+        merged["status"] = status
         merged["questions"] = content["questions"]
+        merged["answers"] = merged_answers
+        merged["pending_questions"] = pending_questions
+        merged["current_question_id"] = pending_questions[0] if pending_questions else None
         merged["next_step_prompt"] = content["next_step_prompt"]
         validate_artifact("init", merged)
         write_json(path, merged)

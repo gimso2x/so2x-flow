@@ -80,20 +80,29 @@ def render_review_task(request: str, docs_used: list[str], task: str | None = No
 
 
 def render_init_task(request: str) -> dict:
+    questions = [
+        {"id": "project_name", "question": "프로젝트 이름이 무엇인가요?", "target_doc": ".workflow/docs/PRD.md"},
+        {"id": "goal", "question": "이 프로젝트의 핵심 목표 한 줄은 무엇인가요?", "target_doc": ".workflow/docs/PRD.md"},
+        {"id": "users", "question": "주요 사용자는 누구인가요?", "target_doc": ".workflow/docs/PRD.md"},
+        {"id": "scope", "question": "이번 버전에 꼭 포함할 범위는 무엇인가요?", "target_doc": ".workflow/docs/PRD.md"},
+        {"id": "out_of_scope", "question": "이번 버전에서 하지 않을 범위는 무엇인가요?", "target_doc": ".workflow/docs/PRD.md"},
+        {"id": "architecture", "question": "예상 기술 스택이나 구조 제약이 있나요?", "target_doc": ".workflow/docs/ARCHITECTURE.md"},
+        {"id": "qa", "question": "초기 QA에서 가장 먼저 확인해야 할 시나리오는 무엇인가요?", "target_doc": ".workflow/docs/QA.md"},
+        {"id": "design", "question": "디자인/UX 기준이 있나요? 없으면 원하는 분위기를 알려주세요.", "target_doc": "DESIGN.md"},
+    ]
+    answers = {
+        "project_name": request,
+        "goal": request,
+    }
+    pending_questions = [item["id"] for item in questions if item["id"] not in answers]
     return validate_artifact("init", {
         "title": request,
-        "status": "needs_user_input",
-        "questions": [
-            {"id": "project_name", "question": "프로젝트 이름이 무엇인가요?", "target_doc": ".workflow/docs/PRD.md"},
-            {"id": "goal", "question": "이 프로젝트의 핵심 목표 한 줄은 무엇인가요?", "target_doc": ".workflow/docs/PRD.md"},
-            {"id": "users", "question": "주요 사용자는 누구인가요?", "target_doc": ".workflow/docs/PRD.md"},
-            {"id": "scope", "question": "이번 버전에 꼭 포함할 범위는 무엇인가요?", "target_doc": ".workflow/docs/PRD.md"},
-            {"id": "out_of_scope", "question": "이번 버전에서 하지 않을 범위는 무엇인가요?", "target_doc": ".workflow/docs/PRD.md"},
-            {"id": "architecture", "question": "예상 기술 스택이나 구조 제약이 있나요?", "target_doc": ".workflow/docs/ARCHITECTURE.md"},
-            {"id": "qa", "question": "초기 QA에서 가장 먼저 확인해야 할 시나리오는 무엇인가요?", "target_doc": ".workflow/docs/QA.md"},
-            {"id": "design", "question": "디자인/UX 기준이 있나요? 없으면 원하는 분위기를 알려주세요.", "target_doc": "DESIGN.md"},
-        ],
-        "next_step_prompt": "위 질문들에 답해주면 flow-init이 문서를 하나씩 채워갈게요.",
+        "status": "draft_auto_filled" if answers else "needs_user_input",
+        "questions": questions,
+        "answers": answers,
+        "pending_questions": pending_questions,
+        "current_question_id": pending_questions[0] if pending_questions else None,
+        "next_step_prompt": "자동으로 채운 초안을 확인했고, 남은 질문은 한 번에 하나씩 이어서 물어보면 돼요.",
     })
 
 

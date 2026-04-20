@@ -50,7 +50,7 @@ def summarize_latest(latest_payload: dict | None, latest_tasks: dict[str, str]) 
         latest_init = latest_tasks.get("init")
         if latest_init:
             init_payload = load_json(PROJECT_ROOT / latest_init)
-            if (init_payload or {}).get("status") == "needs_user_input":
+            if (init_payload or {}).get("status") in {"draft_auto_filled", "needs_user_input", "in_progress"}:
                 return ("Init questionnaire is waiting for user input.", None, "waiting", "waiting:init")
         latest_plan = latest_tasks.get("plan")
         if latest_plan:

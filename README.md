@@ -108,7 +108,7 @@ rmdir .tmp 2>/dev/null || true
 2. 요구사항이 아직 크거나 애매하면 `/flow-plan`부터 돌린다.
 3. 승인된 plan이 생긴 뒤에만 `/flow-feature`로 들어간다.
 
-`flow-init`은 질문지를 만들되, 사용자에게는 한 번에 질문 하나씩만 물어본다.
+`flow-init`은 repo와 최근 요청을 바탕으로 초안을 먼저 채우고, 꼭 필요한 것만 한 번에 하나씩 묻는다.
 
 ## doctor/status surface
 
@@ -178,7 +178,7 @@ python3 .workflow/scripts/execute.py doctor
 ## 포함된 흐름
 
 - `flow-init` — PRD/ARCHITECTURE/QA/DESIGN 기준 질문지를 만들고 init task JSON을 남김
-  - 채팅에서는 질문표 전체를 한 번에 던지지 않고, 순서대로 한 질문씩 확인
+  - 채팅에서는 질문표 전체를 한 번에 던지지 않고, 자동 초안을 먼저 반영한 뒤 필요한 것만 순서대로 한 질문씩 확인
 - `flow-feature` — 승인된 slice 실행 + 가능하면 TDD
 - `flow-qa` — systematic debugging + test-first bugfix 흐름
 - `flow-review` — 문서/태스크 기준 리뷰 흐름

@@ -53,6 +53,9 @@ ARTIFACT_SCHEMAS = {
         "title": str,
         "status": str,
         "questions": list,
+        "answers": dict,
+        "pending_questions": list,
+        "current_question_id": (str, type(None)),
         "next_step_prompt": str,
     },
     "plan": {
@@ -70,7 +73,7 @@ ARTIFACT_SCHEMAS = {
     },
 }
 
-INIT_ALLOWED_STATUSES = {"needs_user_input", "in_progress", "approved"}
+INIT_ALLOWED_STATUSES = {"draft_auto_filled", "needs_user_input", "in_progress", "ready_for_review", "approved"}
 PLAN_ALLOWED_STATUSES = {"draft", "approved", "in_progress", "needs_user_input"}
 DOCTOR_ALLOWED_OVERALL_STATUSES = {"idle", "ok", "blocked", "waiting"}
 
@@ -156,6 +159,18 @@ def _validate_init_nested(payload: dict) -> None:
     if payload["status"] not in INIT_ALLOWED_STATUSES:
         raise ValueError(f"init field 'status' must be one of {sorted(INIT_ALLOWED_STATUSES)}")
     _validate_init_questions(payload)
+    answers = payload["answers"]
+    if not isinstance(answers, dict):
+        raise ValueError("init field 'answers' must be of type dict")
+    for key, value in answers.items():
+        if not isinstance(key, str):
+            raise ValueError("init answers keys must be str")
+        if not isinstance(value, str):
+            raise ValueError(f"init answers['{key}'] must be a str")
+    _require_string_list("init", "pending_questions", payload["pending_questions"])
+    current_question_id = payload["current_question_id"]
+    if current_question_id is not None and not isinstance(current_question_id, str):
+        raise ValueError("init field 'current_question_id' must be of type str | NoneType")
 
 
 def _validate_doctor_nested(payload: dict) -> None:

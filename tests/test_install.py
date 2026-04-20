@@ -139,10 +139,11 @@ def test_command_and_skill_docs_use_workflow_paths_consistently():
     assert "- `/simplify` 반복" in skills_readme
     assert "`/simplify`는 별도 `flow-*` skill이 아니라, 보통 `flow-feature` 완료 뒤 또는 승인된 plan 기준 구현이 끝난 뒤에 도는 마감 루프다." in skills_readme
     assert "PRD/ARCHITECTURE/QA/DESIGN에 매핑된 질문 목록" in init_command
-    assert "한 턴에 질문 하나만 던지고" in init_command
+    assert "초안으로 채울 수 있는 값은 먼저 반영하고" in init_command
     assert "`.workflow/tasks/init/<slug>.json` canonical init artifact" in init_skill
     assert "질문 없이 PRD/ARCHITECTURE/DESIGN 내용을 지어내기 금지" in init_skill
     assert "질문은 항상 한 번에 하나씩만 한다" in init_skill
+    assert "가능한 값은 먼저 자동으로 채운다" in init_skill
     assert "다음 질문으로 넘어간다" in init_skill
     assert "`.workflow/tasks/feature/<slug>.json`" in feature_command
     assert "`.workflow/tasks/qa/<slug>.json`" in qa_command
@@ -216,9 +217,10 @@ def test_flow_init_docs_require_one_question_at_a_time_followup():
     init_command = (ROOT / ".claude" / "commands" / "flow-init.md").read_text(encoding="utf-8")
     init_skill = (ROOT / ".claude" / "skills" / "flow-init.md").read_text(encoding="utf-8")
 
-    assert "`flow-init`은 질문지를 만들되, 사용자에게는 한 번에 질문 하나씩만 물어본다." in readme
-    assert "한 턴에 질문 하나만 던지고" in init_command
+    assert "`flow-init`은 repo와 최근 요청을 바탕으로 초안을 먼저 채우고, 꼭 필요한 것만 한 번에 하나씩 묻는다." in readme
+    assert "초안으로 채울 수 있는 값은 먼저 반영하고" in init_command
     assert "질문은 항상 한 번에 하나씩만 한다." in init_skill
+    assert "가능한 값은 먼저 자동으로 채운다." in init_skill
     assert "사용자가 답하면 init artifact의 `answers`에 반영한 뒤 다음 질문으로 넘어간다." in init_skill
 
 
