@@ -26,7 +26,7 @@ Use this skill to bootstrap a new so2x-flow workspace.
 - `.workflow/tasks/init/<slug>.json` canonical init artifact
 - PRD/ARCHITECTURE/QA/DESIGN 기준 질문 세트
 - repo/최근 요청만으로 확실한 값은 먼저 `answers`에 자동 반영
-- 시작 시 선택 가능한 초기화 방식: `ask-first`, `auto-fill-now`, `auto-fill-after-work`
+- 시작 시 선택 가능한 초기화 방식: `1. 자동채우기`, `2. 질문`
 - 남은 질문이 있으면 `draft_auto_filled` 또는 `needs_user_input`, 다 채워지면 `ready_for_review`
 
 ## Question flow
@@ -34,7 +34,7 @@ Use this skill to bootstrap a new so2x-flow workspace.
 - init은 planner/implementer를 호출하지 않고 질문지 산출물만 갱신한다.
 - 질문은 문서 target과 함께 남긴다.
 - 기본 질문 축은 프로젝트명, 목표, 사용자, 범위, 제외 범위, 구조 제약, 초기 QA, 디자인 기준이다.
-- 시작할 때 초기화 방식을 고를 수 있다: 질문부터 시작(`ask-first`), 지금 자동 초안 작성(`auto-fill-now`), 작업 진행 후 자동 채우기(`auto-fill-after-work`).
+- 시작할 때 초기화 방식을 고를 수 있다: `1. 자동채우기`(`auto-fill-now`), `2. 질문`(`ask-first`).
 - 답을 받기 전에는 문서를 임의로 확정하지 않는다.
 - 가능한 값은 먼저 자동으로 채운다.
 - 질문은 항상 한 번에 하나씩만 한다.

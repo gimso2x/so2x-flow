@@ -92,9 +92,8 @@ def render_init_task(request: str) -> dict:
     ]
     answers: dict[str, str] = {}
     init_mode_options = [
-        "ask-first",
         "auto-fill-now",
-        "auto-fill-after-work",
+        "ask-first",
     ]
     pending_questions = [item["id"] for item in questions]
     return validate_artifact("init", {
@@ -106,8 +105,8 @@ def render_init_task(request: str) -> dict:
         "current_question_id": None,
         "init_mode_options": init_mode_options,
         "selected_init_mode": "ask-first",
-        "next_mode_prompt": "초기화 방식을 고를 수 있어요: 지금 자동 초안 작성 / 작업 진행 후 자동 채우기 / 질문부터 시작",
-        "next_step_prompt": "먼저 초기화 방식을 골라주세요. 기본값은 질문부터 시작입니다.",
+        "next_mode_prompt": "먼저 방식을 골라주세요: 1. 자동채우기 2. 질문",
+        "next_step_prompt": "먼저 1번(자동채우기) 또는 2번(질문) 중 하나를 골라주세요.",
     })
 
 
