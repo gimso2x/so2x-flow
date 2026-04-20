@@ -90,27 +90,24 @@ def render_init_task(request: str) -> dict:
         {"id": "qa", "question": "초기 QA에서 가장 먼저 확인해야 할 시나리오는 무엇인가요?", "target_doc": ".workflow/docs/QA.md"},
         {"id": "design", "question": "디자인/UX 기준이 있나요? 없으면 원하는 분위기를 알려주세요.", "target_doc": "DESIGN.md"},
     ]
-    answers = {
-        "project_name": request,
-        "goal": request,
-    }
+    answers: dict[str, str] = {}
     init_mode_options = [
         "ask-first",
         "auto-fill-now",
         "auto-fill-after-work",
     ]
-    pending_questions = [item["id"] for item in questions if item["id"] not in answers]
+    pending_questions = [item["id"] for item in questions]
     return validate_artifact("init", {
         "title": request,
-        "status": "draft_auto_filled" if answers else "needs_user_input",
+        "status": "needs_user_input",
         "questions": questions,
         "answers": answers,
         "pending_questions": pending_questions,
-        "current_question_id": pending_questions[0] if pending_questions else None,
+        "current_question_id": None,
         "init_mode_options": init_mode_options,
-        "selected_init_mode": "auto-fill-now",
+        "selected_init_mode": "ask-first",
         "next_mode_prompt": "초기화 방식을 고를 수 있어요: 지금 자동 초안 작성 / 작업 진행 후 자동 채우기 / 질문부터 시작",
-        "next_step_prompt": "자동으로 채운 초안을 확인했고, 남은 질문은 한 번에 하나씩 이어서 물어보면 돼요.",
+        "next_step_prompt": "먼저 초기화 방식을 골라주세요. 기본값은 질문부터 시작입니다.",
     })
 
 

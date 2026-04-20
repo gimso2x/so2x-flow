@@ -32,29 +32,46 @@ def write_initial_task(path: Path, content: dict, preserve_existing: bool = Fals
         validate_artifact("init", existing)
         merged = {**existing}
         merged.setdefault("title", content["title"])
-        merged_answers = {**content.get("answers", {}), **existing.get("answers", {})}
-        pending_questions = [item["id"] for item in content["questions"] if item["id"] not in merged_answers]
-        if pending_questions:
-            merged_status = existing.get("status", content["status"])
-            if merged_status == "approved":
-                status = "approved"
-            elif merged_status == "in_progress" and existing.get("answers"):
-                status = "in_progress"
-            elif merged_answers:
-                status = "draft_auto_filled"
+        selected_mode = existing.get("selected_init_mode", content["selected_init_mode"])
+        if selected_mode == "auto-fill-now":
+            base_answers = {"project_name": content["title"], "goal": content["title"]}
+            merged_answers = {**base_answers, **existing.get("answers", {})}
+            pending_questions = [item["id"] for item in content["questions"] if item["id"] not in merged_answers]
+            if pending_questions:
+                merged_status = existing.get("status", content["status"])
+                if merged_status == "approved":
+                    status = "approved"
+                elif merged_status == "in_progress" and existing.get("answers"):
+                    status = "in_progress"
+                elif merged_answers:
+                    status = "draft_auto_filled"
+                else:
+                    status = "needs_user_input"
             else:
-                status = "needs_user_input"
+                status = "ready_for_review"
+            next_step_prompt = "자동으로 채운 초안을 확인했고, 남은 질문은 한 번에 하나씩 이어서 물어보면 돼요."
+            current_question_id = pending_questions[0] if pending_questions else None
+        elif selected_mode == "auto-fill-after-work":
+            merged_answers = existing.get("answers", {})
+            pending_questions = [item["id"] for item in content["questions"] if item["id"] not in merged_answers]
+            status = "in_progress"
+            current_question_id = None
+            next_step_prompt = "작업을 먼저 진행하세요. 구현 맥락이 쌓인 뒤 init 초안을 자동으로 채웁니다."
         else:
-            status = "ready_for_review"
+            merged_answers = existing.get("answers", {})
+            pending_questions = [item["id"] for item in content["questions"] if item["id"] not in merged_answers]
+            status = existing.get("status", "needs_user_input") if merged_answers else "needs_user_input"
+            current_question_id = None
+            next_step_prompt = "먼저 초기화 방식을 골라주세요. 기본값은 질문부터 시작입니다."
         merged["status"] = status
         merged["questions"] = content["questions"]
         merged["answers"] = merged_answers
         merged["pending_questions"] = pending_questions
-        merged["current_question_id"] = pending_questions[0] if pending_questions else None
+        merged["current_question_id"] = current_question_id
         merged["init_mode_options"] = content["init_mode_options"]
-        merged["selected_init_mode"] = existing.get("selected_init_mode", content["selected_init_mode"])
+        merged["selected_init_mode"] = selected_mode
         merged["next_mode_prompt"] = content["next_mode_prompt"]
-        merged["next_step_prompt"] = content["next_step_prompt"]
+        merged["next_step_prompt"] = next_step_prompt
         validate_artifact("init", merged)
         write_json(path, merged)
         return

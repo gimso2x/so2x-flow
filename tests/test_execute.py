@@ -87,18 +87,17 @@ def test_init_dry_run_creates_questionnaire_task_and_uses_canonical_init_artifac
 
     init_json = read_json(workspace / payload["artifacts"][0])
     assert init_json["title"] == "개인용 운동 코칭 앱 MVP"
-    assert init_json["status"] == "draft_auto_filled"
-    assert init_json["answers"] == {
-        "project_name": "개인용 운동 코칭 앱 MVP",
-        "goal": "개인용 운동 코칭 앱 MVP"
-    }
+    assert init_json["status"] == "needs_user_input"
+    assert init_json["answers"] == {}
     assert init_json["init_mode_options"] == [
         "ask-first",
         "auto-fill-now",
         "auto-fill-after-work",
     ]
-    assert init_json["selected_init_mode"] == "auto-fill-now"
+    assert init_json["selected_init_mode"] == "ask-first"
     assert init_json["pending_questions"] == [
+        "project_name",
+        "goal",
         "users",
         "scope",
         "out_of_scope",
@@ -106,8 +105,9 @@ def test_init_dry_run_creates_questionnaire_task_and_uses_canonical_init_artifac
         "qa",
         "design",
     ]
-    assert init_json["current_question_id"] == "users"
+    assert init_json["current_question_id"] is None
     assert init_json["next_mode_prompt"] == "초기화 방식을 고를 수 있어요: 지금 자동 초안 작성 / 작업 진행 후 자동 채우기 / 질문부터 시작"
+    assert init_json["next_step_prompt"] == "먼저 초기화 방식을 골라주세요. 기본값은 질문부터 시작입니다."
     assert [item["id"] for item in init_json["questions"]] == [
         "project_name",
         "goal",
@@ -120,7 +120,46 @@ def test_init_dry_run_creates_questionnaire_task_and_uses_canonical_init_artifac
     ]
     assert init_json["questions"][0]["target_doc"] == ".workflow/docs/PRD.md"
     assert init_json["questions"][-1]["target_doc"] == "DESIGN.md"
-    assert init_json["next_step_prompt"] == "자동으로 채운 초안을 확인했고, 남은 질문은 한 번에 하나씩 이어서 물어보면 돼요."
+
+
+def test_init_dry_run_applies_auto_fill_now_mode_from_existing_artifact(tmp_path: Path):
+    workspace = make_workspace(tmp_path)
+    first = run_execute(workspace, "init", "개인용 운동 코칭 앱 MVP", "--dry-run")
+    payload = read_json(output_path(workspace, first.stdout, "output_json"))
+    init_path = workspace / payload["artifacts"][0]
+
+    existing = read_json(init_path)
+    existing["selected_init_mode"] = "auto-fill-now"
+    init_path.write_text(json.dumps(existing, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    second = run_execute(workspace, "init", "개인용 운동 코칭 앱 MVP", "--dry-run")
+    rerun_payload = read_json(output_path(workspace, second.stdout, "output_json"))
+    rerun_json = read_json(workspace / rerun_payload["artifacts"][0])
+
+    assert rerun_json["status"] == "draft_auto_filled"
+    assert rerun_json["answers"] == {"project_name": "개인용 운동 코칭 앱 MVP", "goal": "개인용 운동 코칭 앱 MVP"}
+    assert rerun_json["current_question_id"] == "users"
+    assert rerun_json["next_step_prompt"] == "자동으로 채운 초안을 확인했고, 남은 질문은 한 번에 하나씩 이어서 물어보면 돼요."
+
+
+def test_init_dry_run_applies_auto_fill_after_work_mode_from_existing_artifact(tmp_path: Path):
+    workspace = make_workspace(tmp_path)
+    first = run_execute(workspace, "init", "개인용 운동 코칭 앱 MVP", "--dry-run")
+    payload = read_json(output_path(workspace, first.stdout, "output_json"))
+    init_path = workspace / payload["artifacts"][0]
+
+    existing = read_json(init_path)
+    existing["selected_init_mode"] = "auto-fill-after-work"
+    init_path.write_text(json.dumps(existing, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    second = run_execute(workspace, "init", "개인용 운동 코칭 앱 MVP", "--dry-run")
+    rerun_payload = read_json(output_path(workspace, second.stdout, "output_json"))
+    rerun_json = read_json(workspace / rerun_payload["artifacts"][0])
+
+    assert rerun_json["status"] == "in_progress"
+    assert rerun_json["answers"] == {}
+    assert rerun_json["current_question_id"] is None
+    assert rerun_json["next_step_prompt"] == "작업을 먼저 진행하세요. 구현 맥락이 쌓인 뒤 init 초안을 자동으로 채웁니다."
 
 
 def test_init_dry_run_preserves_existing_answers_on_rerun(tmp_path: Path):
@@ -160,9 +199,9 @@ def test_init_dry_run_resets_status_to_needs_user_input_when_answers_missing(tmp
     rerun_payload = read_json(output_path(workspace, second.stdout, "output_json"))
     rerun_json = read_json(workspace / rerun_payload["artifacts"][0])
 
-    assert rerun_json["status"] == "in_progress"
+    assert rerun_json["status"] == "needs_user_input"
     assert rerun_json["notes"] == ["keep-me"]
-    assert rerun_json["answers"] == {"project_name": "개인용 운동 코칭 앱 MVP", "goal": "개인용 운동 코칭 앱 MVP"}
+    assert rerun_json["answers"] == {}
 
 
 
@@ -181,8 +220,8 @@ def test_init_dry_run_resets_status_to_needs_user_input_when_answers_empty(tmp_p
     rerun_payload = read_json(output_path(workspace, second.stdout, "output_json"))
     rerun_json = read_json(workspace / rerun_payload["artifacts"][0])
 
-    assert rerun_json["status"] == "draft_auto_filled"
-    assert rerun_json["answers"] == {"project_name": "개인용 운동 코칭 앱 MVP", "goal": "개인용 운동 코칭 앱 MVP"}
+    assert rerun_json["status"] == "needs_user_input"
+    assert rerun_json["answers"] == {}
 
 
 
@@ -1103,8 +1142,8 @@ def test_external_sample_repo_install_init_plan_e2e_smoke(tmp_path: Path):
     assert (repo / "README.md").read_text(encoding="utf-8") == "# sample target\n"
     assert (repo / "app.py").read_text(encoding="utf-8") == "print('sample app')\n"
     assert "## so2x-flow" in (repo / "CLAUDE.md").read_text(encoding="utf-8")
-    assert init_json["status"] == "draft_auto_filled"
-    assert init_json["current_question_id"] == "users"
+    assert init_json["status"] == "needs_user_input"
+    assert init_json["current_question_id"] is None
     assert init_payload["docs_used"][0] == ".workflow/docs/PRD.md"
 
     plan_result = run_execute(repo, "plan", "외부 샘플 앱 로그인 흐름 작업 분해", "--dry-run")
