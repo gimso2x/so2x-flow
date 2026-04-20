@@ -72,7 +72,8 @@ def resolve_role_runner(
         return base_resolution
 
     profile = role_config.get("ccs_profile") or role_config.get("profile")
-    ccs_command = role_config.get("command", "ccs")
+    role_ccs_config = role_config.get("ccs", {}) if isinstance(role_config.get("ccs"), dict) else {}
+    ccs_command = role_ccs_config.get("command") or role_config.get("command", "ccs")
     if not profile or profile in BUILTIN_CCS_PROFILES:
         return base_resolution
 

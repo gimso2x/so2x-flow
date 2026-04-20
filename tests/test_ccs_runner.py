@@ -303,6 +303,35 @@ def test_resolve_role_runner_falls_back_to_claude_when_ccs_profile_missing(monke
     assert "profile 'glm' is not available via ccs" in result.fallback_reason
 
 
+def test_resolve_role_runner_probes_with_nested_ccs_command(monkeypatch):
+    captured = {}
+
+    def fake_probe(profile, command="ccs"):
+        captured["profile"] = profile
+        captured["command"] = command
+        return False, "Profile 'glm' not found"
+
+    monkeypatch.setattr(runner, "probe_ccs_profile", fake_probe)
+
+    result = runner.resolve_role_runner(
+        requested_runner="ccs",
+        role="implementer",
+        role_config={
+            "ccs_profile": "glm",
+            "ccs": {"command": "/tmp/custom-ccs", "engine": "glm", "model": "glm"},
+            "claude": {"command": "claude"},
+        },
+        runtime_config={"claude_command": "claude", "claude_headless_flag": "-p"},
+        has_ccs=True,
+        has_claude=True,
+    )
+
+    assert captured == {"profile": "glm", "command": "/tmp/custom-ccs"}
+    assert result.selected_runner == "claude"
+    assert result.fallback_used is True
+    assert "profile 'glm' is not available via ccs" in result.fallback_reason
+
+
 def test_resolve_role_runner_raises_when_ccs_profile_missing_and_no_claude_available(monkeypatch):
     monkeypatch.setattr(runner, "probe_ccs_profile", lambda profile, command="ccs": (False, "Profile 'glm' not found"))
 
