@@ -1,18 +1,21 @@
 # so2x-flow
 
-so2x-flow는 Claude Code에서 feature, QA, review, plan 작업을 문서 기준으로 굴리기 위한 docs-first 경량 하네스다.
-대화에만 의존하지 않고, 작업 근거와 흐름을 문서로 남기게 만든다.
+so2x-flow는 Claude Code에서 기능 구현, QA, 리뷰, 계획 작업을 문서 중심으로 굴리는 얇은 워크플로우 하네스다.
+핵심은 간단하다. 대화에만 기대지 말고, 판단 근거와 다음 액션을 문서와 JSON 산출물로 남긴다.
 
 ## 빠른 설치
 
-준비물: Claude Code, Git, Python 3.10+
-선택 실행기: `ccs` 또는 `claude` CLI
+준비물
+- Claude Code
+- Git
+- Python 3.10+
+- 선택 실행기: `ccs` 또는 `claude` CLI
 
-### 방법 A — Claude Code에 붙여넣기
+### 방법 A — Claude Code에 그대로 붙여넣기
 
-Claude Code를 프로젝트 루트에서 열고 아래 문구를 그대로 붙여 넣으면 된다.
-전역 `~/.claude/skills`가 아니라 현재 프로젝트 내부에 설치시키는 용도다.
-긴 원샷 프롬프트로 몰아넣지 말고, 단계가 드러나게 시키는 쪽이 덜 멍청하다.
+프로젝트 루트에서 Claude Code를 열고 아래 문구를 그대로 붙여 넣으면 된다.
+목표는 전역 `~/.claude/skills` 설치가 아니라 현재 프로젝트 내부 설치다.
+원샷으로 대충 끝내기보다, 단계가 보이게 시키는 편이 안전하다.
 
 ```text
 현재 작업 디렉토리를 프로젝트 루트로 보고 so2x-flow를 설치해줘. 중간 확인 질문 없이 한국어로 진행하고, 새 설계 문서나 task 문서는 만들지 마.
@@ -26,11 +29,11 @@ recap이나 "다음으로 ~ 하면 됩니다" 같은 안내만 남기지 말고,
 5. 마지막 한 줄에는 반드시 다음 실행 안내를 넣어. 문구는 정확히 `다음 단계: /flow-init으로 프로젝트를 초기화하세요.` 로 써.
 ```
 
-### 방법 B — 셸 설치
+### 방법 B — 셸에서 바로 설치
 
-Claude Code 말고 바로 설치하고 싶으면 프로젝트 루트에서 아래 순서로 실행하면 된다.
-원라이너에 heredoc까지 우겨 넣는 건 복붙 사고 유발기라 뺐다.
-검증 실패해도 찌꺼기 안 남기려면 `trap` 거는 게 맞다.
+Claude Code 대신 셸에서 바로 설치해도 된다.
+복붙 실수를 줄이려고 원라이너와 heredoc은 일부러 피했다.
+검증 중 실패해도 임시 파일이 남지 않게 `trap`을 걸어 둔다.
 
 ```bash
 trap 'rm -rf .tmp/so2x-flow; rmdir .tmp 2>/dev/null || true' EXIT
@@ -46,7 +49,7 @@ rm -rf .tmp/so2x-flow
 rmdir .tmp 2>/dev/null || true
 ```
 
-기존 `CLAUDE.md`에 so2x-flow 섹션까지 자동으로 붙이고 싶으면 아래처럼 실행하면 된다.
+기존 `CLAUDE.md`에 so2x-flow 섹션까지 같이 붙이고 싶으면 `--patch-claude-md`를 추가하면 된다.
 
 ```bash
 trap 'rm -rf .tmp/so2x-flow; rmdir .tmp 2>/dev/null || true' EXIT
@@ -66,19 +69,19 @@ rmdir .tmp 2>/dev/null || true
 
 ### init vs install
 
-- `install.py` — scaffold 파일을 프로젝트에 복사하고 설치 로그를 남기는 진짜 설치 단계
-- `execute.py init` / `flow-init` — 이미 설치된 scaffold를 기준으로 질문 기반 init task를 만들고 dry-run/live 결과를 남기는 운영 단계
+- `install.py`: scaffold 파일을 프로젝트로 복사하는 설치 단계
+- `execute.py init` / `flow-init`: 이미 설치된 scaffold를 바탕으로 init 질문지를 만드는 운영 단계
 - init은 planner를 돌리지 않고 `.workflow/tasks/init/<slug>.json` 질문지만 유지/갱신한다.
-- 즉, 설치와 운영 초기화는 일부러 분리돼 있다. 파일 배포는 install, 워크플로우 실행은 init 질문지 작성이다.
+- 설치와 운영 초기화는 분리돼 있다. 파일 배포는 install, 첫 질문지는 init이 맡는다.
 
 ### plan vs feature
 
-- `flow-plan` — thinking + planning + approval
-- `/flow-plan` — 구현 없이 계획만 수행
+- `flow-plan`: thinking + planning + approval
+- `/flow-plan`: 구현 없이 계획만 수행
 - `/flow-plan`은 `.workflow/tasks/plan/*.json` 하나를 canonical 계획 산출물로 남기는 docs-first 흐름이다.
 - `flow-feature`는 생각/비교/재기획 단계가 아니다.
 - 승인된 plan이 없으면 구현으로 밀지 않고 멈춘다.
-- `--skip-plan`에 쓰려면 `approved: true` 또는 `status: approved`로 명시 승인되어 있어야 한다
+- `--skip-plan`에 쓰려면 `approved: true` 또는 `status: approved`로 명시 승인되어 있어야 한다.
 
 ## 한 줄 워크플로우
 
@@ -88,7 +91,7 @@ rmdir .tmp 2>/dev/null || true
 
 ## 실사용 기본 경로
 
-so2x-flow를 실사용할 때 기본 경로는 plan/feature로 구현까지 밀고, PR 직전에는 `/simplify` 반복 루프로 마무리하는 방식이다.
+실제로는 아래 순서로 보면 된다.
 `/simplify`는 별도 `flow-*` workflow가 아니라, `flow-feature` 완료 뒤나 승인된 plan 기준 구현이 끝난 뒤에 붙는 마감 루프다.
 
 1. 필요하면 `/flow-plan`으로 방향과 slice를 먼저 고정한다.
@@ -125,13 +128,14 @@ python3 .workflow/scripts/execute.py doctor
 ## 언제 무엇부터 시작하나
 
 ### `flow-plan`으로 시작
-이런 경우:
-- 기능 요구사항이 아직 뭉뚱그려져 있음
-- 옵션 비교가 필요함
-- 어디까지 만들지 범위를 먼저 정해야 함
-- 구현 전에 slice와 검증 기준을 먼저 고정하고 싶음
 
-`flow-plan`이 하는 일:
+이럴 때 먼저 쓴다.
+- 요구사항이 아직 뭉뚱그려져 있다
+- 옵션 비교가 필요하다
+- 범위를 먼저 고정해야 한다
+- 구현 전에 slice와 검증 기준을 정리하고 싶다
+
+`flow-plan`이 남기는 것
 - 옵션 2~3개 비교
 - trade-off 정리
 - 추천안 1개 선택
@@ -145,26 +149,29 @@ python3 .workflow/scripts/execute.py doctor
 - writing-plans
 
 ### `flow-feature`로 시작
-이런 경우만:
-- 이미 승인된 plan이 있음
-- 이번에 구현할 slice가 명확함
-- planner/implementer가 새 방향을 발명하면 안 됨
 
-`flow-feature`가 하는 일:
+이 경우에만 바로 들어간다.
+- 이미 승인된 plan이 있다
+- 이번에 구현할 slice가 분명하다
+- planner/implementer가 새 방향을 만들면 안 된다
+
+`flow-feature`가 맡는 일
 - 승인된 방향 확인
 - 이번 최소 구현 slice 선택
 - planner -> implementer 실행
 - verification 정리
 
 ### `flow-qa`로 시작
-이런 경우:
+
+이럴 때 쓴다.
 - 버그 수정
-- QA 이슈 재현/actual/expected가 이미 있음
+- QA 이슈 재현/actual/expected가 이미 정리돼 있다
 
 ### `flow-review`로 시작
-이런 경우:
-- 구현 또는 계획을 문서 기준으로 점검하고 싶음
-- Spec Gap / Test Gap / QA Watchpoints를 보고 싶음
+
+이럴 때 쓴다.
+- 구현 또는 계획을 문서 기준으로 다시 점검하고 싶다
+- Spec Gap / Test Gap / QA Watchpoints가 필요하다
 
 ## 포함된 흐름
 
@@ -192,7 +199,7 @@ python3 .workflow/scripts/execute.py doctor
 
 ## runner 정책
 
-`.workflow/config/ccs-map.yaml`에서 설정한다.
+설정 파일은 `.workflow/config/ccs-map.yaml`이다.
 
 - `auto` — `ccs`가 있으면 우선 사용
 - role별 `ccs_profile` preflight 실패 시 해당 role만 `claude -p`로 fallback
@@ -202,13 +209,13 @@ python3 .workflow/scripts/execute.py doctor
 - `allow_live_run: false` 가 기본값이다. 실실행은 명시적으로 켜기 전까지 막는다.
 - `allow_live_run`은 반드시 YAML boolean `true`/`false` 값이어야 한다. 문자열 `"true"`, `"false"` 같은 값은 허용하지 않는다.
 
-`ccs` shortcut 호출 규약:
+`ccs` shortcut 호출 규약
 
 ```text
 ccs <profile> "prompt"
 ```
 
-주의:
+주의
 - shortcut 실행에 `-p` 전제 금지
 - shortcut 실행에 `--model <same-profile>` 전제 금지
 - 기본 확인은 `--dry-run`으로 빠르게 돌리고, 실실행은 `runtime.allow_live_run=true`에서 실제 runner로 검증한다
@@ -216,30 +223,35 @@ ccs <profile> "prompt"
 
 ## hooks
 
-`.claude/settings.json`에 들어 있는 guardrail은 말뿐인 훈수가 아니라 실제 hook 연결이다.
+`.claude/settings.json`에 들어 있는 guardrail은 설명용 문구가 아니라 실제 hook 연결이다.
 
-- `PreToolUse` + `dangerous-cmd-guard.sh` — 위험한 Bash 명령을 치기 전에 가드
+- `PreToolUse` + `dangerous-cmd-guard.sh`
+  - 위험한 Bash 명령을 치기 전에 가드
   - 예: `rm -rf`, 무차별 삭제/이동 같은 명령 차단
-- `PostToolUse` + `validate-output.sh` — `flow-*` skill contract를 읽어 완료 직후 필수 섹션/구조를 다시 검사한다
+- `PostToolUse` + `validate-output.sh`
+  - `flow-*` skill contract를 읽고 완료 직후 필수 섹션/구조를 다시 검사
   - 예: 필수 섹션, verification, 승인 게이트 질문, `Proposed Steps` 개수(3~7), 닫힌 next-step 질문 누락 방지
-- `PostToolUse` + `tool-output-truncator.sh` — 큰 도구 출력이 나오면 후속 컨텍스트용 요약을 붙이고 에러 라인은 보존한다
+- `PostToolUse` + `tool-output-truncator.sh`
+  - 큰 도구 출력이 나오면 후속 컨텍스트용 요약을 붙이고 에러 라인은 보존
   - 예: 긴 dry-run/grep/bash 출력은 요약본을 추가하고 error/traceback 라인은 유지
-- `PostToolUseFailure` + `edit-error-recovery.sh` — Edit/Write 실패 패턴별 복구 가이드를 바로 준다
+- `PostToolUseFailure` + `edit-error-recovery.sh`
+  - Edit/Write 실패 패턴별 복구 가이드를 즉시 제공
   - 예: old_string mismatch, ambiguous match, permission 문제 재시도 가이드
-- `PostToolUseFailure` + `tool-failure-tracker.sh` — 같은 도구 실패가 짧은 시간에 반복되면 전략 전환을 유도한다
+- `PostToolUseFailure` + `tool-failure-tracker.sh`
+  - 같은 도구 실패가 짧은 시간에 반복되면 전략 전환 유도
   - 예: 같은 patch/edit 실패 3회 이상이면 파일 재읽기나 다른 접근 유도
-- `UserPromptSubmit` + `tdd-guard.sh` — task 문서/계획 없이 바로 구현으로 튀는 흐름을 견제
+- `UserPromptSubmit` + `tdd-guard.sh`
+  - task 문서/계획 없이 바로 구현으로 튀는 흐름 견제
   - 예: task 문서 없이 바로 구현부터 하려는 프롬프트 견제
-- `Stop` + `circuit-breaker.sh` — 종료 직전 최소한의 브레이크 포인트 제공
+- `Stop` + `circuit-breaker.sh`
+  - 종료 직전 최소한의 브레이크 포인트 제공
   - 예: 종료 전에 빠진 검증이나 다음 액션 누락 방지
-
-즉, `CLAUDE.md`에 적힌 규칙은 설명이고, 실제 강제는 여기서 한다.
 
 ## design 문서 정책
 
 - `DESIGN.md`는 기본적으로 타깃 프로젝트 UI/UX 기준 문서다.
 - so2x-flow scaffold 자체를 손볼 때는 이 파일을 억지로 주 참고 문서로 삼지 않는다.
-- `.workflow/docs/UI_GUIDE.md`는 legacy fallback이다. 파일이 없으면 그냥 무시하면 된다.
+- `.workflow/docs/UI_GUIDE.md`는 legacy fallback이다. 파일이 없으면 무시하면 된다.
 
 ## 바로 써보는 문구
 
@@ -291,19 +303,19 @@ flow-review로 "이번 변경 QA 관점 점검" 리뷰 JSON을 만들어줘.
 
 ## 검증
 
-빠르게 전체 흐름을 확인하려면 아래 두 가지를 기준으로 보면 된다.
+빠른 확인용
 
 ```bash
 python3 -m pytest tests/test_ccs_runner.py tests/test_execute.py -q
 ```
 
-docs-first canonical 흐름만 빠르게 보려면 smoke test 하나만 찍어도 된다.
+docs-first canonical 흐름만 따로 보고 싶으면 smoke test 하나만 찍어도 된다.
 
 ```bash
 python3 -m pytest tests/test_execute.py -q -k docs_first_smoke_plan_feature_qa_sequence
 ```
 
-release/handoff 문서 초안은 git diff 기준으로 자동 생성할 수 있다.
+release/handoff 문서 초안은 git diff 기준으로 바로 생성할 수 있다.
 
 ```bash
 python3 .workflow/scripts/release_handoff.py --base-ref origin/main --head-ref HEAD --pr-number 7 --output-dir .
@@ -334,8 +346,8 @@ python3 .workflow/scripts/release_handoff.py \
 - `RELEASE_NOTES_PR7.md`
 - `RELEASE_BODY_PR7.md`
 
-설치 관점까지 포함한 real-world smoke는 빈 프로젝트 하나 만들어 실제 install 결과를 보는 게 제일 빠르다.
-외부 샘플 target repo 기준 e2e smoke도 `tests/test_execute.py::test_external_sample_repo_install_init_plan_e2e_smoke`로 고정돼 있다.
+설치까지 포함한 real-world smoke는 빈 프로젝트 하나를 만들어 직접 install 결과를 보는 방식이 가장 빠르다.
+외부 샘플 target repo 기준 e2e smoke는 `tests/test_execute.py::test_external_sample_repo_install_init_plan_e2e_smoke`로 고정돼 있다.
 
 ```bash
 tmpdir="$(mktemp -d)"

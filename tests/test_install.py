@@ -185,7 +185,7 @@ def test_command_and_skill_docs_use_workflow_paths_consistently():
 def test_readme_documents_init_install_split_and_artifact_naming():
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     assert "## init vs install" in readme
-    assert "설치와 운영 초기화는 일부러 분리돼 있다" in readme
+    assert "설치와 운영 초기화는 분리돼 있다" in readme
     assert "## artifact naming" in readme
     assert "canonical task 산출물은 계속 `.workflow/tasks/...` 아래에 둔다." in readme
     assert "실행 결과 payload는 별도로 `.workflow/outputs/<mode>/<slug>.json`에 남긴다." in readme
@@ -194,7 +194,7 @@ def test_readme_documents_init_install_split_and_artifact_naming():
     assert "`--skip-plan`에 쓰려면 `approved: true` 또는 `status: approved`로 명시 승인되어 있어야 한다" in readme
     assert "- `/flow-plan` — 구현 없이 계획만 수행" in readme
     assert "- `flow-review` — 문서/태스크 기준 리뷰 흐름" in readme
-    assert "질문 기반 init task를 만들고 dry-run/live 결과를 남기는 운영 단계" in readme
+    assert "이미 설치된 scaffold를 바탕으로 init 질문지를 만드는 운영 단계" in readme
     assert "`/flow-plan`은 `.workflow/tasks/plan/*.json` 하나를 canonical 계획 산출물로 남기는 docs-first 흐름이다." in readme
     assert '`allow_live_run`은 반드시 YAML boolean `true`/`false` 값이어야 한다' in readme
     assert "role별 `ccs_profile`이 없으면 그 role만 `claude -p`로 fallback" in readme
@@ -220,7 +220,7 @@ def test_install_output_and_readme_show_one_obvious_next_action():
     install_script = (ROOT / ".workflow" / "scripts" / "install.py").read_text(encoding="utf-8")
     assert "다음 단계: /flow-init으로 프로젝트를 초기화하세요." in readme
     assert "## 실사용 기본 경로" in readme
-    assert "so2x-flow를 실사용할 때 기본 경로는 plan/feature로 구현까지 밀고, PR 직전에는 `/simplify` 반복 루프로 마무리하는 방식이다." in readme
+    assert "실제로는 아래 순서로 보면 된다." in readme
     assert "`/simplify`는 별도 `flow-*` workflow가 아니라, `flow-feature` 완료 뒤나 승인된 plan 기준 구현이 끝난 뒤에 붙는 마감 루프다." in readme
     assert "1. 필요하면 `/flow-plan`으로 방향과 slice를 먼저 고정한다." in readme
     assert "2. `/flow-feature`로 구현과 테스트를 끝낸다." in readme
@@ -249,7 +249,7 @@ def test_install_output_contract_includes_first_run_guidance_lines(tmp_path: Pat
 def test_readme_first_run_guidance_stays_project_local_and_scan_friendly():
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
 
-    assert "전역 `~/.claude/skills`가 아니라 현재 프로젝트 내부에 설치시키는 용도다." in readme
+    assert "전역 `~/.claude/skills` 설치가 아니라 현재 프로젝트 내부 설치" in readme
     assert "## 처음 3단계" in readme
     assert "1. `/flow-init`으로 PRD/ARCHITECTURE/QA/DESIGN 질문지를 만든다." in readme
     assert "2. 요구사항이 아직 크거나 애매하면 `/flow-plan`부터 돌린다." in readme
@@ -272,9 +272,9 @@ def test_readme_and_claude_document_doctor_status_surface():
 
 def test_readme_documents_smoke_test_entrypoint():
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
-    assert "docs-first canonical 흐름만 빠르게 보려면 smoke test 하나만 찍어도 된다." in readme
+    assert "docs-first canonical 흐름만 따로 보고 싶으면 smoke test 하나만 찍어도 된다." in readme
     assert "python3 -m pytest tests/test_execute.py -q -k docs_first_smoke_plan_feature_qa_sequence" in readme
-    assert "release/handoff 문서 초안은 git diff 기준으로 자동 생성할 수 있다." in readme
+    assert "release/handoff 문서 초안은 git diff 기준으로 바로 생성할 수 있다." in readme
     assert "python3 .workflow/scripts/release_handoff.py --base-ref origin/main --head-ref HEAD --pr-number 7 --output-dir ." in readme
     assert "생성한 PR 본문을 현재 PR에 바로 반영하려면 `gh`를 붙이면 된다." in readme
     assert "python3 .workflow/scripts/release_handoff.py --base-ref origin/main --head-ref HEAD --output-dir . --publish-pr-body" in readme
@@ -284,8 +284,8 @@ def test_readme_documents_smoke_test_entrypoint():
     assert "`gh pr create`, `gh pr edit`(필요 시), `gh pr checks --watch`에 대응한다." in readme
     assert "RELEASE_NOTES_PR7.md" in readme
     assert "RELEASE_BODY_PR7.md" in readme
-    assert "설치 관점까지 포함한 real-world smoke는 빈 프로젝트 하나 만들어 실제 install 결과를 보는 게 제일 빠르다." in readme
-    assert "외부 샘플 target repo 기준 e2e smoke도 `tests/test_execute.py::test_external_sample_repo_install_init_plan_e2e_smoke`로 고정돼 있다." in readme
+    assert "설치까지 포함한 real-world smoke는 빈 프로젝트 하나를 만들어 직접 install 결과를 보는 방식이 가장 빠르다." in readme
+    assert "외부 샘플 target repo 기준 e2e smoke는 `tests/test_execute.py::test_external_sample_repo_install_init_plan_e2e_smoke`로 고정돼 있다." in readme
     assert 'tmpdir="$(mktemp -d)"' in readme
     assert 'python3 .workflow/scripts/install.py --target "$tmpdir/app" --patch-claude-md' in readme
     assert 'python3 "$tmpdir/app/.workflow/scripts/execute.py" init "샘플 앱 초기 설정" --dry-run' in readme
@@ -330,7 +330,7 @@ def test_core_workflow_contracts_are_consistent_across_readme_claude_and_flow_do
     assert "기본 downstream 마감 루프는 `flow-feature` 이후 `/simplify` 반복 → convergence `0` → squash다" in plan_skill
     assert "`/simplify`는 별도 `flow-*` workflow가 아니라 승인된 plan 기준 구현이 끝난 뒤 붙는 마감 루프다" in plan_skill
     assert "승인 전에는 `/flow-feature`로 자동 전환" in plan_command
-    assert "설치와 운영 초기화는 일부러 분리돼 있다" in readme
+    assert "설치와 운영 초기화는 분리돼 있다" in readme
     assert "Use `.claude/settings.json` hooks as deterministic guardrails" in claude
 
     assert "`.workflow/tasks/feature/<slug>.json`" in feature_command
@@ -350,7 +350,7 @@ def test_core_workflow_contracts_are_consistent_across_readme_claude_and_flow_do
 
 def test_readme_positions_current_repo_as_v1_ready():
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
-    assert "so2x-flow는 Claude Code에서 feature, QA, review, plan 작업을 문서 기준으로 굴리기 위한 docs-first 경량 하네스다." in readme
+    assert "so2x-flow는 Claude Code에서 기능 구현, QA, 리뷰, 계획 작업을 문서 중심으로 굴리는 얇은 워크플로우 하네스다." in readme
     assert "기본 회귀 검증은 `--dry-run`과 자동 테스트로 빠르게 확인하고, live 실행은 명시 opt-in 뒤 실제 runner로 검증한다" in readme
     assert "구현 완료 -> /simplify 반복 -> convergence 0 -> squash -> 필요하면 flow-review 또는 flow-qa -> GitHub PR 운영은 옵션" in readme
 
