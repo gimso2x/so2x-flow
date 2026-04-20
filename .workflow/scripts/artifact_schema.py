@@ -56,6 +56,9 @@ ARTIFACT_SCHEMAS = {
         "answers": dict,
         "pending_questions": list,
         "current_question_id": (str, type(None)),
+        "init_mode_options": list,
+        "selected_init_mode": str,
+        "next_mode_prompt": str,
         "next_step_prompt": str,
     },
     "plan": {
@@ -168,6 +171,9 @@ def _validate_init_nested(payload: dict) -> None:
         if not isinstance(value, str):
             raise ValueError(f"init answers['{key}'] must be a str")
     _require_string_list("init", "pending_questions", payload["pending_questions"])
+    _require_string_list("init", "init_mode_options", payload["init_mode_options"])
+    if payload["selected_init_mode"] not in payload["init_mode_options"]:
+        raise ValueError("init field 'selected_init_mode' must be one of init_mode_options")
     current_question_id = payload["current_question_id"]
     if current_question_id is not None and not isinstance(current_question_id, str):
         raise ValueError("init field 'current_question_id' must be of type str | NoneType")

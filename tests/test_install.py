@@ -144,6 +144,7 @@ def test_command_and_skill_docs_use_workflow_paths_consistently():
     assert "질문 없이 PRD/ARCHITECTURE/DESIGN 내용을 지어내기 금지" in init_skill
     assert "질문은 항상 한 번에 하나씩만 한다" in init_skill
     assert "가능한 값은 먼저 자동으로 채운다" in init_skill
+    assert "작업 진행 후 자동 채우기" in init_skill
     assert "다음 질문으로 넘어간다" in init_skill
     assert "`.workflow/tasks/feature/<slug>.json`" in feature_command
     assert "`.workflow/tasks/qa/<slug>.json`" in qa_command
@@ -217,7 +218,8 @@ def test_flow_init_docs_require_one_question_at_a_time_followup():
     init_command = (ROOT / ".claude" / "commands" / "flow-init.md").read_text(encoding="utf-8")
     init_skill = (ROOT / ".claude" / "skills" / "flow-init.md").read_text(encoding="utf-8")
 
-    assert "`flow-init`은 repo와 최근 요청을 바탕으로 초안을 먼저 채우고, 꼭 필요한 것만 한 번에 하나씩 묻는다." in readme
+    assert "`flow-init`은 시작할 때 초기화 방식을 하나 고르게 하고, 기본은 repo와 최근 요청을 바탕으로 초안을 먼저 채운다." in readme
+    assert "작업 진행 후 자동 채우기" in init_command
     assert "초안으로 채울 수 있는 값은 먼저 반영하고" in init_command
     assert "질문은 항상 한 번에 하나씩만 한다." in init_skill
     assert "가능한 값은 먼저 자동으로 채운다." in init_skill

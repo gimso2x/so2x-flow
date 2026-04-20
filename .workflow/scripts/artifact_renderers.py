@@ -94,6 +94,11 @@ def render_init_task(request: str) -> dict:
         "project_name": request,
         "goal": request,
     }
+    init_mode_options = [
+        "ask-first",
+        "auto-fill-now",
+        "auto-fill-after-work",
+    ]
     pending_questions = [item["id"] for item in questions if item["id"] not in answers]
     return validate_artifact("init", {
         "title": request,
@@ -102,6 +107,9 @@ def render_init_task(request: str) -> dict:
         "answers": answers,
         "pending_questions": pending_questions,
         "current_question_id": pending_questions[0] if pending_questions else None,
+        "init_mode_options": init_mode_options,
+        "selected_init_mode": "auto-fill-now",
+        "next_mode_prompt": "초기화 방식을 고를 수 있어요: 지금 자동 초안 작성 / 작업 진행 후 자동 채우기 / 질문부터 시작",
         "next_step_prompt": "자동으로 채운 초안을 확인했고, 남은 질문은 한 번에 하나씩 이어서 물어보면 돼요.",
     })
 

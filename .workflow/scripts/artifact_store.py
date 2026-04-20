@@ -51,6 +51,9 @@ def write_initial_task(path: Path, content: dict, preserve_existing: bool = Fals
         merged["answers"] = merged_answers
         merged["pending_questions"] = pending_questions
         merged["current_question_id"] = pending_questions[0] if pending_questions else None
+        merged["init_mode_options"] = content["init_mode_options"]
+        merged["selected_init_mode"] = existing.get("selected_init_mode", content["selected_init_mode"])
+        merged["next_mode_prompt"] = content["next_mode_prompt"]
         merged["next_step_prompt"] = content["next_step_prompt"]
         validate_artifact("init", merged)
         write_json(path, merged)

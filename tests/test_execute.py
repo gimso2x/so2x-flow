@@ -92,6 +92,12 @@ def test_init_dry_run_creates_questionnaire_task_and_uses_canonical_init_artifac
         "project_name": "개인용 운동 코칭 앱 MVP",
         "goal": "개인용 운동 코칭 앱 MVP"
     }
+    assert init_json["init_mode_options"] == [
+        "ask-first",
+        "auto-fill-now",
+        "auto-fill-after-work",
+    ]
+    assert init_json["selected_init_mode"] == "auto-fill-now"
     assert init_json["pending_questions"] == [
         "users",
         "scope",
@@ -101,6 +107,7 @@ def test_init_dry_run_creates_questionnaire_task_and_uses_canonical_init_artifac
         "design",
     ]
     assert init_json["current_question_id"] == "users"
+    assert init_json["next_mode_prompt"] == "초기화 방식을 고를 수 있어요: 지금 자동 초안 작성 / 작업 진행 후 자동 채우기 / 질문부터 시작"
     assert [item["id"] for item in init_json["questions"]] == [
         "project_name",
         "goal",

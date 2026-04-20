@@ -108,7 +108,8 @@ rmdir .tmp 2>/dev/null || true
 2. 요구사항이 아직 크거나 애매하면 `/flow-plan`부터 돌린다.
 3. 승인된 plan이 생긴 뒤에만 `/flow-feature`로 들어간다.
 
-`flow-init`은 repo와 최근 요청을 바탕으로 초안을 먼저 채우고, 꼭 필요한 것만 한 번에 하나씩 묻는다.
+`flow-init`은 시작할 때 초기화 방식을 하나 고르게 하고, 기본은 repo와 최근 요청을 바탕으로 초안을 먼저 채운다.
+필요하면 `작업 진행 후 자동 채우기`처럼 init을 가볍게 넘기고 뒤에서 문서를 메우는 선택지도 둘 수 있다.
 
 ## doctor/status surface
 
