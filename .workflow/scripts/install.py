@@ -39,26 +39,33 @@ def should_skip(path: Path) -> bool:
     return any(part in SKIP_NAMES for part in path.parts)
 
 
-def copy_file(src: Path, dst: Path, force: bool) -> bool:
+def copy_file(src: Path, dst: Path, force: bool) -> str:
     if not src.exists():
-        return False
+        return "missing"
     if should_skip(src):
-        return False
+        return "skipped"
     if dst.exists() and not force:
-        return False
+        return "existing"
     dst.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(src, dst)
-    return True
+    return "copied"
 
 
-def install_tree(target_root: Path, force: bool) -> list[str]:
+def install_tree(target_root: Path, force: bool) -> dict[str, list[str]]:
     copied: list[str] = []
+    skipped_existing: list[str] = []
+    skipped_missing: list[str] = []
 
     for rel in COPY_FILES:
         src = SOURCE_ROOT / rel
         dst = target_root / rel
-        if copy_file(src, dst, force):
+        status = copy_file(src, dst, force)
+        if status == "copied":
             copied.append(rel)
+        elif status == "existing":
+            skipped_existing.append(rel)
+        elif status == "missing":
+            skipped_missing.append(rel)
 
     for rel_dir in COPY_DIRS:
         src_root = SOURCE_ROOT / rel_dir
@@ -66,11 +73,21 @@ def install_tree(target_root: Path, force: bool) -> list[str]:
             if src.is_dir() or should_skip(src.relative_to(SOURCE_ROOT)):
                 continue
             rel = src.relative_to(SOURCE_ROOT)
+            rel_posix = rel.as_posix()
             dst = target_root / rel
-            if copy_file(src, dst, force):
-                copied.append(rel.as_posix())
+            status = copy_file(src, dst, force)
+            if status == "copied":
+                copied.append(rel_posix)
+            elif status == "existing":
+                skipped_existing.append(rel_posix)
+            elif status == "missing":
+                skipped_missing.append(rel_posix)
 
-    return copied
+    return {
+        "copied": copied,
+        "skipped_existing": skipped_existing,
+        "skipped_missing": skipped_missing,
+    }
 
 
 def patch_claude_md(target_root: Path) -> bool:
@@ -96,7 +113,10 @@ def main() -> int:
     target_root.mkdir(parents=True, exist_ok=True)
 
     print("step 1/4: copy scaffold files")
-    copied = install_tree(target_root, force=args.force)
+    install_result = install_tree(target_root, force=args.force)
+    copied = install_result["copied"]
+    skipped_existing = install_result["skipped_existing"]
+    skipped_missing = install_result["skipped_missing"]
 
     print("step 2/4: verify required files")
     missing = verify_install(target_root)
@@ -116,6 +136,12 @@ def main() -> int:
     print("first_run_path: /flow-init -> /flow-plan -> /flow-feature")
     print(f"target: {target_root}")
     print(f"copied_count: {len(copied)}")
+    print(f"skipped_existing_count: {len(skipped_existing)}")
+    print(f"skipped_missing_count: {len(skipped_missing)}")
+    if args.patch_claude_md:
+        print(f"claude_md_status: {'created_or_updated' if patched else 'already_present'}")
+    else:
+        print("claude_md_status: not created (rerun with --patch-claude-md to create/update)")
     if args.verbose_copied_files:
         print("copied_files:")
         for item in copied:
