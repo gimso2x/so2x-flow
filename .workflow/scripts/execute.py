@@ -153,6 +153,7 @@ def main() -> int:
         qa_id=args.qa_id,
         skip_plan=args.skip_plan,
         with_design=args.with_design,
+        dry_run=args.dry_run,
         load_text=load_text,
     )
     artifacts = collect_artifacts_for_mode(mode, bootstrap_artifacts, context)

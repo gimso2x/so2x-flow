@@ -391,6 +391,22 @@ def test_feature_dry_run_prefers_more_specific_plan_match_over_broader_overlap(t
 
 
 
+def test_feature_dry_run_can_match_plan_by_artifact_request_when_filename_is_generic(tmp_path: Path):
+    workspace = make_workspace(tmp_path)
+    plan_result = run_execute(workspace, "plan", "로그인 비밀번호 재설정 설계 확정", "--dry-run")
+    plan_payload = read_json(output_path(workspace, plan_result.stdout, "output_json"))
+    original_path = workspace / plan_payload["artifacts"][0]
+    renamed_path = original_path.with_name("승인된-최근-작업.json")
+    original_path.rename(renamed_path)
+
+    feature_result = run_execute(workspace, "feature", "로그인 비밀번호 재설정 구현", "--dry-run")
+    feature_payload = read_json(output_path(workspace, feature_result.stdout, "output_json"))
+
+    assert feature_payload["approved_plan_path"] == ".workflow/tasks/plan/승인된-최근-작업.json"
+    assert "artifact request" in feature_payload["approved_plan_match_reason"]
+
+
+
 def test_feature_dry_run_reports_best_below_threshold_candidate_when_no_match(tmp_path: Path):
     workspace = make_workspace(tmp_path)
     run_execute(workspace, "plan", "알림 이메일 설정 설계 확정", "--dry-run")
@@ -536,6 +552,26 @@ def test_live_execution_rejects_non_boolean_allow_live_run_values(tmp_path: Path
 
     assert result.returncode != 0
     assert "allow_live_run must be a boolean true" in result.stderr
+
+
+
+def test_feature_live_execution_requires_approved_plan_even_without_skip_plan(tmp_path: Path):
+    workspace = make_workspace(tmp_path)
+    config_path = workspace / ".workflow" / "config" / "ccs-map.yaml"
+    config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+    config["runtime"]["allow_live_run"] = True
+    config_path.write_text(yaml.safe_dump(config, allow_unicode=True, sort_keys=False), encoding="utf-8")
+
+    execute = workspace / ".workflow" / "scripts" / "execute.py"
+    result = subprocess.run(
+        [sys.executable, str(execute), "feature", "프로필 편집"],
+        cwd=workspace,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode != 0
+    assert "feature live execution requires an explicitly approved plan artifact" in result.stderr
 
 
 
@@ -934,7 +970,7 @@ def test_execute_uses_runner_resolution_layer_and_live_runner_path(tmp_path: Pat
 
 
 
-def test_live_execution_requires_explicit_runtime_opt_in(tmp_path: Path):
+def test_live_execution_requires_explicit_runtime_opt_in_duplicate_guard(tmp_path: Path):
     workspace = make_workspace(tmp_path)
     execute = workspace / ".workflow" / "scripts" / "execute.py"
     result = subprocess.run(
@@ -985,6 +1021,14 @@ def test_live_execution_uses_role_specific_timeout_and_persists_failure_payload(
 
 def test_live_execution_persists_partial_results_when_later_role_fails(tmp_path: Path):
     workspace = make_workspace(tmp_path)
+    plan_result = run_execute(workspace, "plan", "로그인 기능 구현", "--dry-run")
+    plan_payload = read_json(output_path(workspace, plan_result.stdout, "output_json"))
+    plan_path = workspace / plan_payload["artifacts"][0]
+    plan_json = read_json(plan_path)
+    plan_json["approved"] = True
+    plan_json["status"] = "approved"
+    plan_path.write_text(json.dumps(plan_json, ensure_ascii=False, indent=2), encoding="utf-8")
+
     fake_claude = workspace / "fake-claude.sh"
     fake_claude.write_text("#!/usr/bin/env bash\nprintf 'planner-live-ok\\n'\n", encoding="utf-8")
     fake_claude.chmod(0o755)
@@ -1137,6 +1181,14 @@ def test_external_sample_repo_install_init_plan_e2e_smoke(tmp_path: Path):
 
 def test_live_feature_role_can_fallback_to_claude_when_ccs_profile_missing(tmp_path: Path):
     workspace = make_workspace(tmp_path)
+    plan_result = run_execute(workspace, "plan", "로그인 기능 구현", "--dry-run")
+    plan_payload = read_json(output_path(workspace, plan_result.stdout, "output_json"))
+    plan_path = workspace / plan_payload["artifacts"][0]
+    plan_json = read_json(plan_path)
+    plan_json["approved"] = True
+    plan_json["status"] = "approved"
+    plan_path.write_text(json.dumps(plan_json, ensure_ascii=False, indent=2), encoding="utf-8")
+
     fake_claude = workspace / "fake-claude.sh"
     fake_claude.write_text("#!/usr/bin/env bash\nprintf 'claude-live-ok\\n'\n", encoding="utf-8")
     fake_claude.chmod(0o755)

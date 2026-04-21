@@ -41,6 +41,7 @@ def prepare_mode_context(
     qa_id: str | None,
     skip_plan: bool,
     with_design: bool,
+    dry_run: bool,
     load_text,
 ) -> ModeContext:
     docs_used, design_doc = collect_docs(project_root, workflow_root, mode, docs, task, with_design)
@@ -66,6 +67,8 @@ def prepare_mode_context(
             docs_bundle = load_docs_bundle(project_root, docs_used, load_text)
         if skip_plan and approved_plan_path is None:
             raise SystemExit("skip-plan requires an explicitly approved plan artifact; run /flow-plan, mark it approved, or omit --skip-plan")
+        if not dry_run and approved_plan_path is None:
+            raise SystemExit("feature live execution requires an explicitly approved plan artifact; run /flow-plan, mark it approved, or use --dry-run")
         task_path = write_feature_task(project_root, request, approved_plan_path)
         artifacts.append(task_path)
     elif mode == "init":

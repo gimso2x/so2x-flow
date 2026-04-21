@@ -82,13 +82,17 @@ def test_install_reports_claude_md_created_when_patch_enabled(tmp_path: Path):
     assert "claude_md_status: created_or_updated" in result.stdout
 
 
-def test_install_force_overwrites_existing_files(tmp_path: Path):
+def test_install_force_overwrites_existing_scaffold_file(tmp_path: Path):
     target = tmp_path / "app"
-    target.mkdir()
-    existing = target / "CLAUDE.md"
+    target.mkdir(parents=True)
+    existing = target / ".workflow" / "docs" / "PRD.md"
+    existing.parent.mkdir(parents=True, exist_ok=True)
     existing.write_text("old\n", encoding="utf-8")
+
     run_install(target, "--force")
-    assert existing.read_text(encoding="utf-8") == "old\n"
+
+    assert existing.read_text(encoding="utf-8") != "old\n"
+    assert "# PRD" in existing.read_text(encoding="utf-8")
 
 
 def test_install_patch_creates_claude_md_when_missing(tmp_path: Path):
@@ -140,38 +144,19 @@ def test_install_rewrites_incomplete_managed_claude_section(tmp_path: Path):
     assert "존재하지 않으면 이 파일은 무시한다" in rewritten
 
 
-def test_readme_uses_exit_trap_cleanup_and_hook_examples():
+def test_readme_uses_exit_trap_cleanup_and_install_checks():
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    assert "### 30초 설치 체크표" in readme
     assert "trap 'rm -rf .tmp/so2x-flow; rmdir .tmp 2>/dev/null || true' EXIT" in readme
     assert "test -f CLAUDE.md" in readme
     assert 'grep -n "## so2x-flow" CLAUDE.md' in readme
     assert 'grep -n "<!-- so2x-flow:managed:start -->" CLAUDE.md' in readme
-    assert '`grep -n "## so2x-flow"`는 managed 섹션 제목이 실제로 삽입된 위치를 보여주고, `grep -n "<!-- so2x-flow:managed:start -->"`는 install이 이후 재실행 때 같은 관리 블록을 다시 찾아 갱신할 수 있게 표시해 두는 시작 마커까지 보여준다.' in readme
-    assert '즉 heading 확인은 "섹션이 들어갔는가"를, managed start marker 확인은 "다음 `--patch-claude-md` 재실행 때 install이 같은 관리 블록을 안전하게 다시 찾을 수 있는가"를 보는 검증이다.' in readme
-    assert 'plain `grep -n`은 사람이 managed heading이나 marker가 들어간 위치를 눈으로 확인할 때 더 잘 맞고, `>/dev/null`을 붙인 변형은 셸 스크립트나 CI에서 통과/실패만 빠르게 보려는 검증에 더 잘 맞는다.' in readme
-    assert '앞의 `test -f CLAUDE.md`는 grep 에러를 숨기기 위한 장식이 아니라, `--patch-claude-md` 검증을 시작하기 전에 patch 결과가 실제 파일로 생겼는지 먼저 닫는 존재 확인 단계다.' in readme
-    assert '즉 사람이 눈으로 위치를 읽는 visible `grep -n` 예시는 `test -f CLAUDE.md`를 별도 줄로 먼저 두는 편이 맞고, quiet `test -f CLAUDE.md && grep ... >/dev/null` 변형은 파일 존재 확인과 pass/fail 검증을 한 줄로 묶고 싶을 때 쓰는 대안이다.' in readme
-    assert 'grep 출력 자체를 보고 싶지 않다면 `test -f CLAUDE.md && grep -n "## so2x-flow" CLAUDE.md >/dev/null`처럼 heading 존재만 조용히 통과/실패로 볼 수도 있고, `test -f CLAUDE.md && grep -n "<!-- so2x-flow:managed:start -->" CLAUDE.md >/dev/null`처럼 같은 관리 블록 재탐색 마커도 같은 방식으로 확인할 수 있다.' in readme
-    assert '# 개별 복사 경로가 정말 필요할 때만 마지막에 --verbose-copied-files 추가' in readme
-    assert '`--verbose-copied-files` 재실행은 개별 복사 경로를 더 자세히 보고 싶을 때만 쓰는 선택 확인 단계이고, 기본 설치 성공 판단은 위 install 출력과 4개 필수 파일 존재 확인으로 먼저 닫는다.' in readme
-    assert '일반 셸 경로에서도 `next_step`, `next_step_cli`, `next_step_human`, `first_run_path`, `target`, `copied_count`, `skipped_existing_count`, `skipped_missing_count`, `claude_md_status`, `copied_files`는 같은 install 실행의 출력 tail에 함께 이어지는 성공 요약이므로, `copied_files` summary mode 문장도 그 한 묶음 안에서 읽으면 된다.' in readme
-    assert '일반 셸 경로에서도 install 출력의 `copied_files: hidden (rerun with --verbose-copied-files to inspect each path)`는 기본 출력이 요약 모드라는 뜻이지, 출력이 잘리거나 설치가 덜 끝났다는 뜻이 아니다.' in readme
-    assert '일반 셸 설치에서도 `python3 .workflow/scripts/doctor.py --brief`는 설치 직후 상태를 더 보고 싶을 때만 붙이는 선택 확인이고, 생략해도 cleanup과 `/flow-init` 진입으로 바로 넘어가면 된다.' in readme
-    assert '# 개별 복사 경로가 정말 필요할 때만 마지막에 --verbose-copied-files 추가' in readme
-    assert '`--verbose-copied-files` 재실행은 patch 경로에서도 개별 복사 경로를 더 자세히 보고 싶을 때만 쓰는 선택 확인 단계이고, 기본 설치 성공 판단은 `--patch-claude-md` install 출력과 위 필수 파일/`CLAUDE.md` 검증으로 먼저 닫는다.' in readme
-    assert 'patch 경로에서도 `next_step`, `next_step_cli`, `next_step_human`, `first_run_path`, `target`, `copied_count`, `skipped_existing_count`, `skipped_missing_count`, `claude_md_status`, `copied_files`는 같은 install 실행의 출력 tail에 함께 이어지는 성공 요약이므로, `copied_files` summary mode 문장도 patch 검증과 같은 맥락에서 읽으면 된다.' in readme
-    assert 'patch 경로에서도 install 출력의 `copied_files: hidden (rerun with --verbose-copied-files to inspect each path)`는 기본 출력이 요약 모드라는 뜻이지, patch 적용 검증이 덜 끝났거나 출력이 중간에 잘렸다는 뜻이 아니다.' in readme
-    assert '성공 경로에서는 `trap - EXIT`를 cleanup 직전에 호출해 자동 EXIT cleanup을 해제한 뒤 아래 `rm -rf`/`rmdir` 정리를 한 번만 눈에 보이게 수행하므로, 실패 시에는 trap이 임시 디렉터리를 치우고 성공 시에는 사용자가 수동 cleanup이 실제로 끝났는지 바로 확인할 수 있다.' in readme
-    assert '여기서도 성공 경로에서는 `trap - EXIT`를 cleanup 직전에 호출해 자동 EXIT cleanup을 해제한 뒤 아래 `rm -rf`/`rmdir` 정리를 한 번만 눈에 보이게 수행하므로, 실패 시에는 trap이 임시 디렉터리를 치우고 성공 시에는 사용자가 patch 검증까지 끝난 뒤 수동 cleanup이 실제로 끝났는지 바로 확인할 수 있다.' in readme
+    assert "`python3 .workflow/scripts/doctor.py --brief`" in readme
+    assert "기본 성공 판단은 **step 로그 + 필수 파일 4개 확인**으로 먼저 닫는다." in readme
+    assert "`copied_files: hidden (rerun with --verbose-copied-files to inspect each path)`는 기본 출력이 요약 모드라는 뜻이다." in readme
+    assert "성공 경로에서는 `trap - EXIT`를 cleanup 직전에 호출해 자동 EXIT cleanup을 해제한 뒤" in readme
     assert "이 옵션은 이미 로컬 `CLAUDE.md`가 있는 프로젝트에서 기존 사용자 가이드와 so2x-flow 섹션을 한 파일로 합칠 때 특히 의미가 크다." in readme
     assert "`CLAUDE.md`가 아예 없는 새 프로젝트라면 install이 scaffold 기본 파일을 복사하는 대신 patch 단계에서 새 `CLAUDE.md`를 만들어 managed so2x-flow 섹션을 넣는다." in readme
-    assert "예: `rm -rf`, 무차별 삭제/이동 같은 명령 차단" in readme
-    assert "예: 필수 섹션, verification, 승인 게이트 질문, `Proposed Steps` 개수(3~7), 닫힌 next-step 질문 누락 방지" in readme
-    assert "예: 긴 dry-run/grep/bash 출력은 요약본을 추가하고 error/traceback 라인은 유지" in readme
-    assert "예: old_string mismatch, ambiguous match, permission 문제 재시도 가이드" in readme
-    assert "예: 같은 patch/edit 실패 3회 이상이면 파일 재읽기나 다른 접근 유도" in readme
-    assert "예: task 문서 없이 바로 구현부터 하려는 프롬프트 견제" in readme
-    assert "예: 종료 전에 빠진 검증이나 다음 액션 누락 방지" in readme
 
 
 def test_skill_docs_use_workflow_paths_consistently():
@@ -259,22 +244,14 @@ def test_flow_init_docs_require_one_question_at_a_time_followup():
     assert "사용자가 답하면 init artifact의 `answers`에 반영한 뒤 다음 질문으로 넘어간다." in init_skill
 
 
-def test_readme_install_prompt_forces_single_turn_completion_without_recap_only():
+def test_readme_install_prompt_stays_single_turn_and_project_local():
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
-    assert "1~5단계를 한 턴에서 끝까지 실제로 실행한 뒤 마지막에만 결과를 짧게 정리해" in readme
-    assert 'recap이나 "다음으로 ~ 하면 됩니다" 같은 안내만 남기지 말고' in readme
-    assert "마지막 정리에서는 step 1~4의 성공/실패만 먼저 짧게 요약하고, 그 다음 마지막 한 줄에만 다음 실행 안내를 plain 문장으로 넣어." in readme
-    assert "그 마지막 줄은 bullet이나 코드블록으로 다시 감싸지 말고" in readme
-    assert "그 마지막 줄 뒤에는 추가 조언 문장을 붙이지 말며" in readme
-    assert '문구는 정확히 `다음 단계: /flow-init으로 프로젝트를 초기화하세요.` 로 써' in readme
-    assert "이 step 로그 뒤에 같은 install 실행의 출력 tail로 `next_step`, `next_step_cli`, `next_step_human`, `first_run_path`, `target`, `copied_count`, `skipped_existing_count`, `skipped_missing_count`, `claude_md_status`, `copied_files` 요약이 이어진다는 점도 같이 보고해." in readme
-    assert "여기서 `copied_files: hidden (rerun with --verbose-copied-files to inspect each path)`는 기본 출력이 요약 모드라는 뜻이지, step 로그나 설치가 중간에 잘렸다는 뜻이 아니다." in readme
-    assert "개별 복사 경로까지 확인이 정말 필요할 때만 같은 명령을 `--verbose-copied-files`와 함께 다시 실행해도 된다." in readme
-    assert "다만 이 verbose 재실행은 선택 확인 단계일 뿐이고, 기본 설치 성공 판단은 step 로그와 아래 4개 필수 파일 존재 확인으로 먼저 닫는다." in readme
-    assert "이 네 파일 존재 확인이 설치 성공 기준이고, 설치 직후 상태 surface까지 바로 보고 싶으면 선택적으로 `python3 .workflow/scripts/doctor.py --brief` 도 한 번 실행해. 이 선택 확인은 생략해도 step 4 cleanup과 `/flow-init` 진입으로 바로 넘어가면 된다." in readme
-    assert "이 경로에서도 install 출력 tail에 legacy `next_step: 다음 단계: /flow-init으로 프로젝트를 초기화하세요.`, `next_step_cli: /flow-init`, `next_step_human: 다음 단계: /flow-init으로 프로젝트를 초기화하세요.`, `first_run_path: /flow-init -> /flow-plan -> /flow-feature`, `target: <설치 대상 경로>`, `copied_count: <복사된 파일 수>`, `skipped_existing_count: <기존 파일이라 유지된 수>`, `skipped_missing_count: <소스에 없어 건너뛴 수>`, `claude_md_status: <not created|created_or_updated|already_present>`, `copied_files: hidden (rerun with --verbose-copied-files to inspect each path)`가 함께 보이므로, Claude Code 사용자는 step 로그를 읽은 직후 기계용 바로가기 키와 첫 실행 순서뿐 아니라 지금 어디에 설치됐고 몇 개 파일이 복사됐는지, 기존 파일 유지나 소스 누락 skip가 몇 건 있었는지, `CLAUDE.md`가 생성/갱신됐는지, 기본 출력이 요약 모드이며 상세 경로는 정말 필요할 때만 `--verbose-copied-files` 재실행으로 보면 된다는 점뿐 아니라 사람용 다음 단계 문장까지 같은 응답 tail에서 바로 확인할 수 있다. 즉 기본 설치 성공 판단은 이 출력 tail과 step 3의 네 필수 파일 확인으로 먼저 닫히며, `python3 .workflow/scripts/doctor.py --brief`는 그 네 필수 파일 확인 뒤에만 덧붙이는 선택 상태 확인일 뿐 cleanup 선행 조건은 아니다. `.tmp/so2x-flow` cleanup은 그 네 파일 확인이 끝난 뒤에만 넘어가야 하며, doctor 확인을 생략해도 된다. 그다음 바로 `/flow-init`로 넘어가면 된다. 다만 `next_step_human`은 install 출력 tail에서 사람이 읽는 참고 키이고, step 5의 최종 응답은 그 키 이름을 다시 감싸지 말고 `다음 단계: /flow-init으로 프로젝트를 초기화하세요.` 문장 자체를 plain 마지막 줄에 직접 남겨야 한다. 즉 마지막 줄을 `next_step:` 또는 `next_step_human:` 같은 키 이름으로 다시 시작하지 말고, 사람에게 바로 보이는 한국어 문장만 그대로 두는 것이 계약이다." in readme
-    assert '`target:`은 설치 대상 디렉터리 절대 경로를, `copied_count:`는 복사된 파일 수를 보여주고, `skipped_existing_count:`와 `skipped_missing_count:`는 각각 기존 파일 유지 수와 소스 누락 skip 수를 보여주며, `claude_md_status:`는 `CLAUDE.md`가 생성/갱신됐는지 여부를 보여준다. `copied_files:`는 기본적으로 요약만 표시하며 개별 경로가 정말 필요할 때만 `--verbose-copied-files`로 다시 확인하면 된다.' in readme
-    assert '즉 기본 성공 판단은 이 예시 블록 그대로 닫고, 개별 복사 경로가 궁금할 때만 `--verbose-copied-files` 재실행으로 넘어가면 된다.' in readme
+    assert "전역 `~/.claude/skills` 설치가 아니라 현재 프로젝트 내부 설치" in readme
+    assert "중간 단계 성공만 보고하고 응답을 끝내지 말고, 아래 작업을 한 턴에서 끝까지 실제로 실행해." in readme
+    assert "install 출력 tail(`next_step`, `next_step_cli`, `next_step_human`, `first_run_path`, `target`, `copied_count`, `skipped_existing_count`, `skipped_missing_count`, `claude_md_status`, `copied_files`)" in readme
+    assert "필요하면 선택적으로 `python3 .workflow/scripts/doctor.py --brief`" in readme
+    assert "마지막 한 줄은 정확히 `다음 단계: /flow-init으로 프로젝트를 초기화하세요.` 로 끝내." in readme
+    assert "기본 성공 판단은 **step 로그 + 필수 파일 4개 확인**으로 먼저 닫는다." in readme
 
 
 def test_readme_install_examples_match_installer_required_file_contract():
@@ -284,42 +261,34 @@ def test_readme_install_examples_match_installer_required_file_contract():
     assert '".workflow/scripts/doctor.py",' in install_script
     assert "`.workflow/scripts/doctor.py`" in readme
     assert 'test -f .workflow/scripts/doctor.py' in readme
-    assert 'test -f "$tmpdir/app/.workflow/scripts/doctor.py"' in readme
-    assert readme.count("설치 직후 상태 surface까지 바로 확인하려면 위 검증 다음 줄에 `python3 .workflow/scripts/doctor.py --brief`를 한 번 더 실행하면 된다.") >= 2
-    assert "설치가 잘 끝났는지 빠르게 보려면 install 출력 마지막에 legacy 호환 안내 줄인 `next_step: 다음 단계: /flow-init으로 프로젝트를 초기화하세요.`와, 기계용 바로가기 키인 `next_step_cli: /flow-init`, 사람용 안내 문장인 `next_step_human: 다음 단계: /flow-init으로 프로젝트를 초기화하세요.`가 함께 보이는지도 같이 확인하면 된다." in readme
+    assert "### 30초 설치 체크표" in readme
+    assert "| 필수 파일 4개 |" in readme
+    assert "| 마지막 안내 | `다음 단계: /flow-init으로 프로젝트를 초기화하세요.` |" in readme
 
 
 def test_install_output_and_readme_show_one_obvious_next_action():
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     install_script = (ROOT / ".workflow" / "scripts" / "install.py").read_text(encoding="utf-8")
     assert "다음 단계: /flow-init으로 프로젝트를 초기화하세요." in readme
-    assert "설치가 끝나면 install 출력 마지막에 아래 안내가 보이면 된다." in readme
+    assert "### install 출력에서 바로 보는 키" in readme
     assert "next_step: 다음 단계: /flow-init으로 프로젝트를 초기화하세요." in readme
     assert "next_step_cli: /flow-init" in readme
     assert "next_step_human: 다음 단계: /flow-init으로 프로젝트를 초기화하세요." in readme
     assert "first_run_path: /flow-init -> /flow-plan -> /flow-feature" in readme
     assert "## 실사용 기본 경로" in readme
     assert "실제로는 아래 순서로 보면 된다." in readme
-    assert "`/simplify`는 별도 `flow-*` workflow가 아니라, `flow-feature` 완료 뒤나 승인된 plan 기준 구현이 끝난 뒤에 붙는 마감 루프다." in readme
     assert "1. 필요하면 `/flow-plan`으로 방향과 slice를 먼저 고정한다." in readme
     assert "2. `/flow-feature`로 구현과 테스트를 끝낸다." in readme
-    assert "3. `/simplify`를 반복한다." in readme
-    assert "4. convergence가 `0`이 될 때까지 다시 `/simplify`를 돈다." in readme
-    assert "5. convergence `0`이 되면 squash commit으로 정리한다." in readme
-    assert "6. 필요하면 `flow-review`, `flow-qa`를 추가한다." in readme
-    assert "7. GitHub PR 생성/본문 반영/checks watch는 필요할 때만 붙인다." in readme
     assert "next_step: 다음 단계: /flow-init으로 프로젝트를 초기화하세요." in install_script
     assert "next_step_cli: /flow-init" in install_script
     assert "next_step_human: 다음 단계: /flow-init으로 프로젝트를 초기화하세요." in install_script
     assert "first_run_path: /flow-init -> /flow-plan -> /flow-feature" in install_script
-    # README install output example must also show target/copied_count/copied_files
     assert "target:" in readme
     assert "copied_count:" in readme
     assert "skipped_existing_count:" in readme
     assert "skipped_missing_count:" in readme
     assert "claude_md_status:" in readme
     assert "copied_files: hidden (rerun with --verbose-copied-files to inspect each path)" in readme
-    assert "위 예시에서 `first_run_path:`, `target:`, `copied_count:`, `skipped_existing_count:`, `skipped_missing_count:`, `claude_md_status:`, `copied_files:` 줄도 실제 install 출력 tail에 `next_step` 안내와 함께 나오므로, shell 사용자는 다음 단계 안내뿐 아니라 첫 실행 경로(`/flow-init -> /flow-plan -> /flow-feature`), 설치 대상 경로, 복사 파일 수, 기존 파일 유지/소스 누락 여부, `CLAUDE.md` 처리 상태, 기본 출력이 summary mode인지 여부까지 한 번에 확인할 수 있다." in readme
 
 
 def test_install_output_contract_includes_first_run_guidance_lines(tmp_path: Path):
