@@ -65,6 +65,9 @@ modes:
   review:
     roles:
     - reviewer
+  evaluate:
+    roles:
+    - reviewer
   plan:
     roles:
     - planner

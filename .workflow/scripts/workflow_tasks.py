@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 from artifact_renderers import (
+    render_evaluate_task,
     render_feature_task,
     render_init_task,
     render_plan_doc,
@@ -51,4 +52,12 @@ def write_review_task(project_root: Path, request: str, docs_used: list[str], ta
     path = project_root / task_path
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(render_review_task(request, docs_used, task), ensure_ascii=False, indent=2), encoding="utf-8")
+    return task_path
+
+
+def write_evaluate_task(project_root: Path, request: str, docs_used: list[str], task: str | None) -> str:
+    task_path = f".workflow/tasks/evaluate/{slugify(request)}.json"
+    path = project_root / task_path
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(render_evaluate_task(request, docs_used, task), ensure_ascii=False, indent=2), encoding="utf-8")
     return task_path

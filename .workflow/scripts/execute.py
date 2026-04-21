@@ -41,6 +41,7 @@ BOOTSTRAP_ARTIFACTS = [
     ".claude/skills/flow-fix.md",
     ".claude/skills/flow-qa.md",
     ".claude/skills/flow-review.md",
+    ".claude/skills/flow-evaluate.md",
     ".claude/skills/flow-plan.md",
     ".workflow/config/ccs-map.yaml",
     ".workflow/docs/PRD.md",
@@ -74,12 +75,13 @@ BOOTSTRAP_DIRS = [
     ".workflow/tasks/qa",
     ".workflow/tasks/plan",
     ".workflow/tasks/review",
+    ".workflow/tasks/evaluate",
 ]
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="so2x-flow execution entrypoint")
-    parser.add_argument("mode", choices=["init", "feature", "qa", "qa-fix", "flow-fix", "review", "plan", "plan-only", "doctor"])
+    parser.add_argument("mode", choices=["init", "feature", "qa", "qa-fix", "flow-fix", "review", "evaluate", "plan", "plan-only", "doctor"])
     parser.add_argument("request", nargs="?", default="doctor status")
     parser.add_argument("--task")
     parser.add_argument("--qa-id")

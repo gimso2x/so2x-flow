@@ -8,6 +8,7 @@ if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
 from artifact_renderers import (
+    render_evaluate_task,
     render_feature_task,
     render_init_task,
     render_plan_doc,
@@ -27,6 +28,7 @@ __all__ = [
     "ARTIFACT_SCHEMAS",
     "INIT_ALLOWED_STATUSES",
     "PLAN_ALLOWED_STATUSES",
+    "render_evaluate_task",
     "render_feature_task",
     "render_init_task",
     "render_plan_doc",

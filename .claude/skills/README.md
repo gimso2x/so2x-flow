@@ -7,6 +7,7 @@ Skills:
 - `flow-feature`
 - `flow-qa`
 - `flow-review`
+- `flow-evaluate`
 - `flow-plan`
 
 핵심 실사용 루프도 skill 기준으로 본다.

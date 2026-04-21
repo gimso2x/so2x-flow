@@ -259,6 +259,36 @@ MODE_CONTRACTS: dict[str, ModeContract] = {
             ),
         ),
     ),
+    "evaluate": ModeContract(
+        mode="evaluate",
+        artifact_kind="evaluate",
+        roles=("reviewer",),
+        required_docs=(
+            ".workflow/docs/QA.md",
+            ".workflow/docs/PRD.md",
+            ".workflow/docs/ARCHITECTURE.md",
+            ".workflow/docs/ADR.md",
+        ),
+        output_contract=OutputContract(
+            markers=(
+                "Mechanical Status",
+                "Semantic Status",
+                "Release Readiness",
+                "Regression Risks",
+                "Recommended Next Step",
+            ),
+            required_patterns=(
+                (r"\.workflow/tasks/evaluate/[^\s]+\.json", "canonical evaluate task artifact path"),
+            ),
+            required_sections=(
+                "Mechanical Status",
+                "Semantic Status",
+                "Release Readiness",
+                "Regression Risks",
+                "Recommended Next Step",
+            ),
+        ),
+    ),
     "plan": ModeContract(
         mode="plan",
         artifact_kind="plan",
@@ -307,6 +337,7 @@ SKILL_TO_MODE = {
     "flow-fix": "qa",
     "flow-qa": "qa",
     "flow-review": "review",
+    "flow-evaluate": "evaluate",
     "flow-plan": "plan",
 }
 

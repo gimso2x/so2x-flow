@@ -25,3 +25,12 @@ def test_role_contracts_capture_handoffs_and_review_lenses():
     assert implementer.handoff_to == ("reviewer",)
     assert "Code Reuse Review, Code Quality Review, Efficiency Review." in reviewer.responsibilities[1]
     assert reviewer.emits[-1] == "Verdict"
+
+
+def test_evaluate_mode_contract_routes_to_reviewer_only():
+    evaluate = module.contract_for_mode("evaluate")
+
+    assert evaluate.artifact_kind == "evaluate"
+    assert evaluate.roles == ("reviewer",)
+    assert "Mechanical Status" in evaluate.output_contract.markers
+    assert "Release Readiness" in evaluate.output_contract.markers

@@ -371,6 +371,7 @@ def test_core_workflow_contracts_are_consistent_across_readme_patch_claude_and_f
     plan_skill = (ROOT / ".claude" / "skills" / "flow-plan.md").read_text(encoding="utf-8")
     qa_skill = (ROOT / ".claude" / "skills" / "flow-qa.md").read_text(encoding="utf-8")
     review_skill = (ROOT / ".claude" / "skills" / "flow-review.md").read_text(encoding="utf-8")
+    evaluate_skill = (ROOT / ".claude" / "skills" / "flow-evaluate.md").read_text(encoding="utf-8")
 
     assert "role별 `ccs_profile`이 없으면 그 role만 `claude -p`로 fallback" in readme
     assert "runner 선택은 `.workflow/config/ccs-map.yaml`을 따른다. `auto`면 `ccs`가 있으면 `ccs`, 없으면 `claude -p`를 사용한다." in patch_claude
@@ -383,7 +384,7 @@ def test_core_workflow_contracts_are_consistent_across_readme_patch_claude_and_f
     assert "convergence가 0이 아니면 /simplify를 다시 반복해줘." in readme
     assert "convergence 0이 되면 squash commit 기준으로 정리해줘." in readme
     assert "구현 전에 항상 `.workflow/tasks` 아래 task 문서를 먼저 만든다." in patch_claude
-    assert "docs-first 실행에는 현재 프로젝트의 `.claude/skills` 아래 `flow-init`, `flow-feature`, `flow-fix`(=`flow-qa`), `flow-review`, `flow-plan`을 사용한다." in patch_claude
+    assert "docs-first 실행에는 현재 프로젝트의 `.claude/skills` 아래 `flow-init`, `flow-feature`, `flow-fix`(=`flow-qa`), `flow-review`, `flow-evaluate`, `flow-plan`을 사용한다." in patch_claude
     assert "승인된 plan이 없으면 여기서 멈추고 `flow-plan` 선행 여부를 먼저 묻는다" in feature_skill
     assert "`/simplify`는 별도 `flow-*` workflow가 아니라 `flow-feature` 뒤에 붙는 기본 마감 루프다" in feature_skill
     assert "승인 전에는 `/flow-feature`로 자동 전환" in plan_skill
@@ -402,6 +403,12 @@ def test_core_workflow_contracts_are_consistent_across_readme_patch_claude_and_f
     assert "reproduction / expected / actual / root cause hypothesis / minimal fix를 명시한다" in qa_skill
     assert "가능하면 `test-driven-development`를 따라 failing reproduction/test를 먼저 만들고 fix 후 회귀 검증까지 끝낸다." in qa_skill
     assert "`.workflow/tasks/review/<slug>.json`" in review_skill
+    assert "Mechanical Status" in evaluate_skill
+    assert "Semantic Status" in evaluate_skill
+    assert "Release Readiness" in evaluate_skill
+    assert "Regression Risks" in evaluate_skill
+    assert "Recommended Next Step" in evaluate_skill
+    assert "`.workflow/tasks/evaluate/<slug>.json`" in evaluate_skill
     assert "## Outputs" in review_skill
     assert "Code Reuse Review" in review_skill
     assert "Code Quality Review" in review_skill
@@ -422,9 +429,18 @@ def test_readme_positions_current_repo_as_v1_ready():
 def test_readme_documents_absorbed_role_contract_and_review_lenses():
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     assert "Code Reuse Review / Code Quality Review / Efficiency Review를 명시적으로 남기고 싶다" in readme
+    assert "release/readiness gate만 보고 싶다 → `flow-evaluate`" in readme
+    assert "먼저 `.workflow/tasks/evaluate/<slug>.json` readiness task를 만든 뒤 실행한다" in readme
     assert "## 역할 계약과 handoff" in readme
     assert "| planner | plan, feature | request, docs bundle, approved plan context, feature task | 방향 고정, `Proposed Steps`, verification gate | implementer |" in readme
     assert "review는 `Code Reuse Review`, `Code Quality Review`, `Efficiency Review` 세 렌즈를 항상 드러낸다." in readme
+
+
+def test_readme_documents_evaluate_and_doctor_surface():
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    assert "`flow-evaluate` — 구현 후 mechanical/semantic readiness 점검 흐름" in readme
+    assert "doctor는 이제 `init/plan/feature/qa/review/evaluate/doctor` 최신 산출물을 함께 본다." in readme
+    assert "evaluate 결과: `.workflow/tasks/evaluate/<slug>.json`" in readme
 
 
 def test_skill_docs_lock_runtime_and_artifact_contracts():
@@ -432,13 +448,16 @@ def test_skill_docs_lock_runtime_and_artifact_contracts():
     plan_skill = (ROOT / ".claude" / "skills" / "flow-plan.md").read_text(encoding="utf-8")
     qa_skill = (ROOT / ".claude" / "skills" / "flow-qa.md").read_text(encoding="utf-8")
     review_skill = (ROOT / ".claude" / "skills" / "flow-review.md").read_text(encoding="utf-8")
+    evaluate_skill = (ROOT / ".claude" / "skills" / "flow-evaluate.md").read_text(encoding="utf-8")
 
     assert "role별 `ccs_profile`이 없으면 그 role만 `claude -p`로 fallback하고 이유를 role 결과에 남긴다." in feature_skill
     assert "role별 `ccs_profile`이 없으면 그 role만 `claude -p`로 fallback하고 이유를 role 결과에 남긴다." in plan_skill
     assert "role별 `ccs_profile`이 없으면 그 role만 `claude -p`로 fallback하고 이유를 role 결과에 남긴다." in qa_skill
     assert "role별 `ccs_profile`이 없으면 그 role만 `claude -p`로 fallback하고 이유를 role 결과에 남긴다." in review_skill
+    assert "reviewer가 단독으로 readiness gate를 남긴다" in evaluate_skill
 
     assert "`.workflow/tasks/feature/<slug>.json`" in feature_skill
     assert "`.workflow/tasks/plan/<slug>.json`" in plan_skill
     assert "`.workflow/tasks/qa/<slug>.json`" in qa_skill
     assert "`.workflow/tasks/review/<slug>.json`" in review_skill
+    assert "`.workflow/tasks/evaluate/<slug>.json`" in evaluate_skill

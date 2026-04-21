@@ -53,6 +53,16 @@ ARTIFACT_SCHEMAS = {
         "findings": list,
         "next_step_prompt": str,
     },
+    "evaluate": {
+        "title": str,
+        "related_docs": list,
+        "related_task": (str, type(None)),
+        "mechanical_status": str,
+        "semantic_status": str,
+        "release_readiness": str,
+        "regression_risks": list,
+        "recommended_next_step": str,
+    },
     "init": {
         "title": str,
         "status": str,
@@ -184,6 +194,17 @@ def _validate_init_nested(payload: dict) -> None:
         raise ValueError("init field 'current_question_id' must be of type str | NoneType")
 
 
+def _validate_evaluate_nested(payload: dict) -> None:
+    _require_string_list("evaluate", "related_docs", payload["related_docs"])
+    _require_string_list("evaluate", "regression_risks", payload["regression_risks"])
+    if payload["mechanical_status"] not in {"pending", "pass", "fail"}:
+        raise ValueError("evaluate field 'mechanical_status' must be one of ['fail', 'pass', 'pending']")
+    if payload["semantic_status"] not in {"pending", "pass", "fail"}:
+        raise ValueError("evaluate field 'semantic_status' must be one of ['fail', 'pass', 'pending']")
+    if payload["release_readiness"] not in {"hold", "ready"}:
+        raise ValueError("evaluate field 'release_readiness' must be one of ['hold', 'ready']")
+
+
 def _validate_doctor_nested(payload: dict) -> None:
     if payload["mode"] != "doctor":
         raise ValueError("doctor field 'mode' must equal 'doctor'")
@@ -246,6 +267,8 @@ def validate_artifact(kind: str, payload: dict) -> dict:
         _validate_qa_nested(payload)
     elif kind == "review":
         _validate_review_nested(payload)
+    elif kind == "evaluate":
+        _validate_evaluate_nested(payload)
     elif kind == "init":
         _validate_init_nested(payload)
     elif kind == "plan":

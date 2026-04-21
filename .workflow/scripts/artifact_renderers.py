@@ -82,6 +82,24 @@ def render_review_task(request: str, docs_used: list[str], task: str | None = No
     return payload
 
 
+def render_evaluate_task(request: str, docs_used: list[str], task: str | None = None) -> dict:
+    payload = {
+        "title": request,
+        "related_docs": docs_used,
+        "related_task": task,
+        "mechanical_status": "pending",
+        "semantic_status": "pending",
+        "release_readiness": "hold",
+        "regression_risks": [
+            "테스트/린트/산출물 정합성이 아직 검증되지 않음",
+            "plan 또는 task 대비 구현 누락 가능성을 아직 점검하지 않음",
+        ],
+        "recommended_next_step": "/flow-review 또는 /flow-fix로 후속 조치를 진행할까요? (y/n)",
+    }
+    validate_artifact("evaluate", payload)
+    return payload
+
+
 def render_init_task(request: str) -> dict:
     questions = [
         {"id": "project_name", "question": "프로젝트 이름이 무엇인가요?", "target_doc": ".workflow/docs/PRD.md"},

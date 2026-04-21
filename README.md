@@ -170,6 +170,7 @@ copied_files: hidden (rerun with --verbose-copied-files to inspect each path)
 | 이미 방향이 승인됨 | `/flow-feature` | `/simplify` 반복 |
 | 버그 재현/수정 | `flow-fix` (`flow-qa` alias) | 필요 시 `flow-review` |
 | 구현/계획 점검 | `flow-review` | 수정 여부 판단 |
+| 릴리즈 전 readiness 점검 | `flow-evaluate` | `flow-review`/`flow-fix`/`/simplify` 중 후속 선택 |
 
 실제로는 아래 순서로 보면 된다.
 `/simplify`는 별도 `flow-*` workflow가 아니라, `flow-feature` 완료 뒤나 승인된 plan 기준 구현이 끝난 뒤에 붙는 마감 루프다.
@@ -208,6 +209,7 @@ python3 .workflow/scripts/execute.py doctor
 - doctor는 read-only 상태 surface다.
 - 상태 JSON은 `.workflow/outputs/doctor/status.json`에 남긴다.
 - 기본 필드: `overall_status`, `exact_status`, `blocked_reason`, `latest_summary`, `latest_output_json`, `latest_outputs`, `latest_tasks`, `last_event`
+- doctor는 이제 `init/plan/feature/qa/review/evaluate/doctor` 최신 산출물을 함께 본다.
 - `waiting:init`은 init 질문 응답 대기, `waiting:approval`은 plan 승인 대기, `blocked:*`는 최신 실패 payload 기준이다.
 
 마지막 한 줄 안내는 항상 이걸 기준으로 보면 된다.
@@ -220,6 +222,7 @@ python3 .workflow/scripts/execute.py doctor
 - 방향은 승인됐고 구현 slice가 분명하다 → `flow-feature`
 - 버그 재현/수정이다 → `flow-fix` (`flow-qa` alias)
 - 변경을 독립적으로 점검하고 싶다 → `flow-review`
+- 구현은 끝났고 release/readiness gate만 보고 싶다 → `flow-evaluate`
 
 ### `flow-plan`으로 시작
 
@@ -269,6 +272,14 @@ python3 .workflow/scripts/execute.py doctor
 - Spec Gap / Test Gap / QA Watchpoints가 필요하다
 - Code Reuse Review / Code Quality Review / Efficiency Review를 명시적으로 남기고 싶다
 
+### `flow-evaluate`로 시작
+
+이럴 때 쓴다.
+- 구현은 끝났고 release 직전 readiness만 다시 확인하고 싶다
+- mechanical 상태와 semantic 상태를 분리해서 보고 싶다
+- 지금 바로 배포해도 되는지, 아니면 `flow-review`/`flow-fix`/`/simplify` 중 어디로 가야 하는지 결정하고 싶다
+- 먼저 `.workflow/tasks/evaluate/<slug>.json` readiness task를 만든 뒤 실행한다
+
 ## 역할 계약과 handoff
 
 harness-100 쪽에서 흡수한 핵심은 런타임 구조가 아니라 역할 계약 표현 방식이다.
@@ -280,6 +291,7 @@ so2x-flow는 여전히 thin-core를 유지하고, 아래 계약만 더 또렷하
 | qa_planner | qa | QA task, QA/PRD/ARCHITECTURE/ADR docs, reproduction context | root cause hypothesis, minimal fix, regression checklist | implementer |
 | implementer | feature, qa | planner/qa_planner output, task artifact, docs bundle | 구현 결과, verification evidence, follow-up/residual risk | reviewer |
 | reviewer | review | review task, docs bundle, related task | Spec Gap, Test Gap, QA Watchpoints, review verdict | (none) |
+| reviewer | evaluate | evaluate task, docs bundle, related task | Mechanical Status, Semantic Status, Release Readiness, Regression Risks, Recommended Next Step | (none) |
 
 추가 규칙
 - feature의 planner는 승인된 방향 없이 새 방향을 발명하지 않는다.
@@ -295,12 +307,14 @@ so2x-flow는 여전히 thin-core를 유지하고, 아래 계약만 더 또렷하
 - `feature`는 구현
 - `qa`는 버그 수정
 - `review`는 독립 검토
+- `evaluate`는 readiness gate
 
 - `flow-init` — PRD/ARCHITECTURE/QA/DESIGN 기준 질문지를 만들고 init task JSON을 남김
   - 채팅에서는 질문표 전체를 한 번에 던지지 않고, 자동 초안을 먼저 반영한 뒤 필요한 것만 순서대로 한 질문씩 확인
 - `flow-feature` — 승인된 slice 실행 + 가능하면 TDD
 - `flow-fix` (`flow-qa` alias) — systematic debugging + test-first bugfix 흐름
 - `flow-review` — 문서/태스크 기준 리뷰 흐름
+- `flow-evaluate` — 구현 후 mechanical/semantic readiness 점검 흐름
 - `flow-plan` — thinking + planning + approval
 - `/flow-plan` — 구현 없이 계획만 수행
 
@@ -418,7 +432,7 @@ flow-review로 "이번 변경 QA 관점 점검" 리뷰 JSON을 만들어줘.
 - `DESIGN.md` — 타깃 프로젝트용 기본 디자인 기준 문서
 - `.workflow/docs/UI_GUIDE.md` — 구버전 호환용 fallback 문서, 없으면 무시 가능
 - `.workflow/prompts/` — role prompt 템플릿
-- `.workflow/tasks/` — feature / plan / QA / review JSON 템플릿과 생성 산출물
+- `.workflow/tasks/` — feature / plan / QA / review / evaluate JSON 템플릿과 생성 산출물
 - `.workflow/scripts/execute.py` — orchestrator
 - `.workflow/scripts/doctor.py` — read-only latest status surface
 - `.workflow/scripts/install.py` — 설치 + 단계 로그 출력
@@ -443,6 +457,7 @@ flow-review로 "이번 변경 QA 관점 점검" 리뷰 JSON을 만들어줘.
 - plan 결과: `.workflow/tasks/plan/<slug>.json`
   - 기본값: `status: draft`, `approved: false`
 - review 결과: `.workflow/tasks/review/<slug>.json`
+- evaluate 결과: `.workflow/tasks/evaluate/<slug>.json`
 - canonical task 산출물은 계속 `.workflow/tasks/...` 아래에 둔다.
 - 실행 결과 payload는 별도로 `.workflow/outputs/<mode>/<slug>.json`에 남긴다.
 

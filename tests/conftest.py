@@ -14,6 +14,7 @@ GENERATED_DIRS = [
 TASK_TEMPLATE_NAMES = {"_template.json", ".gitkeep"}
 TASK_DIRS = [
     ROOT / ".workflow" / "tasks" / "feature",
+    ROOT / ".workflow" / "tasks" / "evaluate",
     ROOT / ".workflow" / "tasks" / "init",
     ROOT / ".workflow" / "tasks" / "plan",
     ROOT / ".workflow" / "tasks" / "qa",

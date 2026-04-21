@@ -6,7 +6,7 @@ from pathlib import Path
 def collect_design_doc(project_root: Path, workflow_root: Path, mode: str, with_design: bool) -> str | None:
     preferred = project_root / "DESIGN.md"
     fallback = workflow_root / "docs" / "UI_GUIDE.md"
-    if with_design or mode in {"feature", "review", "plan"}:
+    if with_design or mode in {"feature", "review", "evaluate", "plan"}:
         if preferred.exists():
             return "DESIGN.md"
         if fallback.exists():
@@ -29,6 +29,8 @@ def collect_docs(project_root: Path, workflow_root: Path, mode: str, extra_docs:
     elif mode == "plan":
         docs = [".workflow/docs/PRD.md", ".workflow/docs/ARCHITECTURE.md", ".workflow/docs/ADR.md"]
     elif mode == "review":
+        docs = [".workflow/docs/QA.md", ".workflow/docs/PRD.md", ".workflow/docs/ARCHITECTURE.md", ".workflow/docs/ADR.md"]
+    elif mode == "evaluate":
         docs = [".workflow/docs/QA.md", ".workflow/docs/PRD.md", ".workflow/docs/ARCHITECTURE.md", ".workflow/docs/ADR.md"]
     else:
         docs = [".workflow/docs/PRD.md", ".workflow/docs/ARCHITECTURE.md", ".workflow/docs/ADR.md"]

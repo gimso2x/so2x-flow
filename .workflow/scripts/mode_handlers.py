@@ -7,6 +7,7 @@ from workflow_context import select_approved_plan
 from workflow_contracts import contract_for_mode
 from workflow_docs import collect_docs, load_docs_bundle
 from workflow_tasks import (
+    write_evaluate_task,
     write_feature_task,
     write_init_task,
     write_plan_mode_task,
@@ -83,6 +84,9 @@ def prepare_mode_context(
         artifacts.append(task_path)
     elif mode == "review":
         task_path = write_review_task(project_root, request, docs_used, task)
+        artifacts.append(task_path)
+    elif mode == "evaluate":
+        task_path = write_evaluate_task(project_root, request, docs_used, task)
         artifacts.append(task_path)
 
     if task_path:

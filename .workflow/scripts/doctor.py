@@ -16,7 +16,7 @@ from artifact_schema import validate_artifact, write_json
 
 OUTPUTS_ROOT = WORKFLOW_ROOT / "outputs"
 STATUS_OUTPUT_PATH = OUTPUTS_ROOT / "doctor" / "status.json"
-TASK_MODES = ("init", "plan", "feature", "qa", "review")
+TASK_MODES = ("init", "plan", "feature", "qa", "review", "evaluate")
 OUTPUT_MODES = TASK_MODES + ("doctor",)
 
 
