@@ -12,6 +12,10 @@ ARTIFACT_SCHEMAS = {
         "latest_output_json": (str, type(None)),
         "latest_outputs": dict,
         "latest_tasks": dict,
+        "approval_status": str,
+        "latest_approved_plan_path": (str, type(None)),
+        "latest_runner_resolution": (dict, type(None)),
+        "suggested_next_command": str,
     },
     "feature": {
         "title": str,
@@ -79,6 +83,7 @@ ARTIFACT_SCHEMAS = {
 INIT_ALLOWED_STATUSES = {"draft_auto_filled", "needs_user_input", "in_progress", "ready_for_review", "approved"}
 PLAN_ALLOWED_STATUSES = {"draft", "approved", "in_progress", "needs_user_input"}
 DOCTOR_ALLOWED_OVERALL_STATUSES = {"idle", "ok", "blocked", "waiting"}
+DOCTOR_ALLOWED_APPROVAL_STATUSES = {"none", "waiting", "matched-unapproved-plan", "approved"}
 
 
 def _require_string_list(kind: str, field: str, values: object) -> None:
@@ -184,8 +189,27 @@ def _validate_doctor_nested(payload: dict) -> None:
         raise ValueError("doctor field 'mode' must equal 'doctor'")
     if payload["overall_status"] not in DOCTOR_ALLOWED_OVERALL_STATUSES:
         raise ValueError(f"doctor field 'overall_status' must be one of {sorted(DOCTOR_ALLOWED_OVERALL_STATUSES)}")
+    if payload["approval_status"] not in DOCTOR_ALLOWED_APPROVAL_STATUSES:
+        raise ValueError(f"doctor field 'approval_status' must be one of {sorted(DOCTOR_ALLOWED_APPROVAL_STATUSES)}")
     if not payload["exact_status"]:
         raise ValueError("doctor field 'exact_status' must be a non-empty str")
+    if not payload["suggested_next_command"]:
+        raise ValueError("doctor field 'suggested_next_command' must be a non-empty str")
+    resolution = payload.get("latest_runner_resolution")
+    if resolution is not None:
+        for key in ("requested_runner", "selected_runner", "fallback_used", "fallback_reason", "execution_mode"):
+            if key not in resolution:
+                raise ValueError(f"doctor latest_runner_resolution missing required field: {key}")
+        if not isinstance(resolution["requested_runner"], str):
+            raise ValueError("doctor latest_runner_resolution['requested_runner'] must be a str")
+        if not isinstance(resolution["selected_runner"], str):
+            raise ValueError("doctor latest_runner_resolution['selected_runner'] must be a str")
+        if not isinstance(resolution["fallback_used"], bool):
+            raise ValueError("doctor latest_runner_resolution['fallback_used'] must be a bool")
+        if resolution["fallback_reason"] is not None and not isinstance(resolution["fallback_reason"], str):
+            raise ValueError("doctor latest_runner_resolution['fallback_reason'] must be a str | NoneType")
+        if resolution["execution_mode"] not in {"dry_run", "live"}:
+            raise ValueError("doctor latest_runner_resolution['execution_mode'] must be 'dry_run' or 'live'")
     for field in ("latest_outputs", "latest_tasks"):
         mapping = payload[field]
         if not isinstance(mapping, dict):

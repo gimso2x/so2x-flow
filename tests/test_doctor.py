@@ -4,7 +4,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from test_execute import make_workspace, output_path, run_execute
+from execute_helpers import make_workspace, output_path, run_execute
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -39,6 +39,10 @@ def test_doctor_reports_idle_when_no_flow_outputs_exist(tmp_path: Path):
     assert payload["latest_output_json"] is None
     assert payload["latest_outputs"] == {"doctor": ".workflow/outputs/doctor/status.json"}
     assert payload["latest_tasks"] == {}
+    assert payload["approval_status"] == "none"
+    assert payload["latest_approved_plan_path"] is None
+    assert payload["latest_runner_resolution"] is None
+    assert payload["suggested_next_command"] == "/flow-init"
 
 
 
@@ -91,6 +95,16 @@ def test_doctor_reports_latest_success_surface_and_task_links(tmp_path: Path):
     assert payload["latest_outputs"]["plan"] == ".workflow/outputs/plan/로그인-기능-설계-확정.json"
     assert payload["latest_tasks"]["feature"] == ".workflow/tasks/feature/로그인-기능-구현.json"
     assert payload["latest_tasks"]["plan"] == ".workflow/tasks/plan/로그인-기능-설계-확정.json"
+    assert payload["approval_status"] == "matched-unapproved-plan"
+    assert payload["latest_approved_plan_path"] is None
+    assert payload["latest_runner_resolution"] == {
+        "requested_runner": "auto",
+        "selected_runner": "ccs",
+        "fallback_used": False,
+        "fallback_reason": None,
+        "execution_mode": "dry_run",
+    }
+    assert payload["suggested_next_command"] == "/flow-plan"
     assert payload["latest_summary"].startswith("feature dry-run ready: 로그인 기능 구현")
     assert payload["last_event"]["request"] == "로그인 기능 구현"
     assert payload["last_event"]["output_json"] == ".workflow/outputs/feature/로그인-기능-구현.json"
@@ -136,13 +150,67 @@ def test_doctor_reports_blocked_reason_from_latest_failed_output(tmp_path: Path)
 
 def test_doctor_brief_and_json_modes_emit_machine_friendly_output(tmp_path: Path):
     workspace = make_workspace(tmp_path)
+    run_execute(workspace, "plan", "로그인 기능 설계 확정", "--dry-run")
     run_execute(workspace, "feature", "로그인 기능 구현", "--dry-run")
 
     brief = run_doctor(workspace, "--brief")
     json_only = run_doctor(workspace, "--json")
 
     assert brief.stdout.strip().startswith("ok:feature | feature dry-run ready: 로그인 기능 구현")
+    assert "| next=/flow-plan" in brief.stdout.strip()
     assert json_only.stdout.strip() == ".workflow/outputs/doctor/status.json"
+
+
+
+def test_doctor_reports_approved_plan_surface_for_live_feature_output(tmp_path: Path):
+    workspace = make_workspace(tmp_path)
+    plan_result = run_execute(workspace, "plan", "프로필 편집 설계 확정", "--dry-run")
+    plan_payload = read_json(output_path(workspace, plan_result.stdout, "output_json"))
+    plan_path = workspace / plan_payload["artifacts"][0]
+    plan_json = read_json(plan_path)
+    plan_json["approved"] = True
+    plan_json["status"] = "approved"
+    plan_path.write_text(json.dumps(plan_json, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    feature_output = workspace / ".workflow" / "outputs" / "feature" / "프로필-편집.json"
+    feature_output.parent.mkdir(parents=True, exist_ok=True)
+    feature_output.write_text(
+        json.dumps(
+            {
+                "mode": "feature",
+                "request": "프로필 편집",
+                "dry_run": False,
+                "requested_runner": "auto",
+                "selected_runner": "claude",
+                "fallback_used": True,
+                "fallback_reason": "ccs profile missing",
+                "approved_plan_path": ".workflow/tasks/plan/프로필-편집-설계-확정.json",
+                "approved_plan_match_reason": "matched plan similarity exact slug via artifact request",
+                "docs_used": [".workflow/docs/PRD.md"],
+                "roles": ["planner", "implementer"],
+                "role_results": [],
+                "artifacts": [".workflow/tasks/feature/프로필-편집.json"],
+                "output_json": ".workflow/outputs/feature/프로필-편집.json",
+            },
+            ensure_ascii=False,
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+    result = run_doctor(workspace)
+    payload = read_json(output_path(workspace, result.stdout, "output_json"))
+
+    assert payload["approval_status"] == "approved"
+    assert payload["latest_approved_plan_path"] == ".workflow/tasks/plan/프로필-편집-설계-확정.json"
+    assert payload["latest_runner_resolution"] == {
+        "requested_runner": "auto",
+        "selected_runner": "claude",
+        "fallback_used": True,
+        "fallback_reason": "ccs profile missing",
+        "execution_mode": "live",
+    }
+    assert payload["suggested_next_command"] == "/simplify"
 
 
 
@@ -163,6 +231,10 @@ def test_doctor_artifact_schema_rejects_invalid_overall_status(tmp_path: Path):
         "latest_output_json": None,
         "latest_outputs": {"doctor": ".workflow/outputs/doctor/status.json"},
         "latest_tasks": {},
+        "approval_status": "none",
+        "latest_approved_plan_path": None,
+        "latest_runner_resolution": None,
+        "suggested_next_command": "/flow-init",
     }
 
     try:
