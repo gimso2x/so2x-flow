@@ -24,6 +24,7 @@ Use this skill to review planned or implemented work against project documents.
 - `flow-review`는 칭찬문이 아니라 independent verification 단계다.
 - `requesting-code-review` 철학을 따라, 구현자 관점이 아니라 독립 reviewer 관점에서 gap과 regression risk를 찾는다.
 - 가능하면 spec compliance와 code quality/security를 분리해 본다.
+- 세 가지 명시적 리뷰 렌즈를 항상 드러낸다: `Code Reuse Review`, `Code Quality Review`, `Efficiency Review`.
 
 ## Outputs
 - `.workflow/tasks/review/<slug>.json`
@@ -31,6 +32,9 @@ Use this skill to review planned or implemented work against project documents.
 - `Architecture Concern`
 - `Test Gap`
 - `QA Watchpoints`
+- `Code Reuse Review`
+- `Code Quality Review`
+- `Efficiency Review`
 - `Security / Regression Risk`
 - `Verdict`
 
@@ -43,6 +47,7 @@ Use this skill to review planned or implemented work against project documents.
 ## Runtime policy
 - actionable finding 위주로 쓴다
 - spec gap / quality risk / regression risk를 구분해서 쓴다
+- `Code Reuse Review`, `Code Quality Review`, `Efficiency Review` 세 렌즈를 숨기지 말고 명시적으로 남긴다
 - reviewer는 구현을 스스로 정당화하지 말고 fail-closed에 가깝게 본다
 - 기본은 `--dry-run`으로 빠르게 확인하고, live 실행은 `runtime.allow_live_run=true`일 때 실제 runner로 검증한다
 - live 실행은 `runtime.allow_live_run=true`일 때만 허용

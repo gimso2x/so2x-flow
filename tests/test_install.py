@@ -434,6 +434,9 @@ def test_core_workflow_contracts_are_consistent_across_readme_patch_claude_and_f
     assert "가능하면 `test-driven-development`를 따라 failing reproduction/test를 먼저 만들고 fix 후 회귀 검증까지 끝낸다." in qa_skill
     assert "`.workflow/tasks/review/<slug>.json`" in review_skill
     assert "## Outputs" in review_skill
+    assert "Code Reuse Review" in review_skill
+    assert "Code Quality Review" in review_skill
+    assert "Efficiency Review" in review_skill
     assert "actionable finding 위주로 쓴다" in review_skill
     assert "`flow-review`는 칭찬문이 아니라 independent verification 단계다." in review_skill
     assert "`.workflow/tasks/plan/<slug>.json`" in plan_skill
@@ -445,6 +448,14 @@ def test_readme_positions_current_repo_as_v1_ready():
     assert "so2x-flow는 Claude Code에서 기능 구현, QA, 리뷰, 계획 작업을 문서 중심으로 굴리는 얇은 워크플로우 하네스다." in readme
     assert "기본 회귀 검증은 `--dry-run`과 자동 테스트로 빠르게 확인하고, live 실행은 명시 opt-in 뒤 실제 runner로 검증한다" in readme
     assert "구현 완료 -> /simplify 반복 -> convergence 0 -> squash -> 필요하면 flow-review 또는 flow-qa -> GitHub PR 운영은 옵션" in readme
+
+
+def test_readme_documents_absorbed_role_contract_and_review_lenses():
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    assert "Code Reuse Review / Code Quality Review / Efficiency Review를 명시적으로 남기고 싶다" in readme
+    assert "## 역할 계약과 handoff" in readme
+    assert "| planner | plan, feature | request, docs bundle, approved plan context, feature task | 방향 고정, `Proposed Steps`, verification gate | implementer |" in readme
+    assert "review는 `Code Reuse Review`, `Code Quality Review`, `Efficiency Review` 세 렌즈를 항상 드러낸다." in readme
 
 
 def test_skill_docs_lock_runtime_and_artifact_contracts():

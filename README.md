@@ -228,6 +228,25 @@ python3 .workflow/scripts/execute.py doctor
 이럴 때 쓴다.
 - 구현 또는 계획을 문서 기준으로 다시 점검하고 싶다
 - Spec Gap / Test Gap / QA Watchpoints가 필요하다
+- Code Reuse Review / Code Quality Review / Efficiency Review를 명시적으로 남기고 싶다
+
+## 역할 계약과 handoff
+
+harness-100 쪽에서 흡수한 핵심은 런타임 구조가 아니라 역할 계약 표현 방식이다.
+so2x-flow는 여전히 thin-core를 유지하고, 아래 계약만 더 또렷하게 고정한다.
+
+| role | modes | receives | emits | handoff |
+|---|---|---|---|---|
+| planner | plan, feature | request, docs bundle, approved plan context, feature task | 방향 고정, `Proposed Steps`, verification gate | implementer |
+| qa_planner | qa | QA task, QA/PRD/ARCHITECTURE/ADR docs, reproduction context | root cause hypothesis, minimal fix, regression checklist | implementer |
+| implementer | feature, qa | planner/qa_planner output, task artifact, docs bundle | 구현 결과, verification evidence, follow-up/residual risk | reviewer |
+| reviewer | review | review task, docs bundle, related task | Spec Gap, Test Gap, QA Watchpoints, review verdict | (none) |
+
+추가 규칙
+- feature의 planner는 승인된 방향 없이 새 방향을 발명하지 않는다.
+- plan은 approval에서 멈추고 자동으로 implementation으로 넘어가지 않는다.
+- qa는 reproduction / expected / actual / root cause를 먼저 고정한다.
+- review는 `Code Reuse Review`, `Code Quality Review`, `Efficiency Review` 세 렌즈를 항상 드러낸다.
 
 ## 포함된 흐름
 
@@ -344,7 +363,7 @@ flow-review로 "이번 변경 QA 관점 점검" 리뷰 JSON을 만들어줘.
 - `.workflow/scripts/runner_resolution.py` — runner/role fallback 결정
 - `.workflow/scripts/runner_commands.py` — ccs/claude command build
 - `.workflow/scripts/runner_execution.py` — dry-run/live 실행과 subprocess 오류 처리
-- `.workflow/scripts/workflow_contracts.py` — mode별 artifact/roles/output contract 단일 소스
+- `.workflow/scripts/workflow_contracts.py` — mode별 artifact/roles/output contract + role handoff contract 단일 소스
 - `tests/` — dry-run 테스트
 
 ## artifact naming
