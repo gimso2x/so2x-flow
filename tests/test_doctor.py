@@ -187,7 +187,7 @@ def test_doctor_reports_approved_plan_surface_for_live_feature_output(tmp_path: 
                 "approved_plan_path": ".workflow/tasks/plan/프로필-편집-설계-확정.json",
                 "approved_plan_match_reason": "matched plan similarity exact slug via artifact request",
                 "docs_used": [".workflow/docs/PRD.md"],
-                "roles": ["planner", "implementer"],
+                "roles": ["planner", "implementer", "reviewer"],
                 "role_results": [],
                 "artifacts": [".workflow/tasks/feature/프로필-편집.json"],
                 "output_json": ".workflow/outputs/feature/프로필-편집.json",

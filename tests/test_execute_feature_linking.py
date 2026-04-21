@@ -23,7 +23,7 @@ def test_feature_dry_run_collects_design_doc_creates_task_and_chains_planner_to_
         ".workflow/docs/ADR.md",
         "DESIGN.md",
     ]
-    assert [item["role"] for item in payload["role_results"]] == ["planner", "implementer"]
+    assert [item["role"] for item in payload["role_results"]] == ["planner", "implementer", "reviewer"]
     assert payload["artifacts"] == [".workflow/tasks/feature/로그인-기능-구현.json"]
 
     task_json = read_json(workspace / payload["artifacts"][0])
@@ -39,6 +39,9 @@ def test_feature_dry_run_collects_design_doc_creates_task_and_chains_planner_to_
     assert "Approved Direction" in implementer_output
     assert "approved_plan_path: (none)" in implementer_output
     assert "approved_plan_match_reason: no plan artifacts found" in implementer_output
+    reviewer_output = payload["role_results"][2]["output"]
+    assert "implementer_output:" in reviewer_output
+    assert "Code Reuse Review" in reviewer_output
 
 def test_feature_dry_run_links_matching_latest_plan_artifact(tmp_path: Path):
     workspace = make_workspace(tmp_path)
@@ -177,9 +180,10 @@ def test_skip_plan_allows_feature_run_when_matching_plan_is_explicitly_approved(
 
     result = run_execute(workspace, "feature", "프로필 편집", "--skip-plan", "--dry-run")
     payload = read_json(output_path(workspace, result.stdout, "output_json"))
-    assert payload["roles"] == ["implementer"]
+    assert payload["roles"] == ["implementer", "reviewer"]
     assert payload["approved_plan_path"] == ".workflow/tasks/plan/프로필-편집-설계-확정.json"
     assert "planner_output:" not in payload["role_results"][0]["output"]
+    assert "implementer_output:" in payload["role_results"][1]["output"]
 
 def test_plan_rerun_preserves_explicit_approval_metadata(tmp_path: Path):
     workspace = make_workspace(tmp_path)

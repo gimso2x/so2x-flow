@@ -56,10 +56,12 @@ modes:
     roles:
     - planner
     - implementer
+    - reviewer
   qa:
     roles:
     - qa_planner
     - implementer
+    - reviewer
   review:
     roles:
     - reviewer

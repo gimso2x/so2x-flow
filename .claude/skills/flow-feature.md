@@ -14,7 +14,7 @@ Use this skill when an approved product or engineering slice is ready to execute
 - `flow-feature`는 구현 단계 본체다.
 - 실사용 기본 루프는 보통 `flow-plan` → `flow-feature` → `/simplify` 반복 → convergence `0` → squash 순서다.
 - `/simplify`는 별도 `flow-*` workflow가 아니라 `flow-feature` 뒤에 붙는 기본 마감 루프다.
-- `flow-review`, `flow-qa`는 필요할 때 추가하고, GitHub PR 운영은 선택 사항이다.
+- `flow-review`, `flow-fix`(`flow-qa` alias)는 필요할 때 추가하고, GitHub PR 운영은 선택 사항이다.
 
 ## Input
 - feature 요청 한 줄
@@ -32,6 +32,7 @@ Use this skill when an approved product or engineering slice is ready to execute
 ## Goal
 - `flow-feature`는 설계/옵션 비교 단계가 아니라, 승인된 방향에서 이번에 구현할 최소 slice를 실행하는 단계다.
 - planner와 implementer는 새 방향을 발명하는 역할이 아니라, 승인된 방향을 안전하게 실행하는 역할이다.
+- reviewer는 구현이 끝난 뒤 Code Reuse Review, Code Quality Review, Efficiency Review를 포함해 마감 gate를 점검한다.
 - brainstorming이나 writing-plans 성격의 작업은 여기서 하지 않고 `flow-plan`에서 끝낸다.
 - 구현은 가능하면 `test-driven-development`를 따르고, slice 완료 뒤에는 independent review gate를 통과해야 한다.
 - slice가 충분히 독립적이면 `subagent-driven-development`처럼 task 단위로 실행/검토를 분리할 수 있다.
@@ -46,7 +47,7 @@ Use this skill when an approved product or engineering slice is ready to execute
 7. 새 동작/버그 수정은 가능하면 failing test를 먼저 만들고 구현한다
 8. 구현/테스트가 끝나면 `/simplify` 반복 대상으로 넘길 수 있게 변경 범위와 검증 결과를 정리한다
 9. 실사용 기본 마감 루프는 `/simplify` 반복 → convergence `0` → squash다
-10. `flow-review`, `flow-qa`, GitHub PR 운영은 필요할 때만 뒤에 붙인다
+10. `flow-review`, `flow-fix`(`flow-qa` alias), GitHub PR 운영은 필요할 때만 뒤에 붙인다
 11. 마지막은 자동 다음 단계 제안이 아니라, 현재 slice 진행 여부 또는 plan 선행 여부를 묻는 닫힌 질문으로 끝낸다
 
 ## Output contract
@@ -77,6 +78,7 @@ feature task와 응답에는 최소한 아래 항목이 있어야 한다.
 - 승인된 plan이 없으면 여기서 멈추고 `flow-plan` 선행 여부를 먼저 묻는다
 - `--skip-plan`은 matching plan JSON에 `approved: true` 또는 `status: approved`가 있을 때만 허용한다
 - `Proposed Steps`를 planner가 채운 뒤 implementer를 실행한다
+- implementer 다음에는 reviewer가 마지막 검토 gate를 남긴다
 - canonical plan 후보는 `.workflow/tasks/plan/*.json`만 본다
 - 최신 plan이 있어도 요청과 안 맞으면 연결하지 않는다
 - implementer는 planner 결과와 승인된 plan 문맥이 있을 때만 그 최소 범위로 실행한다
@@ -85,7 +87,7 @@ feature task와 응답에는 최소한 아래 항목이 있어야 한다.
 - 매회 `/simplify`는 최대 2~3개 개선만 처리하고, convergence 요약은 짧게 남긴다
 - convergence가 `0`이면 바로 종료하고 squash한다
 - convergence가 작더라도 반복은 보통 2~3회를 넘기지 않는다
-- `flow-review`, `flow-qa`는 필요할 때만 추가하고, GitHub PR 운영은 선택 사항이다
+- `flow-review`, `flow-fix`(`flow-qa` alias)는 필요할 때만 추가하고, GitHub PR 운영은 선택 사항이다
 - 기본은 `--dry-run`으로 빠르게 확인하고, live 실행은 `runtime.allow_live_run=true`일 때 실제 runner로 검증한다
 - live 실행은 `runtime.allow_live_run=true`일 때만 허용
 - role별 `ccs_profile`이 없으면 그 role만 `claude -p`로 fallback하고 이유를 role 결과에 남긴다.

@@ -85,8 +85,10 @@ def test_feature_live_execution_requires_approved_plan_even_without_skip_plan(tm
 def test_legacy_mode_aliases_still_work(tmp_path: Path):
     workspace = make_workspace(tmp_path)
     qa_payload = read_json(output_path(workspace, run_execute(workspace, "qa-fix", "QA-009 토글 오동작", "--qa-id", "QA-009", "--dry-run").stdout, "output_json"))
+    flow_fix_payload = read_json(output_path(workspace, run_execute(workspace, "flow-fix", "QA-010 설정 저장 실패", "--qa-id", "QA-010", "--dry-run").stdout, "output_json"))
     plan_payload = read_json(output_path(workspace, run_execute(workspace, "plan-only", "결제 기능 작업 분해", "--dry-run").stdout, "output_json"))
     assert qa_payload["mode"] == "qa"
+    assert flow_fix_payload["mode"] == "qa"
     assert plan_payload["mode"] == "plan"
 
 def test_requested_ccs_falls_back_to_claude_when_ccs_missing(tmp_path: Path):
@@ -171,7 +173,7 @@ def test_build_payload_keeps_failure_and_fallback_contract_fields(tmp_path: Path
         approved_plan_path=".workflow/tasks/plan/로그인-기능-설계-확정.json",
         approved_plan_match_reason="explicit approval metadata matched latest request",
         docs_used=[".workflow/docs/PRD.md", ".workflow/docs/ARCHITECTURE.md"],
-        roles=["planner", "implementer"],
+        roles=["planner", "implementer", "reviewer"],
         role_results=role_results,
         artifacts=[".workflow/tasks/feature/로그인-기능-구현.json"],
         failed_role="implementer",
@@ -211,7 +213,7 @@ def test_print_summary_emits_fallbacks_failures_and_output_json_lines(tmp_path: 
         "approved_plan_path": ".workflow/tasks/plan/로그인-기능-설계-확정.json",
         "approved_plan_match_reason": "token overlap matched approved artifact",
         "docs_used": [".workflow/docs/PRD.md", ".workflow/docs/ARCHITECTURE.md"],
-        "roles": ["planner", "implementer"],
+        "roles": ["planner", "implementer", "reviewer"],
         "role_results": [
             {
                 "role": "planner",
@@ -382,6 +384,7 @@ def test_execute_uses_runner_resolution_layer_and_live_runner_path(tmp_path: Pat
     assert "task_content=context.task_content" in execution_runtime
     assert "task_content: str | None" in mode_handlers
     assert "planner_output: str | None" not in mode_handlers
+    assert "prior_role_output: str | None" in prompt_builder
     assert "load_text(task_file)" not in prompt_builder
     assert "from workflow_docs import collect_docs, load_docs_bundle" in mode_handlers
     assert "from workflow_context import select_approved_plan" in mode_handlers
@@ -578,7 +581,7 @@ def test_docs_first_smoke_plan_feature_qa_sequence(tmp_path: Path):
     feature_result = run_execute(workspace, "feature", "로그인 폼 validation과 submit 흐름 추가", "--skip-plan", "--dry-run")
     feature_payload = read_json(output_path(workspace, feature_result.stdout, "output_json"))
     feature_json = read_json(workspace / feature_payload["artifacts"][0])
-    assert feature_payload["roles"] == ["implementer"]
+    assert feature_payload["roles"] == ["implementer", "reviewer"]
     assert feature_payload["approved_plan_path"] == plan_payload["artifacts"][0]
     assert feature_json["latest_approved_flow_plan_output"] == plan_payload["artifacts"][0]
     assert feature_json["approved_direction"]["source_plan_artifact"] == plan_payload["artifacts"][0]
@@ -588,7 +591,7 @@ def test_docs_first_smoke_plan_feature_qa_sequence(tmp_path: Path):
     qa_payload = read_json(output_path(workspace, qa_result.stdout, "output_json"))
     qa_json = read_json(workspace / qa_payload["artifacts"][0])
     assert qa_payload["docs_used"][0] == ".workflow/docs/QA.md"
-    assert qa_payload["roles"] == ["qa_planner", "implementer"]
+    assert qa_payload["roles"] == ["qa_planner", "implementer", "reviewer"]
     assert qa_json["qa_id"] == "QA-101"
     assert qa_json["reproduction"] == ["Describe how to reproduce the issue."]
     assert qa_json["minimal_fix"] == ["Describe the smallest safe repair."]

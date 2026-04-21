@@ -42,7 +42,8 @@ def _role_result_payload(result) -> dict:
 
 def run_roles(*, config: dict, resolution, runtime_config: dict, prompts_dir, mode: str, request: str, context, qa_id: str | None, dry_run: bool) -> list[dict]:
     role_results: list[dict] = []
-    planner_output = None
+    prior_role = None
+    prior_role_output = None
     for role in context.roles:
         requested_role_config = config["roles"][role][resolution.selected_runner]
         shared_role_config = {**config["roles"][role], **requested_role_config}
@@ -68,7 +69,8 @@ def run_roles(*, config: dict, resolution, runtime_config: dict, prompts_dir, mo
                 task_path=context.task_path,
                 task_content=context.task_content,
                 qa_id=qa_id,
-                planner_output=planner_output,
+                prior_role=prior_role,
+                prior_role_output=prior_role_output,
                 design_doc=context.design_doc,
                 approved_plan_path=context.approved_plan_path,
                 approved_plan_match_reason=context.approved_plan_match_reason,
@@ -98,6 +100,6 @@ def run_roles(*, config: dict, resolution, runtime_config: dict, prompts_dir, mo
         except Exception as exc:
             raise ExecutionFailure(role=role, stage="role_execution", message=str(exc), role_results=role_results) from exc
         role_results.append(_role_result_payload(result))
-        if role in {"planner", "qa_planner"}:
-            planner_output = result.output
+        prior_role = role
+        prior_role_output = result.output
     return role_results

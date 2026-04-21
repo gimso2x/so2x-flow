@@ -189,7 +189,7 @@ def test_skill_docs_use_workflow_paths_consistently():
     assert "매회 `/simplify`는 최대 2~3개 개선만 처리하고, convergence 요약은 짧게 남긴다" in feature_skill
     assert "convergence가 `0`이면 바로 종료하고 squash한다" in feature_skill
     assert "convergence가 작더라도 반복은 보통 2~3회를 넘기지 않는다" in feature_skill
-    assert "`flow-review`, `flow-qa`는 필요할 때만 추가하고, GitHub PR 운영은 선택 사항이다" in feature_skill
+    assert "`flow-review`, `flow-fix`(`flow-qa` alias)는 필요할 때만 추가하고, GitHub PR 운영은 선택 사항이다" in feature_skill
     assert "## Input" in qa_skill
     assert "## Outputs" in qa_skill
     assert "## Forbidden" in qa_skill
@@ -377,13 +377,13 @@ def test_core_workflow_contracts_are_consistent_across_readme_patch_claude_and_f
     assert "승인된 plan이 없으면" in readme
     assert ".workflow/tasks/plan/<slug>.json" in readme
 
-    assert "구현 완료 -> /simplify 반복 -> convergence 0 -> squash -> 필요하면 flow-review 또는 flow-qa -> GitHub PR 운영은 옵션" in readme
+    assert "구현 완료 -> /simplify 반복 -> convergence 0 -> squash -> 필요하면 flow-review 또는 flow-fix(flow-qa alias) -> GitHub PR 운영은 옵션" in readme
     assert "GitHub PR 생성/본문 반영/checks watch는 필요할 때만 추가로 사용한다" in readme
     assert "이 변경 기준으로 /simplify를 한 번 돌려줘." in readme
     assert "convergence가 0이 아니면 /simplify를 다시 반복해줘." in readme
     assert "convergence 0이 되면 squash commit 기준으로 정리해줘." in readme
     assert "구현 전에 항상 `.workflow/tasks` 아래 task 문서를 먼저 만든다." in patch_claude
-    assert "docs-first 실행에는 현재 프로젝트의 `.claude/skills` 아래 `flow-init`, `flow-feature`, `flow-qa`, `flow-review`, `flow-plan`을 사용한다." in patch_claude
+    assert "docs-first 실행에는 현재 프로젝트의 `.claude/skills` 아래 `flow-init`, `flow-feature`, `flow-fix`(=`flow-qa`), `flow-review`, `flow-plan`을 사용한다." in patch_claude
     assert "승인된 plan이 없으면 여기서 멈추고 `flow-plan` 선행 여부를 먼저 묻는다" in feature_skill
     assert "`/simplify`는 별도 `flow-*` workflow가 아니라 `flow-feature` 뒤에 붙는 기본 마감 루프다" in feature_skill
     assert "승인 전에는 `/flow-feature`로 자동 전환" in plan_skill
@@ -416,7 +416,7 @@ def test_readme_positions_current_repo_as_v1_ready():
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     assert "so2x-flow는 Claude Code에서 기능 구현, QA, 리뷰, 계획 작업을 문서 중심으로 굴리는 얇은 워크플로우 하네스다." in readme
     assert "기본 회귀 검증은 `--dry-run`과 자동 테스트로 빠르게 확인하고, live 실행은 명시 opt-in 뒤 실제 runner로 검증한다" in readme
-    assert "구현 완료 -> /simplify 반복 -> convergence 0 -> squash -> 필요하면 flow-review 또는 flow-qa -> GitHub PR 운영은 옵션" in readme
+    assert "구현 완료 -> /simplify 반복 -> convergence 0 -> squash -> 필요하면 flow-review 또는 flow-fix(flow-qa alias) -> GitHub PR 운영은 옵션" in readme
 
 
 def test_readme_documents_absorbed_role_contract_and_review_lenses():

@@ -36,7 +36,8 @@ def build_prompt(
     task_path: str | None,
     task_content: str | None,
     qa_id: str | None,
-    planner_output: str | None,
+    prior_role: str | None,
+    prior_role_output: str | None,
     design_doc: str | None,
     approved_plan_path: str | None = None,
     approved_plan_match_reason: str | None = None,
@@ -65,6 +66,6 @@ def build_prompt(
         lines.extend(["", f"task_path: {task_path}", "task_content:", (task_content or "").strip()])
     if qa_id:
         lines.append(f"qa_id: {qa_id}")
-    if planner_output:
-        lines.extend(["", "planner_output:", planner_output])
+    if prior_role_output:
+        lines.extend(["", f"{prior_role}_output:", prior_role_output])
     return "\n".join(lines)

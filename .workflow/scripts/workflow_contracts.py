@@ -160,7 +160,7 @@ MODE_CONTRACTS: dict[str, ModeContract] = {
     "feature": ModeContract(
         mode="feature",
         artifact_kind="feature",
-        roles=("planner", "implementer"),
+        roles=("planner", "implementer", "reviewer"),
         required_docs=(
             ".workflow/docs/PRD.md",
             ".workflow/docs/ARCHITECTURE.md",
@@ -196,7 +196,7 @@ MODE_CONTRACTS: dict[str, ModeContract] = {
     "qa": ModeContract(
         mode="qa",
         artifact_kind="qa",
-        roles=("qa_planner", "implementer"),
+        roles=("qa_planner", "implementer", "reviewer"),
         required_docs=(
             ".workflow/docs/QA.md",
             ".workflow/docs/PRD.md",
@@ -304,6 +304,7 @@ MODE_CONTRACTS: dict[str, ModeContract] = {
 SKILL_TO_MODE = {
     "flow-init": "init",
     "flow-feature": "feature",
+    "flow-fix": "qa",
     "flow-qa": "qa",
     "flow-review": "review",
     "flow-plan": "plan",

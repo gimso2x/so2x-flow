@@ -26,6 +26,7 @@ PLAN_TASKS = WORKFLOW_ROOT / "tasks" / "plan"
 PROMPTS_DIR = WORKFLOW_ROOT / "prompts"
 
 MODE_ALIASES = {
+    "flow-fix": "qa",
     "qa-fix": "qa",
     "plan-only": "plan",
 }
@@ -37,6 +38,7 @@ BOOTSTRAP_ARTIFACTS = [
     ".claude/skills/README.md",
     ".claude/skills/flow-init.md",
     ".claude/skills/flow-feature.md",
+    ".claude/skills/flow-fix.md",
     ".claude/skills/flow-qa.md",
     ".claude/skills/flow-review.md",
     ".claude/skills/flow-plan.md",
@@ -77,7 +79,7 @@ BOOTSTRAP_DIRS = [
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="so2x-flow execution entrypoint")
-    parser.add_argument("mode", choices=["init", "feature", "qa", "qa-fix", "review", "plan", "plan-only", "doctor"])
+    parser.add_argument("mode", choices=["init", "feature", "qa", "qa-fix", "flow-fix", "review", "plan", "plan-only", "doctor"])
     parser.add_argument("request", nargs="?", default="doctor status")
     parser.add_argument("--task")
     parser.add_argument("--qa-id")

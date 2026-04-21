@@ -10,17 +10,18 @@ from execute_helpers import make_sample_target_repo, make_workspace, output_path
 
 def test_qa_dry_run_prioritizes_qa_doc_and_uses_qa_planner(tmp_path: Path):
     workspace = make_workspace(tmp_path)
-    result = run_execute(workspace, "qa", "QA-001 홈 버튼 클릭 안됨", "--qa-id", "QA-001", "--dry-run")
+    result = run_execute(workspace, "flow-fix", "QA-001 홈 버튼 클릭 안됨", "--qa-id", "QA-001", "--dry-run")
     payload = read_json(output_path(workspace, result.stdout, "output_json"))
     assert payload["mode"] == "qa"
     assert payload["docs_used"][0] == ".workflow/docs/QA.md"
-    assert [item["role"] for item in payload["role_results"]] == ["qa_planner", "implementer"]
+    assert [item["role"] for item in payload["role_results"]] == ["qa_planner", "implementer", "reviewer"]
     task_json = read_json(workspace / payload["artifacts"][0])
     assert task_json["reproduction"] == ["Describe how to reproduce the issue."]
     assert task_json["expected"] == ["Describe the intended behavior."]
     assert task_json["actual"] == ["Describe the current broken behavior."]
     assert task_json["minimal_fix"] == ["Describe the smallest safe repair."]
     assert "qa_id: QA-001" in payload["role_results"][1]["output"]
+    assert "implementer_output:" in payload["role_results"][2]["output"]
 
 def test_review_dry_run_uses_reviewer_only_and_includes_design_doc(tmp_path: Path):
     workspace = make_workspace(tmp_path)
