@@ -23,3 +23,5 @@
 ## Agent notes
 - Claude Code: use `.claude/skills/flow-init.md`, `.claude/skills/flow-plan.md`, `.claude/skills/flow-feature.md`, `.claude/skills/flow-fix.md`, `.claude/skills/flow-review.md`, `.claude/skills/flow-evaluate.md`.
 - Codex and other agents: follow this `AGENTS.md`, inspect `.workflow/docs/*`, and use `.workflow/scripts/execute.py` and `.workflow/scripts/doctor.py` as the canonical workflow surface.
+- Shortcut for Codex or shell use: `python3 flow.py <mode> ...` is the thin root wrapper for `.workflow/scripts/execute.py`.
+- Read-only status shortcut: `python3 flow.py doctor --brief` or `python3 flow.py status --brief` delegates to `.workflow/scripts/doctor.py`.
