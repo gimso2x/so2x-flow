@@ -104,6 +104,12 @@ def patch_agents_md(target_root: Path) -> bool:
     return apply_patch(target_root)
 
 
+def agents_md_has_so2x_flow(target_root: Path) -> bool:
+    from patch_agents_md import has_so2x_flow_section
+
+    return has_so2x_flow_section(target_root / "AGENTS.md")
+
+
 def verify_install(target_root: Path) -> list[str]:
     required = [
         ".claude/skills/flow-init.md",
@@ -150,8 +156,10 @@ def main() -> int:
     print(f"skipped_missing_count: {len(skipped_missing)}")
     if args.patch_agents_md:
         print(f"agents_md_status: {'created_or_updated' if agents_patched else 'already_present'}")
-    elif (target_root / "AGENTS.md").exists():
+    elif agents_md_has_so2x_flow(target_root):
         print("agents_md_status: available")
+    elif (target_root / "AGENTS.md").exists():
+        print("agents_md_status: existing_without_so2x_flow (rerun with --patch-agents-md to create/update)")
     else:
         print("agents_md_status: not created (rerun with --patch-agents-md to create/update)")
     if args.patch_claude_md:

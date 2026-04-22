@@ -102,6 +102,18 @@ def test_install_reports_agents_md_created_when_patch_enabled(tmp_path: Path):
     assert "Codex 같은 다른 에이전트" in patched
 
 
+def test_install_reports_agents_md_needs_patch_when_existing_guide_lacks_so2x_flow(tmp_path: Path):
+    target = tmp_path / "app"
+    target.mkdir()
+    agents_md = target / "AGENTS.md"
+    agents_md.write_text("# local agents guide\n", encoding="utf-8")
+
+    result = run_install(target)
+
+    assert "agents_md_status: existing_without_so2x_flow (rerun with --patch-agents-md to create/update)" in result.stdout
+    assert agents_md.read_text(encoding="utf-8") == "# local agents guide\n"
+
+
 def test_install_force_overwrites_existing_scaffold_file(tmp_path: Path):
     target = tmp_path / "app"
     target.mkdir(parents=True)
@@ -138,6 +150,40 @@ def test_install_patch_agents_does_not_duplicate_existing_section(tmp_path: Path
     run_install(target, "--patch-agents-md")
     second = agents_md.read_text(encoding="utf-8")
     assert second.count("## so2x-flow") == 1
+
+
+def test_install_rewrites_unmanaged_stale_agents_section_when_patch_enabled(tmp_path: Path):
+    target = tmp_path / "app"
+    target.mkdir()
+    agents_md = target / "AGENTS.md"
+    agents_md.write_text(
+        "# local agents guide\n\n## so2x-flow\n- stale\n\n## Other\n- keep\n",
+        encoding="utf-8",
+    )
+
+    result = run_install(target, "--patch-agents-md")
+
+    rewritten = agents_md.read_text(encoding="utf-8")
+    assert "agents_md_status: created_or_updated" in result.stdout
+    assert "- stale" not in rewritten
+    assert "<!-- so2x-flow:managed:start -->" in rewritten
+    assert "## Other\n- keep\n" in rewritten
+
+
+def test_install_patch_agents_keeps_following_top_level_sections(tmp_path: Path):
+    target = tmp_path / "app"
+    target.mkdir()
+    agents_md = target / "AGENTS.md"
+    agents_md.write_text(
+        "# local agents guide\n\n## so2x-flow\n- stale\n\n# Top level\n- keep\n",
+        encoding="utf-8",
+    )
+
+    run_install(target, "--patch-agents-md")
+
+    rewritten = agents_md.read_text(encoding="utf-8")
+    assert "<!-- so2x-flow:managed:start -->" in rewritten
+    assert "# Top level\n- keep\n" in rewritten
 
 
 def test_install_does_not_copy_generated_task_artifacts(tmp_path: Path):
@@ -193,6 +239,7 @@ def test_readme_uses_exit_trap_cleanup_and_install_checks():
     assert "이 옵션은 이미 로컬 `CLAUDE.md`가 있는 프로젝트에서 기존 사용자 가이드와 so2x-flow 섹션을 한 파일로 합칠 때 특히 의미가 크다." in readme
     assert "`CLAUDE.md`가 아예 없는 새 프로젝트라면 install이 scaffold 기본 파일을 복사하는 대신 patch 단계에서 새 `CLAUDE.md`를 만들어 managed so2x-flow 섹션을 넣는다." in readme
     assert "### 기존 `AGENTS.md`까지 같이 패치하려면" in readme
+    assert "기존 `AGENTS.md`가 이미 있지만 so2x-flow 섹션이 없으면 install 출력에 patch 필요 상태가 표시된다." in readme
     assert "`--patch-agents-md`를 추가해 같은 managed 섹션을 붙일 수 있다." in readme
     assert 'test -f AGENTS.md' in readme
     assert 'grep -n "## so2x-flow" AGENTS.md' in readme

@@ -122,6 +122,8 @@ grep 출력 자체를 보고 싶지 않다면 `test -f CLAUDE.md && grep -n "## 
 
 Codex나 다른 agent용 루트 가이드가 이미 있는 프로젝트라면 `--patch-agents-md`를 추가해 같은 managed 섹션을 붙일 수 있다.
 새 프로젝트라면 기본 install만으로 `AGENTS.md`가 복사되지만, 기존 `AGENTS.md`를 유지하면서 so2x-flow 섹션만 덧붙이고 싶을 때는 patch 옵션이 더 안전하다.
+기존 `AGENTS.md`가 이미 있지만 so2x-flow 섹션이 없으면 install 출력에 patch 필요 상태가 표시된다.
+기존 `AGENTS.md`에 예전 so2x-flow 섹션이 남아 있어도 patch를 다시 실행하면 managed 블록으로 재정렬한다.
 
 ```bash
 python3 .tmp/so2x-flow/.workflow/scripts/install.py --target . --patch-agents-md --patch-claude-md

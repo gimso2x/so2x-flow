@@ -18,6 +18,18 @@ SECTION_BODY = """## so2x-flow
 """
 SECTION = f"{START}\n{SECTION_BODY}{END}\n"
 MANAGED_BLOCK_RE = re.compile(r"\n?<!-- so2x-flow:managed:start -->.*?<!-- so2x-flow:managed:end -->\n?", re.S)
+UNMANAGED_SECTION_RE = re.compile(r"(?ms)^## so2x-flow\n.*?(?=^#{1,2}\s|\Z)")
+
+
+def has_so2x_flow_section(path: Path) -> bool:
+    if not path.exists():
+        return False
+    text = path.read_text(encoding="utf-8")
+    return (
+        START in text and END in text
+        or "## so2x-flow" in text
+        or "# so2x-flow workspace guide" in text
+    )
 
 
 def patch_agents_md(target_root: Path) -> bool:
@@ -32,6 +44,12 @@ def patch_agents_md(target_root: Path) -> bool:
         return False
 
     if "## so2x-flow" in base:
+        updated = UNMANAGED_SECTION_RE.sub(SECTION.rstrip(), base, count=1)
+        if updated != base:
+            if not updated.endswith("\n"):
+                updated += "\n"
+            path.write_text(updated, encoding="utf-8")
+            return True
         return False
 
     if base and not base.endswith("\n"):
