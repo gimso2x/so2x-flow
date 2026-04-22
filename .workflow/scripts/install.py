@@ -112,6 +112,7 @@ def agents_md_has_so2x_flow(target_root: Path) -> bool:
 
 def verify_install(target_root: Path) -> list[str]:
     required = [
+        ".claude/commands/flow-init.md",
         ".claude/skills/flow-init.md",
         ".workflow/scripts/execute.py",
         ".workflow/scripts/doctor.py",

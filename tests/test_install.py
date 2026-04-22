@@ -39,6 +39,7 @@ def test_install_copies_flow_scaffold_into_target_project(tmp_path: Path):
     assert "claude_md_status: not created (rerun with --patch-claude-md to create/update)" in result.stdout
     assert "copied_files: hidden (rerun with --verbose-copied-files to inspect each path)" in result.stdout
     assert (target / "AGENTS.md").exists()
+    assert (target / ".claude" / "commands" / "flow-init.md").exists()
     assert (target / ".claude" / "skills" / "flow-feature.md").exists()
     assert (target / ".workflow" / "config" / "ccs-map.yaml").exists()
     assert (target / ".workflow" / "docs" / "PRD.md").exists()
@@ -69,6 +70,7 @@ def test_install_verbose_flag_prints_each_copied_path(tmp_path: Path):
     result = run_install(target, "--verbose-copied-files")
     assert "copied_files:" in result.stdout
     assert ".workflow/scripts/execute.py" in result.stdout
+    assert ".claude/commands/flow-init.md" in result.stdout
     assert ".claude/skills/flow-init.md" in result.stdout
 
 
@@ -233,7 +235,7 @@ def test_readme_uses_exit_trap_cleanup_and_install_checks():
     assert 'grep -n "## so2x-flow" CLAUDE.md' in readme
     assert 'grep -n "<!-- so2x-flow:managed:start -->" CLAUDE.md' in readme
     assert "`python3 .workflow/scripts/doctor.py --brief`" in readme
-    assert "기본 성공 판단은 **step 로그 + 필수 파일 4개 확인**으로 먼저 닫는다." in readme
+    assert "기본 성공 판단은 **step 로그 + 필수 파일 5개 확인**으로 먼저 닫는다." in readme
     assert "`copied_files: hidden (rerun with --verbose-copied-files to inspect each path)`는 기본 출력이 요약 모드라는 뜻이다." in readme
     assert "성공 경로에서는 `trap - EXIT`를 cleanup 직전에 호출해 자동 EXIT cleanup을 해제한 뒤" in readme
     assert "이 옵션은 이미 로컬 `CLAUDE.md`가 있는 프로젝트에서 기존 사용자 가이드와 so2x-flow 섹션을 한 파일로 합칠 때 특히 의미가 크다." in readme
@@ -337,7 +339,7 @@ def test_readme_install_prompt_stays_single_turn_and_project_local():
     assert "install 출력 tail(`next_step`, `next_step_cli`, `next_step_human`, `first_run_path`, `target`, `copied_count`, `skipped_existing_count`, `skipped_missing_count`, `claude_md_status`, `copied_files`)" in readme
     assert "필요하면 선택적으로 `python3 .workflow/scripts/doctor.py --brief`" in readme
     assert "마지막 한 줄은 정확히 `다음 단계: /flow-init으로 프로젝트를 초기화하세요.` 로 끝내." in readme
-    assert "기본 성공 판단은 **step 로그 + 필수 파일 4개 확인**으로 먼저 닫는다." in readme
+    assert "기본 성공 판단은 **step 로그 + 필수 파일 5개 확인**으로 먼저 닫는다." in readme
 
 
 def test_readme_install_examples_match_installer_required_file_contract():
@@ -348,7 +350,7 @@ def test_readme_install_examples_match_installer_required_file_contract():
     assert "`.workflow/scripts/doctor.py`" in readme
     assert 'test -f .workflow/scripts/doctor.py' in readme
     assert "### 30초 설치 체크표" in readme
-    assert "| 필수 파일 4개 |" in readme
+    assert "| 필수 파일 5개 |" in readme
     assert "| 마지막 안내 | `다음 단계: /flow-init으로 프로젝트를 초기화하세요.` |" in readme
 
 
@@ -386,6 +388,7 @@ def test_install_output_contract_includes_first_run_guidance_lines(tmp_path: Pat
     assert "next_step_cli: /flow-init" in result.stdout
     assert "next_step_human: 다음 단계: /flow-init으로 프로젝트를 초기화하세요." in result.stdout
     assert "first_run_path: /flow-init -> /flow-plan -> /flow-feature" in result.stdout
+    assert (target / ".claude" / "commands" / "flow-init.md").exists()
     assert (target / ".claude" / "skills" / "flow-init.md").exists()
     assert (target / ".workflow" / "scripts" / "execute.py").exists()
     assert (target / ".workflow" / "scripts" / "doctor.py").exists()

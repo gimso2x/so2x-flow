@@ -35,6 +35,14 @@ BOOTSTRAP_ARTIFACTS = [
     "CLAUDE.md",
     "DESIGN.md",
     ".claude/settings.json",
+    ".claude/commands/README.md",
+    ".claude/commands/flow-init.md",
+    ".claude/commands/flow-plan.md",
+    ".claude/commands/flow-feature.md",
+    ".claude/commands/flow-fix.md",
+    ".claude/commands/flow-qa.md",
+    ".claude/commands/flow-review.md",
+    ".claude/commands/flow-evaluate.md",
     ".claude/skills/README.md",
     ".claude/skills/flow-init.md",
     ".claude/skills/flow-feature.md",
@@ -65,6 +73,7 @@ BOOTSTRAP_ARTIFACTS = [
 
 BOOTSTRAP_DIRS = [
     ".claude",
+    ".claude/commands",
     ".claude/skills",
     ".workflow/config",
     ".workflow/docs",
