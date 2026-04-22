@@ -12,6 +12,10 @@ def _read_patch_claude_md() -> str:
     return (ROOT / ".workflow" / "scripts" / "patch_claude_md.py").read_text(encoding="utf-8")
 
 
+def _read_patch_agents_md() -> str:
+    return (ROOT / ".workflow" / "scripts" / "patch_agents_md.py").read_text(encoding="utf-8")
+
+
 def run_install(target: Path, *extra: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [sys.executable, str(INSTALL), "--target", str(target), *extra],
@@ -31,8 +35,10 @@ def test_install_copies_flow_scaffold_into_target_project(tmp_path: Path):
     assert "copied_count:" in result.stdout
     assert "skipped_existing_count:" in result.stdout
     assert "skipped_missing_count:" in result.stdout
+    assert "agents_md_status: available" in result.stdout
     assert "claude_md_status: not created (rerun with --patch-claude-md to create/update)" in result.stdout
     assert "copied_files: hidden (rerun with --verbose-copied-files to inspect each path)" in result.stdout
+    assert (target / "AGENTS.md").exists()
     assert (target / ".claude" / "skills" / "flow-feature.md").exists()
     assert (target / ".workflow" / "config" / "ccs-map.yaml").exists()
     assert (target / ".workflow" / "docs" / "PRD.md").exists()
@@ -82,6 +88,20 @@ def test_install_reports_claude_md_created_when_patch_enabled(tmp_path: Path):
     assert "claude_md_status: created_or_updated" in result.stdout
 
 
+def test_install_reports_agents_md_created_when_patch_enabled(tmp_path: Path):
+    target = tmp_path / "app"
+    target.mkdir()
+    agents_md = target / "AGENTS.md"
+    agents_md.write_text("# local agents guide\n", encoding="utf-8")
+
+    result = run_install(target, "--patch-agents-md")
+
+    assert "agents_md_status: created_or_updated" in result.stdout
+    patched = agents_md.read_text(encoding="utf-8")
+    assert "## so2x-flow" in patched
+    assert "Codex 같은 다른 에이전트" in patched
+
+
 def test_install_force_overwrites_existing_scaffold_file(tmp_path: Path):
     target = tmp_path / "app"
     target.mkdir(parents=True)
@@ -103,6 +123,21 @@ def test_install_patch_creates_claude_md_when_missing(tmp_path: Path):
     assert claude_md.exists()
     assert "claude_md_patched: True" in result.stdout
     assert "## so2x-flow" in claude_md.read_text(encoding="utf-8")
+
+
+def test_install_patch_agents_does_not_duplicate_existing_section(tmp_path: Path):
+    target = tmp_path / "app"
+    target.mkdir()
+    agents_md = target / "AGENTS.md"
+    agents_md.write_text("# local agents guide\n", encoding="utf-8")
+
+    run_install(target, "--patch-agents-md")
+    first = agents_md.read_text(encoding="utf-8")
+    assert "## so2x-flow" in first
+
+    run_install(target, "--patch-agents-md")
+    second = agents_md.read_text(encoding="utf-8")
+    assert second.count("## so2x-flow") == 1
 
 
 def test_install_does_not_copy_generated_task_artifacts(tmp_path: Path):
@@ -157,6 +192,10 @@ def test_readme_uses_exit_trap_cleanup_and_install_checks():
     assert "성공 경로에서는 `trap - EXIT`를 cleanup 직전에 호출해 자동 EXIT cleanup을 해제한 뒤" in readme
     assert "이 옵션은 이미 로컬 `CLAUDE.md`가 있는 프로젝트에서 기존 사용자 가이드와 so2x-flow 섹션을 한 파일로 합칠 때 특히 의미가 크다." in readme
     assert "`CLAUDE.md`가 아예 없는 새 프로젝트라면 install이 scaffold 기본 파일을 복사하는 대신 patch 단계에서 새 `CLAUDE.md`를 만들어 managed so2x-flow 섹션을 넣는다." in readme
+    assert "### 기존 `AGENTS.md`까지 같이 패치하려면" in readme
+    assert "`--patch-agents-md`를 추가해 같은 managed 섹션을 붙일 수 있다." in readme
+    assert 'test -f AGENTS.md' in readme
+    assert 'grep -n "## so2x-flow" AGENTS.md' in readme
 
 
 def test_skill_docs_use_workflow_paths_consistently():
@@ -287,6 +326,7 @@ def test_install_output_and_readme_show_one_obvious_next_action():
     assert "copied_count:" in readme
     assert "skipped_existing_count:" in readme
     assert "skipped_missing_count:" in readme
+    assert "agents_md_status:" in readme
     assert "claude_md_status:" in readme
     assert "copied_files: hidden (rerun with --verbose-copied-files to inspect each path)" in readme
 
@@ -330,6 +370,17 @@ def test_readme_and_patch_claude_md_document_doctor_status_surface():
     assert "`.workflow/outputs/doctor/status.json`" in readme
     assert "doctor.py --brief" not in patch_claude
     assert "execute.py doctor" not in patch_claude
+
+
+def test_patch_guides_cover_both_claude_and_cross_agent_surfaces():
+    patch_claude = _read_patch_claude_md()
+    patch_agents = _read_patch_agents_md()
+    agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+
+    assert "AGENTS.md" in patch_claude
+    assert "공용 agent surface는 루트 `AGENTS.md`와 `.workflow/` 문서다." in patch_agents
+    assert "portable entrypoint for Codex and other coding agents" in agents
+    assert "Codex and other agents" in agents
 
 
 def test_readme_and_patch_claude_md_align_on_flow_qa_task_artifact_gate():

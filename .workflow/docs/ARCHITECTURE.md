@@ -1,7 +1,9 @@
 # ARCHITECTURE
 
 ## Structure
+- `AGENTS.md`: cross-agent root entrypoint
 - `.claude/skills/`: workflow definitions
+- `.claude/`: optional Claude-specific integration surface
 - `.workflow/docs/`: source-of-truth workflow docs
 - `DESIGN.md`: root design reference
 - `.workflow/prompts/`: role prompt templates

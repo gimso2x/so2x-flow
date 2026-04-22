@@ -2,8 +2,14 @@ __pycache__/
 .pytest_cache/
 .workflow/scripts/__pycache__/
 .workflow/tasks/feature/*.json
+.workflow/tasks/feature/*.md
+.workflow/tasks/init/*.md
 .workflow/tasks/plan/*.json
+.workflow/tasks/plan/*.md
 .workflow/tasks/qa/*.json
+.workflow/tasks/qa/*.md
 .workflow/tasks/review/*.json
+.workflow/tasks/review/*.md
+.workflow/tasks/evaluate/*.md
 !.workflow/tasks/feature/_template.json
 !.workflow/tasks/qa/_template.json

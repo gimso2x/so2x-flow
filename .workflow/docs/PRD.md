@@ -5,10 +5,12 @@
 
 ## Users
 - Primary user: solo builder using Claude Code and lightweight agent workflows.
+- Additional surface: Codex or another coding agent reading the same workflow through `AGENTS.md` and `.workflow/`.
 - Secondary user: future maintainer who needs explicit docs.
 
 ## Scope
 - Skill-based lightweight harness.
+- Portable root guide via `AGENTS.md` while keeping `.claude/` as an optional Claude-specific surface.
 - Docs-first task and plan generation.
 - Dry-run orchestration for init, feature, qa, review, and plan modes.
 - Config-driven runner selection with `ccs`/`claude` fallback.

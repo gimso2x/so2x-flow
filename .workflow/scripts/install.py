@@ -11,6 +11,7 @@ COPY_DIRS = [
     ".workflow",
 ]
 COPY_FILES = [
+    "AGENTS.md",
     "DESIGN.md",
 ]
 SKIP_NAMES = {"__pycache__", ".git", ".pytest_cache", "outputs", "tests", "README.md"}
@@ -21,6 +22,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Install so2x-flow into a target project")
     parser.add_argument("--target", default=".", help="Target project root (default: current directory)")
     parser.add_argument("--force", action="store_true", help="Overwrite existing files")
+    parser.add_argument("--patch-agents-md", action="store_true", help="Append a so2x-flow section to target AGENTS.md if missing")
     parser.add_argument("--patch-claude-md", action="store_true", help="Append a so2x-flow section to target CLAUDE.md if missing")
     parser.add_argument(
         "--verbose-copied-files",
@@ -96,6 +98,12 @@ def patch_claude_md(target_root: Path) -> bool:
     return apply_patch(target_root)
 
 
+def patch_agents_md(target_root: Path) -> bool:
+    from patch_agents_md import patch_agents_md as apply_patch
+
+    return apply_patch(target_root)
+
+
 def verify_install(target_root: Path) -> list[str]:
     required = [
         ".claude/skills/flow-init.md",
@@ -125,9 +133,11 @@ def main() -> int:
             print(f"missing: {rel}")
         raise SystemExit(1)
 
-    print("step 3/4: patch CLAUDE.md")
-    patched = patch_claude_md(target_root) if args.patch_claude_md else False
-    print(f"claude_md_patched: {patched}")
+    print("step 3/4: patch agent guides")
+    agents_patched = patch_agents_md(target_root) if args.patch_agents_md else False
+    claude_patched = patch_claude_md(target_root) if args.patch_claude_md else False
+    print(f"agents_md_patched: {agents_patched}")
+    print(f"claude_md_patched: {claude_patched}")
 
     print("step 4/4: install complete")
     print("next_step: 다음 단계: /flow-init으로 프로젝트를 초기화하세요.")
@@ -138,8 +148,14 @@ def main() -> int:
     print(f"copied_count: {len(copied)}")
     print(f"skipped_existing_count: {len(skipped_existing)}")
     print(f"skipped_missing_count: {len(skipped_missing)}")
+    if args.patch_agents_md:
+        print(f"agents_md_status: {'created_or_updated' if agents_patched else 'already_present'}")
+    elif (target_root / "AGENTS.md").exists():
+        print("agents_md_status: available")
+    else:
+        print("agents_md_status: not created (rerun with --patch-agents-md to create/update)")
     if args.patch_claude_md:
-        print(f"claude_md_status: {'created_or_updated' if patched else 'already_present'}")
+        print(f"claude_md_status: {'created_or_updated' if claude_patched else 'already_present'}")
     else:
         print("claude_md_status: not created (rerun with --patch-claude-md to create/update)")
     if args.verbose_copied_files:

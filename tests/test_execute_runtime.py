@@ -604,6 +604,7 @@ def test_external_sample_repo_install_init_plan_e2e_smoke(tmp_path: Path):
     init_json = read_json(repo / init_payload["artifacts"][0])
     assert (repo / "README.md").read_text(encoding="utf-8") == "# sample target\n"
     assert (repo / "app.py").read_text(encoding="utf-8") == "print('sample app')\n"
+    assert "so2x-flow workspace guide" in (repo / "AGENTS.md").read_text(encoding="utf-8")
     assert "## so2x-flow" in (repo / "CLAUDE.md").read_text(encoding="utf-8")
     assert init_json["status"] == "needs_user_input"
     assert init_json["current_question_id"] is None
