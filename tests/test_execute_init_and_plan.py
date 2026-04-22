@@ -81,6 +81,37 @@ def test_init_dry_run_applies_auto_fill_now_mode_from_existing_artifact(tmp_path
     assert rerun_json["current_question_id"] == "users"
     assert rerun_json["next_step_prompt"] == "자동으로 채운 초안을 확인했고, 남은 질문은 한 번에 하나씩 이어서 물어보면 돼요."
 
+
+def test_init_dry_run_marks_ready_for_review_with_flow_plan_next_step_when_questions_finished(tmp_path: Path):
+    workspace = make_workspace(tmp_path)
+    first = run_execute(workspace, "init", "개인용 운동 코칭 앱 MVP", "--dry-run")
+    payload = read_json(output_path(workspace, first.stdout, "output_json"))
+    init_path = workspace / payload["artifacts"][0]
+
+    existing = read_json(init_path)
+    existing["selected_init_mode"] = "auto-fill-now"
+    existing["answers"] = {
+        "project_name": "개인용 운동 코칭 앱 MVP",
+        "goal": "개인용 운동 코칭 앱 MVP",
+        "users": "혼자 운동하는 사용자",
+        "scope": "운동 기록과 루틴 관리",
+        "out_of_scope": "커뮤니티 기능",
+        "architecture": "Next.js 단일 앱",
+        "qa": "운동 기록 저장 시나리오",
+        "design": "미니멀한 모바일 UX",
+    }
+    init_path.write_text(json.dumps(existing, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    second = run_execute(workspace, "init", "개인용 운동 코칭 앱 MVP", "--dry-run")
+    rerun_payload = read_json(output_path(workspace, second.stdout, "output_json"))
+    rerun_json = read_json(workspace / rerun_payload["artifacts"][0])
+
+    assert rerun_json["status"] == "ready_for_review"
+    assert rerun_json["pending_questions"] == []
+    assert rerun_json["current_question_id"] is None
+    assert rerun_json["next_step_prompt"] == "init 초안이 준비됐습니다. 요구사항과 slice를 고정하려면 /flow-plan으로 이어가세요."
+    assert "next_step_prompt: init 초안이 준비됐습니다. 요구사항과 slice를 고정하려면 /flow-plan으로 이어가세요." in second.stdout
+
 def test_init_dry_run_preserves_existing_answers_on_rerun(tmp_path: Path):
     workspace = make_workspace(tmp_path)
     first = run_execute(workspace, "init", "개인용 운동 코칭 앱 MVP", "--dry-run")

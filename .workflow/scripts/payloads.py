@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -8,6 +9,23 @@ if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
 from workflow_contracts import contract_for_mode
+
+
+def _primary_artifact_next_step_prompt(payload: dict) -> str | None:
+    artifacts = payload.get("artifacts") or []
+    if not artifacts:
+        return None
+    primary = Path(artifacts[0])
+    if primary.suffix != ".json":
+        return None
+    artifact_path = (SCRIPT_DIR.parent.parent / primary).resolve()
+    if not artifact_path.exists():
+        return None
+    artifact_payload = json.loads(artifact_path.read_text(encoding="utf-8"))
+    next_step_prompt = artifact_payload.get("next_step_prompt")
+    if isinstance(next_step_prompt, str) and next_step_prompt:
+        return next_step_prompt
+    return None
 
 
 def build_payload(
@@ -87,6 +105,9 @@ def print_summary(payload: dict) -> None:
     print("artifacts:")
     for artifact in payload["artifacts"]:
         print(f"  - {artifact}")
+    next_step_prompt = _primary_artifact_next_step_prompt(payload)
+    if next_step_prompt:
+        print(f"next_step_prompt: {next_step_prompt}")
     if payload.get("failed_role"):
         print(f"failed_role: {payload['failed_role']}")
     if payload.get("failed_stage"):

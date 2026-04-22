@@ -98,6 +98,8 @@ def suggested_next_command(overall_status: str, exact_status: str, approval_stat
         return "/flow-init"
     if exact_status == "waiting:init":
         return "/flow-init"
+    if exact_status == "ok:init":
+        return "/flow-plan"
     if exact_status == "waiting:approval" or approval_status in {"waiting", "matched-unapproved-plan"}:
         return "/flow-plan"
     if overall_status == "blocked":
@@ -109,10 +111,14 @@ def suggested_next_command(overall_status: str, exact_status: str, approval_stat
 
 
 def summarize_latest(latest_payload: dict | None, latest_tasks: dict[str, str]) -> tuple[str, str | None, str, str]:
+    latest_init = latest_tasks.get("init")
+    latest_init_payload = load_json(PROJECT_ROOT / latest_init) if latest_init else None
+    if latest_init_payload and latest_init_payload.get("status") == "ready_for_review":
+        request = latest_init_payload.get("title") or "(unknown request)"
+        return (f"init ready for review: {request}", None, "ok", "ok:init")
     if latest_payload is None:
-        latest_init = latest_tasks.get("init")
         if latest_init:
-            init_payload = load_json(PROJECT_ROOT / latest_init)
+            init_payload = latest_init_payload
             if (init_payload or {}).get("status") in {"draft_auto_filled", "needs_user_input", "in_progress"}:
                 return ("Init questionnaire is waiting for user input.", None, "waiting", "waiting:init")
         latest_plan = latest_tasks.get("plan")

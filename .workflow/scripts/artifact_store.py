@@ -49,7 +49,9 @@ def write_initial_task(path: Path, content: dict, preserve_existing: bool = Fals
                     status = "needs_user_input"
             else:
                 status = "ready_for_review"
-            next_step_prompt = "자동으로 채운 초안을 확인했고, 남은 질문은 한 번에 하나씩 이어서 물어보면 돼요."
+                next_step_prompt = "init 초안이 준비됐습니다. 요구사항과 slice를 고정하려면 /flow-plan으로 이어가세요."
+            if pending_questions:
+                next_step_prompt = "자동으로 채운 초안을 확인했고, 남은 질문은 한 번에 하나씩 이어서 물어보면 돼요."
             current_question_id = pending_questions[0] if pending_questions else None
         elif selected_mode == "auto-fill-after-work":
             merged_answers = existing.get("answers", {})

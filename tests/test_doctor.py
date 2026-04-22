@@ -79,6 +79,38 @@ def test_doctor_reports_waiting_plan_approval_without_outputs(tmp_path: Path):
 
 
 
+def test_doctor_reports_init_ready_for_review_surface_and_next_step(tmp_path: Path):
+    workspace = make_workspace(tmp_path)
+    run_execute(workspace, "init", "개인용 운동 코칭 앱 MVP", "--dry-run")
+    init_path = workspace / ".workflow" / "tasks" / "init" / "개인용-운동-코칭-앱-mvp.json"
+    init_json = read_json(init_path)
+    init_json["selected_init_mode"] = "auto-fill-now"
+    init_json["answers"] = {
+        "project_name": "개인용 운동 코칭 앱 MVP",
+        "goal": "개인용 운동 코칭 앱 MVP",
+        "users": "혼자 운동하는 사용자",
+        "scope": "운동 기록과 루틴 관리",
+        "out_of_scope": "커뮤니티 기능",
+        "architecture": "Next.js 단일 앱",
+        "qa": "운동 기록 저장 시나리오",
+        "design": "미니멀한 모바일 UX",
+    }
+    init_path.write_text(json.dumps(init_json, ensure_ascii=False, indent=2), encoding="utf-8")
+    run_execute(workspace, "init", "개인용 운동 코칭 앱 MVP", "--dry-run")
+
+    result = run_doctor(workspace)
+    payload = read_json(output_path(workspace, result.stdout, "output_json"))
+
+    assert payload["overall_status"] == "ok"
+    assert payload["exact_status"] == "ok:init"
+    assert payload["blocked_reason"] is None
+    assert payload["latest_summary"] == "init ready for review: 개인용 운동 코칭 앱 MVP"
+    assert payload["latest_output_json"] == ".workflow/outputs/init/개인용-운동-코칭-앱-mvp.json"
+    assert payload["latest_tasks"]["init"] == ".workflow/tasks/init/개인용-운동-코칭-앱-mvp.json"
+    assert payload["suggested_next_command"] == "/flow-plan"
+
+
+
 def test_doctor_reports_latest_success_surface_and_task_links(tmp_path: Path):
     workspace = make_workspace(tmp_path)
     run_execute(workspace, "plan", "로그인 기능 설계 확정", "--dry-run")
