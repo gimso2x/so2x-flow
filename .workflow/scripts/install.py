@@ -13,6 +13,7 @@ COPY_DIRS = [
 COPY_FILES = [
     "AGENTS.md",
     "DESIGN.md",
+    "flow.py",
 ]
 SKIP_NAMES = {"__pycache__", ".git", ".pytest_cache", "outputs", "tests", "README.md"}
 TASK_TEMPLATE_NAMES = {"_template.json"}

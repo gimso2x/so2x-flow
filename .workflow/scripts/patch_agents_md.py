@@ -10,6 +10,8 @@ SECTION_BODY = """## so2x-flow
 - 공용 agent surface는 루트 `AGENTS.md`와 `.workflow/` 문서다.
 - Claude Code를 쓸 때는 `.claude/skills` 아래 `flow-init`, `flow-feature`, `flow-fix`(=`flow-qa`), `flow-review`, `flow-evaluate`, `flow-plan`을 추가로 사용할 수 있다.
 - Codex 같은 다른 에이전트에서도 같은 계약을 `AGENTS.md`와 `.workflow/` 기준으로 그대로 따른다.
+- Codex나 셸에서 바로 쓸 때는 `python3 flow.py <mode> ...`를 기본 진입점으로 본다. 이 파일은 `.workflow/scripts/execute.py`와 `.workflow/scripts/doctor.py`를 감싼 얇은 래퍼다.
+- 상태만 읽고 싶으면 `python3 flow.py doctor --brief` 또는 `python3 flow.py status --brief`를 쓴다.
 - 구현 전에 항상 `.workflow/tasks` 아래 task 문서를 먼저 만든다.
 - scaffold 자체를 다룰 때는 `DESIGN.md`를 굳이 읽지 않아도 된다. 이 파일은 타깃 프로젝트 UI 기준 문서다.
 - `.workflow/docs/UI_GUIDE.md`는 legacy fallback이다. 존재하지 않으면 이 파일은 무시한다.

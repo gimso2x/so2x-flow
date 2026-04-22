@@ -2,6 +2,7 @@
 
 ## Structure
 - `AGENTS.md`: cross-agent root entrypoint
+- `flow.py`: root convenience wrapper for Codex/CLI use; delegates to the canonical workflow scripts
 - `.claude/skills/`: workflow definitions
 - `.claude/`: optional Claude-specific integration surface
 - `.workflow/docs/`: source-of-truth workflow docs
